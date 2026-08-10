@@ -13,8 +13,12 @@ QQC2.ToolButton {
     icon.name: ""
     display: QQC2.AbstractButton.TextBesideIcon
     focusPolicy: Qt.StrongFocus
-    Accessible.name: i18n("KodexBar usage: %1. Open details.", usageText)
-    Accessible.description: i18n("Open or close KodexBar usage details")
+    Accessible.name: typeof i18n === "function"
+        ? i18n("KodexBar usage: %1. Open details.", usageText)
+        : "KodexBar usage: " + usageText + ". Open details."
+    Accessible.description: typeof i18n === "function"
+        ? i18n("Open or close KodexBar usage details")
+        : "Open or close KodexBar usage details"
     Layout.minimumWidth: contentItem.implicitWidth + Kirigami.Units.smallSpacing * 2
     Layout.minimumHeight: Kirigami.Units.iconSizes.smallMedium
 

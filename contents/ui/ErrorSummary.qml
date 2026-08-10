@@ -19,13 +19,24 @@ ColumnLayout {
     property bool expanded: false
     readonly property alias disclosureButton: disclosure
 
+    function translate(text) {
+        return typeof i18n === "function" ? i18n(text) : text
+    }
+
+    function translatePlural(singular, plural, count) {
+        if (typeof i18np === "function") {
+            return i18np(singular, plural, count)
+        }
+        return (count === 1 ? singular : plural).replace("%1", count)
+    }
+
     function valueText(value) {
         return value === null || value === undefined ? "" : String(value)
     }
 
     function failureText(failure) {
         if (failure === null || failure === undefined) {
-            return i18n("Provider returned an unknown error")
+            return translate("Provider returned an unknown error")
         }
         if (typeof failure === "string") {
             return failure
@@ -45,20 +56,20 @@ ColumnLayout {
     visible: errorCount > 0
     Layout.fillWidth: true
     spacing: Kirigami.Units.smallSpacing
-    Accessible.name: i18np("%1 provider failure", "%1 provider failures", errorCount)
+    Accessible.name: translatePlural("%1 provider failure", "%1 provider failures", errorCount)
 
     QQC2.ToolButton {
         id: disclosure
 
         checkable: true
         checked: root.expanded
-        text: i18np("Show %1 provider failure", "Show %1 provider failures", root.errorCount)
+        text: root.translatePlural("Show %1 provider failure", "Show %1 provider failures", root.errorCount)
         icon.name: checked ? "arrow-down" : "arrow-right"
         display: QQC2.AbstractButton.TextBesideIcon
         Accessible.name: text
         Accessible.description: checked
-            ? i18n("Collapse provider failures")
-            : i18n("Expand provider failures")
+            ? root.translate("Collapse provider failures")
+            : root.translate("Expand provider failures")
         onToggled: root.expanded = checked
     }
 
@@ -91,7 +102,7 @@ ColumnLayout {
 
         PlasmaComponents.Label {
             visible: root.omittedErrorCount > 0
-            text: i18np("%1 additional failure not shown", "%1 additional failures not shown", root.omittedErrorCount)
+            text: root.translatePlural("%1 additional failure not shown", "%1 additional failures not shown", root.omittedErrorCount)
             color: Kirigami.Theme.disabledTextColor
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
