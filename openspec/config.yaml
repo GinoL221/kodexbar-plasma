@@ -1,0 +1,47 @@
+schema: spec-driven
+
+context: |
+  Project: kodexbar-plasma, a Plasma 6 QML/Kirigami widget for displaying external CodexBar usage.
+  Runtime boundary: consume the external `codexbar` CLI; do not reimplement providers, auth, or fetching.
+  Architecture: Plasma applet metadata and configuration, a QML controller/model boundary, native Kirigami/QtQuick UI, and executable QML harnesses.
+  Testing: qml6 offscreen harnesses, QtTest inputs resolved by scripts/run-qml-tests.sh, package lifecycle smoke, and a manual live-Plasma smoke checklist.
+  Delivery strategy: ask-on-risk; review budget: 800 changed lines.
+
+strict_tdd: true
+
+testing:
+  runner: qmltestrunner
+  runner_command: ./scripts/run-qml-tests.sh
+  runner_resolution: PATH, /usr/lib/qt6/bin/qmltestrunner, or /usr/lib64/qt6/bin/qmltestrunner
+  framework: QtTest plus executable qml6 QML harnesses
+  unit: tests/UsageModelTest.qml and tests/UsageControllerFixture.qml via qmltestrunner; model/controller harnesses via qml6
+  integration: QML controller and executable DataSource lifecycle harnesses
+  e2e: manual package and live-Plasma smoke; kpackagetool6 and plasmawindowed when available
+  coverage: null
+  linter: null
+  type_checker: null
+  formatter: clang-format
+  formatter_command: clang-format
+  notes: qml6 harnesses run offscreen with QT_QPA_PLATFORM=offscreen and QT_QUICK_BACKEND=software. Coverage and QML type-checking are not configured. clang-format is available but no project-specific QML formatting contract exists. Live keyboard traversal and live theme switching require manual Plasma execution.
+
+rules:
+  proposal:
+    - Include rollback plans for risky changes.
+    - Preserve the external codexbar CLI boundary.
+  specs:
+    - Use Given/When/Then scenarios and RFC 2119 keywords.
+  design:
+    - Document architecture decisions and rationale.
+  tasks:
+    - Group tasks by phase and keep them completable in one session.
+  apply:
+    guidelines:
+      - Follow established Plasma 6 QML/Kirigami patterns once detected.
+    tdd: true
+    test_command: ./scripts/run-qml-tests.sh
+  verify:
+    test_command: ./scripts/run-qml-tests.sh
+    build_command: git diff --check
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas.

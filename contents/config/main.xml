@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      https://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="General">
+    <entry name="codexbarCommand" type="String">
+      <default>/home/ginopc/.local/bin/codexbar</default>
+    </entry>
+    <entry name="refreshInterval" type="Int">
+      <default>60</default>
+      <min>1</min>
+      <max>3600</max>
+    </entry>
+    <entry name="requestTimeout" type="Int">
+      <default>60</default>
+      <min>30</min>
+      <max>600</max>
+    </entry>
+  </group>
+</kcfg>
