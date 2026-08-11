@@ -59,16 +59,18 @@ KCM.SimpleKCM {
 
                 QQC2.TextField {
                     id: codexbarCommand
+                    objectName: "codexbarCommand"
                     Kirigami.FormData.label: i18n("CLI path:")
-                    placeholderText: "/home/ginopc/.local/bin/codexbar"
+                    placeholderText: i18n("Leave empty to try automatic discovery")
                     Accessible.name: i18n("Absolute CodexBar CLI path")
+                    Accessible.description: i18n("Leave this empty to try approved locations automatically, or enter an absolute executable path.")
                     validator: RegularExpressionValidator {
                         regularExpression: /\/[^\r\n]*/
                     }
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 24
                     onEditingFinished: {
-                        if (!acceptableInput) {
-                            text = page.cfg_codexbarCommandDefault || "/home/ginopc/.local/bin/codexbar"
+                        if (text.length > 0 && !acceptableInput) {
+                            text = page.cfg_codexbarCommandDefault
                         }
                     }
                 }
@@ -118,10 +120,14 @@ KCM.SimpleKCM {
                 }
 
                 PlasmaComponents.Label {
-                    text: i18n("Enter an absolute path beginning with '/'. Invalid paths are restored to the configured default when editing finishes.")
+                    id: codexbarSetupGuidance
+                    objectName: "codexbarSetupGuidance"
+                    text: i18n("Leave the path empty to try approved locations automatically. To configure manually, install CodexBar, run 'command -v codexbar' in a terminal, and save its absolute executable path here. Credentials and any OpenCode Go prerequisite remain external setup.")
                     color: Kirigami.Theme.disabledTextColor
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
+                    Accessible.name: qsTr("CodexBar setup guidance")
+                    Accessible.description: text
                 }
 
                 PlasmaComponents.Label {

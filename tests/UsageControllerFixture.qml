@@ -143,7 +143,11 @@ TestCase {
     function test_blocksMissingRelativeAndNonExecutablePaths() {
         var component = controllerComponent()
         verify(component.status === Component.Ready, component.errorString())
-        var controller = component.createObject(null)
+        var controller = component.createObject(null, {
+            testMode: true,
+            pathExecutableForTest: false,
+            discoveryOutputForTest: ""
+        })
         verify(!controller.validatePath("codexbar").valid)
         controller.commandPath = "/definitely/missing/codexbar"
         controller.requestRefresh()
@@ -153,6 +157,92 @@ TestCase {
         controller.requestRefresh()
         tryVerify(function() { return controller.phase === "error" }, 10000)
         verify(controller.errorMessage.length > 0)
+        controller.destroy()
+    }
+
+    function test_validSavedPathSkipsDiscoveryAndPreservesUsageArguments() {
+        var component = controllerComponent()
+        verify(component.status === Component.Ready, component.errorString())
+        var controller = component.createObject(null, {
+            commandPath: "/tmp/codexbar",
+            testMode: true,
+            pathExecutableForTest: true,
+            discoveryOutputForTest: "/should/not/be/used"
+        })
+
+        controller.requestRefresh()
+        compare(controller.activeStage, "command")
+        compare(controller.discoveredPathForTest, "")
+        compare(controller.activeSource,
+                "'/tmp/codexbar' usage --provider all --format json --json-only")
+        controller.destroy()
+    }
+
+    function test_emptyAndInvalidPathsDiscoverFirstExecutableCandidate() {
+        var component = controllerComponent()
+        verify(component.status === Component.Ready, component.errorString())
+        var emptyPath = component.createObject(null, {
+            commandPath: "",
+            testMode: true,
+            discoveryOutputForTest: "/opt/codexbar"
+        })
+        var invalidPath = component.createObject(null, {
+            commandPath: "relative-codexbar",
+            testMode: true,
+            discoveryOutputForTest: "/opt/recovered-codexbar"
+        })
+
+        emptyPath.requestRefresh()
+        compare(emptyPath.discoveredPathForTest, "/opt/codexbar")
+        tryVerify(function() { return emptyPath.activeStage === "command" }, 1000)
+        compare(emptyPath.activeSource,
+                "'/opt/codexbar' usage --provider all --format json --json-only")
+        invalidPath.requestRefresh()
+        compare(invalidPath.discoveredPathForTest, "/opt/recovered-codexbar")
+        tryVerify(function() { return invalidPath.activeStage === "command" }, 1000)
+        compare(invalidPath.activeSource,
+                "'/opt/recovered-codexbar' usage --provider all --format json --json-only")
+        emptyPath.destroy()
+        invalidPath.destroy()
+    }
+
+    function test_noDiscoveryMatchBlocksUsageAndRetainsSnapshot() {
+        var component = controllerComponent()
+        verify(component.status === Component.Ready, component.errorString())
+        var controller = component.createObject(null, {
+            commandPath: "",
+            testMode: true,
+            discoveryOutputForTest: ""
+        })
+        controller.committedProviders = [{ provider: "retained" }]
+
+        controller.requestRefresh()
+        compare(controller.phase, "error")
+        compare(controller.configurationRequired, true)
+        compare(controller.activeRequestCount, 0)
+        compare(controller.committedProviders.length, 1)
+        controller.destroy()
+    }
+
+    function test_preflightDataCallbackDispatchesDiscoveryResults() {
+        var component = controllerComponent()
+        verify(component.status === Component.Ready, component.errorString())
+        var controller = component.createObject(null, {
+            commandPath: "/tmp/codexbar",
+            testMode: false
+        })
+
+        controller.startPreflightForTest()
+        controller.deliverStageForTest("preflight", controller.generation, controller.activeSource, {
+                                           "exit code": 1
+                                       })
+        compare(controller.activeStage, "discovery")
+        controller.deliverPreflightDataForTest({
+                                                    stdout: "/opt/codexbar\n",
+                                                    "exit code": 0
+                                                })
+        compare(controller.discoveredPathForTest, "/opt/codexbar")
+        tryVerify(function() { return controller.activeStage === "preflight" }, 1000)
         controller.destroy()
     }
 

@@ -22,24 +22,43 @@ The CLI is the boundary: KodexBar Plasma runs one configured executable with `us
 
 - KDE Plasma 6
 - `kpackagetool6`
-- Upstream `codexbar` CLI at an executable absolute path
+- Upstream `codexbar` CLI
 
-Install the upstream CLI with Homebrew on Linux:
+## Configuration-first setup
+
+The widget starts with no CLI path. On first use it checks only these approved executable locations, in order: `$HOME/.local/bin/codexbar`, `/usr/local/bin/codexbar`, `/usr/bin/codexbar`, and `$HOMEBREW_PREFIX/bin/codexbar` when that prefix is an absolute path. The first executable path is saved automatically. It never searches directories or uses Plasma's inherited `PATH`.
+
+If discovery does not find CodexBar, install the upstream CLI, then configure its absolute executable path in widget settings.
 
 ```sh
 brew install steipete/tap/codexbar
-/home/ginopc/.local/bin/codexbar usage --provider all --format json --json-only
 ```
 
 Or download a Linux CLI tarball from the [CodexBar releases](https://github.com/steipete/CodexBar/releases/latest).
 
-Configure credentials through CodexBar and the relevant provider tools before using the widget. For OpenCode Go, run this prerequisite manually after completing the external sign-in flow:
+### Terminal-only diagnosis and verification
+
+Run `command -v codexbar` in **your terminal only** to identify the installed executable. This is a setup diagnostic; the widget does not run `command -v` or otherwise look up `PATH` at runtime.
+
+```sh
+command -v codexbar
+```
+
+Copy the resulting absolute path into widget settings, then verify both executability and the unchanged all-provider command before opening the widget:
+
+```sh
+CODEXBAR_PATH="$(command -v codexbar)"
+test -n "$CODEXBAR_PATH" && test "${CODEXBAR_PATH#/}" != "$CODEXBAR_PATH" && test -x "$CODEXBAR_PATH"
+"$CODEXBAR_PATH" usage --provider all --format json --json-only | python3 -m json.tool
+```
+
+Configure external credentials through CodexBar and the relevant provider tools before using the widget. For OpenCode Go, run this prerequisite manually after completing its external sign-in flow:
 
 ```sh
 codexbar-sync-opencodego-cookie
 ```
 
-KodexBar Plasma never runs this command or automates cookie synchronization.
+KodexBar Plasma never runs this command, configures credentials, or automates cookie synchronization.
 
 ## Install
 
@@ -78,19 +97,9 @@ KodexBar Plasma deliberately does not implement cost data, charts, provider or s
 
 | Setting | Purpose |
 | --- | --- |
-| CLI path | Executable absolute path. The default is `/home/ginopc/.local/bin/codexbar`. |
+| CLI path | Executable absolute path. Empty enables the bounded first-run discovery above; a saved valid path remains authoritative. |
 | Refresh interval | Positive polling interval from 1 to 3600 seconds. |
 | Request timeout | All-provider watchdog: presets 60, 120, or 180 seconds, or a custom whole number from 30 to 600. Missing or invalid values use 60 seconds and do not change refresh. |
-
-## Test the CLI
-
-Run this before debugging the widget:
-
-```sh
-/home/ginopc/.local/bin/codexbar usage --provider all --format json --json-only | python3 -m json.tool
-```
-
-If the widget shows a CLI error, configure the external CLI and credentials, then set its executable absolute path in widget settings.
 
 ## Run QtTest
 
@@ -123,10 +132,11 @@ For the manual real-desktop checklist, including keyboard traversal and Breeze t
 
 | Symptom | Likely fix |
 | --- | --- |
-| Widget says `No data` | Run the all-provider CLI command above and verify it returns usable data. |
-| Widget shows a CLI/runtime error | Install and configure `codexbar`, then set its executable absolute path. |
+| Widget says the CLI was not found | Open settings and save an executable absolute path after the terminal-only verification above. An invalid saved path is revalidated, then bounded discovery runs; a failed recovery keeps the prior usage snapshot. |
+| Widget says `No data` | Run the verified all-provider CLI command above and verify it returns usable data. |
+| Widget shows a CLI/runtime error | Install and configure `codexbar` and its external credentials, then set its executable absolute path. |
 | Widget reports that all-provider usage did not return within its request timeout | Check enabled providers in CodexBar, temporarily disable one that hangs, then use the widget Refresh button to retry. The timeout is separate from refresh. |
-| Provider works in terminal but not in the widget | Use the same absolute command path in settings if Plasma does not inherit your shell `PATH`. |
+| Provider works in terminal but not in the widget | Save the terminal-verified absolute executable path in settings. Do not expect the widget to inherit your shell `PATH`. |
 
 ## License
 

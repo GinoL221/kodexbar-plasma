@@ -13,6 +13,30 @@ plasmawindowed org.kde.plasma.kodexbar.plasma
 
 If the package is not installed yet, use `-i .` instead of `-u .`.
 
+## Configuration-first recovery evidence
+
+Record the command path and outcome for each scenario in the evidence template below. Terminal `command -v codexbar` is a user diagnosis step only; the live widget must not use inherited `PATH`, scan directories, or probe arbitrary paths.
+
+### First-run discovery
+
+1. Clear the widget's saved CLI path in settings and apply the change.
+2. Launch the applet with `plasmawindowed`.
+3. When one approved candidate is executable, verify the first approved path is saved and the widget reaches Loading then Ready.
+4. Verify the request still uses exactly `usage --provider all --format json --json-only`.
+
+### Valid saved path upgrade
+
+1. Save a known executable absolute CLI path, then update the applet with `kpackagetool6 -t Plasma/Applet -u .`.
+2. Launch the updated applet and activate Refresh.
+3. Verify the same saved path remains configured and reaches Ready without replacing it through discovery.
+
+### Failed recovery and retained snapshot
+
+1. First obtain a visible provider row from a valid executable path.
+2. Change the saved path to a missing, relative, or non-executable value, then activate Refresh.
+3. Verify bounded recovery either saves a validated approved path or shows configuration guidance without issuing a usage request.
+4. When no approved path validates, verify the previous provider snapshot remains visible and the settings path can be corrected manually.
+
 ## Manual live lifecycle evidence
 
 Save the current CodexBar CLI path from the widget settings before this check. Set the path temporarily to the executable fixture from this checkout, then start the applet:
@@ -55,6 +79,8 @@ plasmawindowed org.kde.plasma.kodexbar.plasma
 
 ## Settings
 
+- With no CLI path configured, verify the configuration-first guidance explains how to save an executable absolute path.
+- Confirm a relative or non-executable path does not run the all-provider request; correct it with a terminal-verified absolute path.
 - Open widget settings and use `Tab` to reach Request timeout, its preset selector, and the custom seconds input.
 - Confirm 60, 120, and 180 presets, then enter a custom whole number from 30 to 600; verify Refresh interval remains unchanged.
 - Verify the correction guidance wraps, labels remain readable, and focus is visible in both Breeze themes.

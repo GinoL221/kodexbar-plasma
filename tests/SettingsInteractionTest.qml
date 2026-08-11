@@ -10,6 +10,7 @@ TestCase {
     property var settings
     property var cliControl
     property var refreshControl
+    property var setupGuidance
 
     Window {
         id: testWindow
@@ -24,14 +25,15 @@ TestCase {
             testCase.settings = component.createObject(contentItem, {
                 "width": width,
                 "height": height,
-                "cfg_codexbarCommandDefault": "/usr/bin/codexbar",
-                "cfg_codexbarCommand": "/usr/bin/codexbar",
+                "cfg_codexbarCommandDefault": "",
+                "cfg_codexbarCommand": "",
                 "cfg_refreshInterval": 60,
                 "cfg_requestTimeout": 60
             })
             verify(testCase.settings !== null, "the native settings page must instantiate")
-            testCase.cliControl = testCase.findByProperty(testCase.settings, "placeholderText", "/home/ginopc/.local/bin/codexbar")
+            testCase.cliControl = testCase.findByProperty(testCase.settings, "objectName", "codexbarCommand")
             testCase.refreshControl = testCase.findByRange(testCase.settings, 1, 3600)
+            testCase.setupGuidance = testCase.findByProperty(testCase.settings, "objectName", "codexbarSetupGuidance")
         }
     }
 
@@ -73,12 +75,13 @@ TestCase {
         verify(settings !== null, "settings must be ready before interaction tests")
         verify(cliControl !== null, "the native CLI path field must be discoverable")
         verify(refreshControl !== null, "the native refresh control must be discoverable")
+        verify(setupGuidance !== null, "the native setup guidance must be discoverable")
         testWindow.requestActivate()
         tryCompare(testWindow, "active", true)
     }
 
     function init() {
-        settings.cfg_codexbarCommand = "/usr/bin/codexbar"
+        settings.cfg_codexbarCommand = ""
         settings.cfg_refreshInterval = 60
         settings.cfg_requestTimeout = 60
         wait(0)
@@ -90,18 +93,25 @@ TestCase {
         }
     }
 
-    function test_cliPathEditingAndValidation() {
+    function test_cliPathAllowsEmptyAndRejectsRelativePaths() {
+        verify(cliControl.placeholderText !== "/home/ginopc/.local/bin/codexbar",
+               "the CLI field must not expose an author-specific placeholder")
         cliControl.text = ""
         cliControl.forceActiveFocus()
         tryVerify(function() { return cliControl.activeFocus }, 1000, "the CLI path field must accept focus")
-        keyClick("/")
-        keyClick(Qt.Key_Tab)
-        compare(settings.cfg_codexbarCommand, "/")
+        cliControl.editingFinished()
+        compare(settings.cfg_codexbarCommand, "")
 
         cliControl.text = "relative/codexbar"
         cliControl.forceActiveFocus()
         cliControl.editingFinished()
-        compare(settings.cfg_codexbarCommand, "/usr/bin/codexbar")
+        compare(settings.cfg_codexbarCommand, "")
+    }
+
+    function test_cliPathProvidesNativeSetupGuidance() {
+        verify(setupGuidance.visible, "manual setup guidance must remain visible when no path is configured")
+        verify(setupGuidance.Accessible.name.length > 0,
+               "manual setup guidance must have an accessible name")
     }
 
     function test_customTimeoutEditing() {

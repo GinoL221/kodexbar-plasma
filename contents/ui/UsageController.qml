@@ -2,15 +2,21 @@ import QtQuick
 import org.kde.plasma.plasma5support as Plasma5Support
 
 import "../code/UsageModel.js" as UsageModel
+import "../code/CodexBarPathResolver.js" as PathResolver
 
 Item {
     id: root
 
-    property string commandPath: "/home/ginopc/.local/bin/codexbar"
+    property string commandPath: ""
     property int timeoutMs: 15000
     property int activeTimeoutMs: timeoutMs
     property bool testMode: false
     property bool pathExecutableForTest: true
+    property string discoveryOutputForTest: ""
+    property string discoveredPathForTest: ""
+    readonly property string effectiveCommandPath: _effectiveCommandPath
+    property string _effectiveCommandPath: ""
+    property bool configurationRequired: false
 
     property string phase: "idle"
     property string errorMessage: ""
@@ -26,30 +32,18 @@ Item {
     property var activeDataSource: null
     readonly property int activeRequestCount: requestActive ? 1 : 0
 
-    function shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\\''") + "'"
-    }
+    signal pathDiscovered(string path)
 
     function commandLine() {
-        return shellQuote(commandPath) + " usage --provider all --format json --json-only"
+        return PathResolver.shellQuote(effectiveCommandPath) + " usage --provider all --format json --json-only"
     }
 
     function pathCheckCommand() {
-        return "test -x " + shellQuote(commandPath)
+        return PathResolver.pathCheckCommand(effectiveCommandPath)
     }
 
     function validatePath(path) {
-        var value = String(path || "").trim()
-        if (value.length === 0) {
-            return { valid: false, error: "Configure an absolute CodexBar CLI path." }
-        }
-        if (value.charAt(0) !== "/") {
-            return { valid: false, error: "The CodexBar CLI path must be absolute." }
-        }
-        if (value.indexOf("\n") !== -1 || value.indexOf("\r") !== -1) {
-            return { valid: false, error: "The CodexBar CLI path cannot contain a line break." }
-        }
-        return { valid: true, error: "" }
+        return PathResolver.validateAbsolutePath(path)
     }
 
     function requestRefresh() {
@@ -60,11 +54,12 @@ Item {
 
         var validation = validatePath(commandPath)
         if (!validation.valid) {
-            phase = "error"
-            errorMessage = validation.error
+            startDiscovery()
             return
         }
 
+        configurationRequired = false
+        _effectiveCommandPath = validation.path
         startPathCheck()
     }
 
@@ -91,17 +86,34 @@ Item {
         }
     }
 
-    function startPathCheck() {
-        var requestGeneration = beginGeneration()
+    function startPathCheck(requestGeneration) {
+        if (requestGeneration === undefined) {
+            requestGeneration = beginGeneration()
+        }
         if (testMode) {
             if (!pathExecutableForTest) {
-                failGeneration("Configured CodexBar CLI path is missing or not executable. Choose an executable absolute path.")
+                startDiscovery(requestGeneration)
                 return
             }
             startCommandStage(requestGeneration)
             return
         }
         beginStage(preflightDataSource, "preflight", pathCheckCommand(), requestGeneration)
+    }
+
+    function startDiscovery(requestGeneration) {
+        if (requestGeneration === undefined) {
+            requestGeneration = beginGeneration()
+        }
+        if (testMode) {
+            beginStage(preflightDataSource, "discovery", PathResolver.discoveryCommand(), requestGeneration)
+            handleDiscovery(preflightDataSource, requestGeneration, activeSource, {
+                stdout: discoveryOutputForTest,
+                "exit code": discoveryOutputForTest.length > 0 ? 0 : 1
+            })
+            return
+        }
+        beginStage(preflightDataSource, "discovery", PathResolver.discoveryCommand(), requestGeneration)
     }
 
     function startCommandStage(requestGeneration) {
@@ -157,7 +169,8 @@ Item {
             return
         }
         if (Number(data["exit code"]) !== 0) {
-            failGeneration("Configured CodexBar CLI path is missing or not executable. Choose an executable absolute path.")
+            releaseStage()
+            startDiscovery(requestGeneration)
             return
         }
         releaseStage()
@@ -165,6 +178,40 @@ Item {
             if (requestActive && generation === requestGeneration && activeGeneration === requestGeneration
                     && activeStage === "") {
                 startCommandStage(requestGeneration)
+            }
+        })
+    }
+
+    function handlePreflightData(dataSource, requestGeneration, sourceName, data) {
+        if (activeStage === "discovery") {
+            handleDiscovery(dataSource, requestGeneration, sourceName, data)
+            return
+        }
+        handlePreflight(dataSource, requestGeneration, sourceName, data)
+    }
+
+    function handleDiscovery(dataSource, requestGeneration, sourceName, data) {
+        if (!isCurrentStage(dataSource, "discovery", requestGeneration, sourceName)) {
+            return
+        }
+        var output = String(data.stdout || "").replace(/\r?\n$/, "")
+        var validation = Number(data["exit code"]) === 0
+            ? validatePath(output)
+            : { valid: false }
+        if (!validation.valid) {
+            configurationRequired = true
+            failGeneration("CodexBar CLI was not found in approved locations. Configure an executable absolute path.")
+            return
+        }
+        _effectiveCommandPath = validation.path
+        discoveredPathForTest = validation.path
+        configurationRequired = false
+        pathDiscovered(validation.path)
+        releaseStage()
+        Qt.callLater(function() {
+            if (requestActive && generation === requestGeneration && activeGeneration === requestGeneration
+                    && activeStage === "") {
+                startPathCheck(requestGeneration)
             }
         })
     }
@@ -208,7 +255,7 @@ Item {
         if (!requestActive || generation !== requestGeneration || activeGeneration !== requestGeneration) {
             return
         }
-        failGeneration(activeStage === "preflight"
+        failGeneration(activeStage === "preflight" || activeStage === "discovery"
                        ? "CodexBar CLI path validation timed out. Check that the configured path is available."
                        : "CodexBar did not return all-provider usage within " + (activeTimeoutMs / 1000) + " seconds. Check enabled providers in CodexBar, temporarily disable a provider that hangs, then retry.")
     }
@@ -220,6 +267,8 @@ Item {
             return
         }
         var requestGeneration = beginGeneration()
+        var validation = validatePath(commandPath)
+        _effectiveCommandPath = validation.valid ? validation.path : ""
         beginStage(preflightDataSource, "preflight", pathCheckCommand(), requestGeneration)
     }
 
@@ -227,9 +276,15 @@ Item {
         var dataSource = stage === "preflight" ? preflightDataSource : commandDataSource
         if (stage === "preflight") {
             handlePreflight(dataSource, requestGeneration, sourceName, data)
+        } else if (stage === "discovery") {
+            handleDiscovery(dataSource, requestGeneration, sourceName, data)
         } else {
             handleCommand(dataSource, requestGeneration, sourceName, data)
         }
+    }
+
+    function deliverPreflightDataForTest(data) {
+        handlePreflightData(preflightDataSource, generation, activeSource, data)
     }
 
     // This mirrors a DataSource callback whose generation was captured at connection time.
@@ -271,7 +326,7 @@ Item {
         property int connectionGeneration: 0
         onNewData: function(sourceName, data) {
             if (connectionGeneration !== 0) {
-                root.handlePreflight(preflightDataSource, connectionGeneration, sourceName, data)
+                root.handlePreflightData(preflightDataSource, connectionGeneration, sourceName, data)
             }
         }
     }

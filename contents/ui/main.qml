@@ -12,7 +12,8 @@ import "../code/RequestTimeout.js" as RequestTimeout
 PlasmoidItem {
     id: root
 
-    property string codexbarCommand: Plasmoid.configuration.codexbarCommand || "/home/ginopc/.local/bin/codexbar"
+    property string codexbarCommand: Plasmoid.configuration.codexbarCommand || ""
+    property bool suppressNextCommandRefresh: false
     property int refreshSeconds: RefreshInterval.valueOrDefault(Plasmoid.configuration.refreshInterval, 60)
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(Plasmoid.configuration.requestTimeout)
     readonly property var compactSelection: UsageModel.selectCompact(controller.committedProviders)
@@ -33,7 +34,16 @@ PlasmoidItem {
         id: controller
         commandPath: root.codexbarCommand
         timeoutMs: root.requestTimeoutMs
+        onPathDiscovered: function(path) {
+            if (root.codexbarCommand === path) {
+                return
+            }
+            root.suppressNextCommandRefresh = true
+            Plasmoid.configuration.codexbarCommand = path
+        }
     }
+
+    Plasmoid.configurationRequired: controller.configurationRequired
 
     function refresh() {
         controller.requestRefresh()
@@ -118,5 +128,11 @@ PlasmoidItem {
         refresh()
     }
 
-    onCodexbarCommandChanged: refresh()
+    onCodexbarCommandChanged: {
+        if (suppressNextCommandRefresh) {
+            suppressNextCommandRefresh = false
+            return
+        }
+        refresh()
+    }
 }

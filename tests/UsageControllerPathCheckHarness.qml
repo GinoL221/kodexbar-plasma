@@ -33,10 +33,10 @@ Item {
 
             assert(missingPath.activeRequestCount === 0, "missing path must not start the CLI request")
             assert(nonExecutablePath.activeRequestCount === 0, "non-executable path must not start the CLI request")
-            assert(missingPath.errorMessage.indexOf("not executable") !== -1,
-                   "missing path error must be actionable")
-            assert(nonExecutablePath.errorMessage.indexOf("not executable") !== -1,
-                   "non-executable path error must be actionable")
+            assert(missingPath.configurationRequired,
+                   "missing path must require manual configuration after discovery fails")
+            assert(nonExecutablePath.configurationRequired,
+                   "non-executable path must require manual configuration after discovery fails")
             finished = true
             finish()
         })
@@ -52,6 +52,9 @@ Item {
         id: missingPath
         commandPath: "/definitely/missing/kodexbar"
         timeoutMs: 5000
+        testMode: true
+        pathExecutableForTest: false
+        discoveryOutputForTest: ""
         onPhaseChanged: {
             root.checkCompletion()
         }
@@ -61,6 +64,9 @@ Item {
         id: nonExecutablePath
         commandPath: "/dev/null"
         timeoutMs: 5000
+        testMode: true
+        pathExecutableForTest: false
+        discoveryOutputForTest: ""
         onPhaseChanged: {
             root.checkCompletion()
         }

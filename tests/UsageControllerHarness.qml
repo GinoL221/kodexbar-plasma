@@ -24,22 +24,30 @@ Item {
             timeoutMs: 60000,
             testMode: true
         })
-        assert(controller.commandLine() === "'/tmp/cli dir/cli'\\''$(unsafe)' usage --provider all --format json --json-only",
+        controller.requestRefresh()
+        assert(controller.activeSource === "'/tmp/cli dir/cli'\\''$(unsafe)' usage --provider all --format json --json-only",
                "command must quote only the configured path and append fixed arguments")
+        assert(controller.commandLine() === controller.activeSource,
+               "commandLine must use the validated effective path")
         assert(!controller.validatePath("codexbar").valid, "relative paths must be rejected")
+
+        controller.timeoutForTest(controller.generation)
+        assert(controller.phase === "error", "a command timeout must become a recoverable error")
 
         controller.setPathExecutableForTest(false)
         controller.commandPath = "/definitely/missing/codexbar"
         controller.requestRefresh()
-        assert(controller.phase === "error", "missing absolute paths must fail preflight")
+        assert(controller.phase === "error", "missing absolute paths must fail discovery")
         assert(controller.activeRequestCount === 0, "missing paths must not start the CLI request")
-        assert(controller.errorMessage.indexOf("not executable") !== -1,
-               "missing paths must explain how to correct the CLI path")
+        assert(controller.configurationRequired, "missing paths must request configuration")
+        assert(controller.errorMessage.indexOf("not found") !== -1,
+               "missing paths must explain that discovery found no executable")
 
         controller.commandPath = "/dev/null"
         controller.requestRefresh()
-        assert(controller.phase === "error", "non-executable absolute paths must fail preflight")
+        assert(controller.phase === "error", "non-executable absolute paths must fail discovery")
         assert(controller.activeRequestCount === 0, "non-executable paths must not start the CLI request")
+        assert(controller.configurationRequired, "non-executable paths must request configuration")
 
         controller.setPathExecutableForTest(true)
         controller.commandPath = "/tmp/cli dir/cli'$(unsafe)"

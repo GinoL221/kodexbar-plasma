@@ -22,12 +22,13 @@ Item {
             testMode: true
         })
 
+        controller.discoveryOutputForTest = ""
         controller.setPathExecutableForTest(false)
         controller.requestRefresh()
         assert(controller.phase === "error", "missing paths must fail before a CLI request starts")
         assert(controller.activeRequestCount === 0, "missing paths must not create a CLI request")
-        assert(controller.errorMessage.indexOf("not executable") !== -1,
-               "missing paths must provide actionable configuration guidance")
+        assert(controller.configurationRequired,
+               "missing paths must require manual configuration after discovery fails")
 
         controller.commandPath = "/dev/null"
         controller.requestRefresh()

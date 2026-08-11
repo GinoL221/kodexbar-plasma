@@ -37,6 +37,7 @@ for harness in \
     UsageControllerDataSourceLifecycleHarness \
     UsageControllerPreflightHarness \
     UsageControllerPathCheckHarness \
+    CodexBarPathResolverHarness \
     TimeoutFeedbackPopupHarness \
     MainCompactHarness \
     CompactUsageButtonHarness \
