@@ -16,6 +16,8 @@ Item {
         if (!condition) {
             console.error("TimeoutFeedbackPopupHarness failure:", message)
             assertionFailed = true
+            Qt.exit(1)
+            throw new Error(message)
         }
     }
 

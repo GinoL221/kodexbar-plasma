@@ -10,6 +10,8 @@ Item {
         if (!condition) {
             console.error("MainCompactHarness failure:", message)
             assertionFailed = true
+            Qt.exit(1)
+            throw new Error(message)
         }
     }
 

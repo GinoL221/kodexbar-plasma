@@ -11,6 +11,8 @@ Item {
         if (!condition) {
             console.error("ErrorSummaryHarness failure:", message)
             assertionFailed = true
+            Qt.exit(1)
+            throw new Error(message)
         }
     }
 

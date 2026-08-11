@@ -9,8 +9,10 @@ Item {
 
     function assert(condition, message) {
         if (!condition) {
-            console.log("UsageControllerHarness failure:", message)
+            console.error("UsageControllerHarness failure:", message)
             assertionFailed = true
+            Qt.exit(1)
+            throw new Error(message)
         }
     }
 

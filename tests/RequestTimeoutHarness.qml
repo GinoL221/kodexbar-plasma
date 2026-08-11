@@ -8,6 +8,8 @@ Item {
         if (!condition) {
             console.error("RequestTimeoutHarness failure: " + message)
             assertionFailed = true
+            Qt.exit(1)
+            throw new Error(message)
         }
     }
 

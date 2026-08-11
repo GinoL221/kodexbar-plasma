@@ -24,7 +24,23 @@ plasmawindowed org.kde.plasma.kodexbar.plasma
 
 - When fixture-backed execution is available, activate Refresh and verify Loading continues through path validation, then becomes Ready with the `fixture` provider; it must not remain Loading until timeout.
 - Restore the previously saved CodexBar CLI path immediately after the check and activate Refresh once more.
-- If fixture-backed `plasmawindowed` execution cannot be automated, record a manual real-provider observation instead: visible provider rows, compact summary, Ready transition, command path provenance, observer, and whether the verifier executed it. This is accepted live evidence but does not claim automated fixture coverage.
+- If fixture-backed `plasmawindowed` execution cannot be automated, record a manual real-provider observation instead. Use the evidence record template below.
+
+### Manual evidence record template
+
+| Field | Value |
+|---|---|
+| Evidence class | `user-provided` / `verifier-run` / `fixture-backed` |
+| Observer / source | Who observed or supplied the evidence |
+| Command path | Absolute path to the CodexBar CLI used |
+| Plasma / runtime context | `plasmawindowed` version, Plasma version, color scheme, offscreen or live session |
+| Ready outcome | Did the widget leave Loading and reach Ready? |
+| Visible provider rows | Provider names and usage values observed |
+| Compact summary | Text shown in the panel compact representation |
+| Date / reference | When the observation was made, plus screenshot or log reference |
+| Automation limitations | State that this evidence is environment-specific, non-replayable, and does not prove automated or verifier-run coverage |
+
+> Manual evidence is accepted when fixture-backed automation is infeasible. It MUST NOT be represented as automated, verifier-run, or fixture-backed coverage.
 
 ## Keyboard
 

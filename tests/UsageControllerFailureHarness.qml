@@ -9,6 +9,8 @@ Item {
         if (!condition) {
             console.error("UsageControllerFailureHarness failure: " + message)
             assertionFailed = true
+            Qt.exit(1)
+            throw new Error(message)
         }
     }
 

@@ -13,6 +13,8 @@ Item {
         if (!condition) {
             console.error("UsageControllerDataSourceLifecycleHarness failure: " + message)
             assertionFailed = true
+            Qt.exit(1)
+            throw new Error(message)
         }
     }
 

@@ -6,8 +6,10 @@ Item {
 
     function assert(condition, message) {
         if (!condition) {
-            console.error(message)
+            console.error("UsageModelHarness failure: " + message)
             assertionFailed = true
+            Qt.exit(1)
+            throw new Error(message)
         }
     }
 
