@@ -10,6 +10,12 @@ KodexBar Plasma is a native KDE Plasma widget that displays all-provider usage r
 
 The CLI is the boundary: KodexBar Plasma runs one configured executable with `usage --provider all --format json --json-only`. CodexBar remains responsible for provider configuration, credentials, API access, and its own data acquisition.
 
+## Provenance
+
+KodexBar Plasma is an open-source derivative of [KodexBar](https://github.com/tylxr59/KodexBar) by `tylxr`, adapted as a KDE Plasma integration. The upstream MIT license and copyright notice are preserved in [LICENSE](LICENSE), together with attribution for this project's changes.
+
+This project does not redistribute the external [CodexBar CLI](https://github.com/steipete/CodexBar); it invokes the user's separately installed executable.
+
 ![KodexBar Plasma widget screenshot](screenshot.png)
 
 ## MVP scope

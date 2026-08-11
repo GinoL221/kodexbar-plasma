@@ -3,6 +3,10 @@
     "Authors": [
       {
         "Email": "",
+        "Name": "GinoL221"
+      },
+      {
+        "Email": "",
         "Name": "tylxr"
       }
     ],
@@ -13,7 +17,7 @@
     "License": "MIT",
     "Name": "KodexBar Plasma",
     "Version": "0.1.0",
-    "Website": "https://github.com/tylxr59/KodexBar"
+    "Website": "https://github.com/GinoL221/kodexbar-plasma"
   },
   "KPackageStructure": "Plasma/Applet",
   "X-Plasma-API-Minimum-Version": "6.0"
