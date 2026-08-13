@@ -5,7 +5,7 @@ context: |
   Runtime boundary: consume the external `codexbar` CLI; do not reimplement providers, auth, or fetching.
   Architecture: Plasma applet metadata and configuration, a QML controller/model boundary, native Kirigami/QtQuick UI, and executable QML harnesses.
   Testing: qml6 offscreen harnesses, QtTest inputs resolved by scripts/run-qml-tests.sh, package lifecycle smoke, and a manual live-Plasma smoke checklist.
-  Delivery strategy: ask-on-risk; review budget: 800 changed lines.
+  Delivery strategy: ask-on-risk; review budget: 400 changed lines.
 
 strict_tdd: true
 

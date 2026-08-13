@@ -5,6 +5,9 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 import org.kde.plasma.components as PlasmaComponents
 
+import "../../code/PreferredWindow.js" as PreferredWindow
+import "../../code/Translation.js" as Translation
+
 KCM.SimpleKCM {
     id: page
 
@@ -17,6 +20,22 @@ KCM.SimpleKCM {
     property alias requestTimeoutPresetControl: requestTimeoutPreset
     property alias requestTimeoutCustomControl: requestTimeout
     property alias requestTimeoutGuidance: requestTimeoutGuidanceLabel
+    property alias cfg_preferredRepresentativeWindow: preferredWindow.selectedKey
+    property string cfg_preferredRepresentativeWindowDefault
+    property alias preferredWindowControl: preferredWindow
+    property alias preferredWindowGuidance: preferredWindowGuidanceLabel
+
+    readonly property var preferredWindowKeys: PreferredWindow.VALID_KEYS
+
+    function preferredWindowIndex(key) {
+        var index = page.preferredWindowKeys.indexOf(key)
+        return index < 0 ? 0 : index
+    }
+
+    function preferredWindowKeyAt(index) {
+        return index >= 0 && index < page.preferredWindowKeys.length
+            ? page.preferredWindowKeys[index] : "automatic"
+    }
 
     function timeoutPresetIndex(value) {
         return value === 60 ? 0 : value === 120 ? 1 : value === 180 ? 2 : 3
@@ -81,7 +100,10 @@ KCM.SimpleKCM {
                     from: 1
                     to: 3600
                     stepSize: 1
-                    textFromValue: function(value) { return i18np("%1 second", "%1 seconds", value) }
+                    textFromValue: function(value) {
+                        return Translation.plural("%1 second", "%1 seconds", value,
+                            typeof i18np === "function" ? i18np : null)
+                    }
                     valueFromText: function(text) { return Number(text.replace(/\D/g, "")) }
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 10
                 }
@@ -93,8 +115,9 @@ KCM.SimpleKCM {
                     textRole: ""
                     Accessible.name: i18n("Request timeout preset")
                     displayText: currentIndex === 3
-                        ? i18n("Custom")
-                        : i18np("%1 second", "%1 seconds", currentValue)
+                        ? Translation.translate("Custom", [], typeof i18n === "function" ? i18n : null)
+                        : Translation.plural("%1 second", "%1 seconds", currentValue,
+                            typeof i18np === "function" ? i18np : null)
                     onActivated: {
                         if (currentIndex < 3) {
                             requestTimeout.value = currentValue
@@ -111,12 +134,34 @@ KCM.SimpleKCM {
                     to: 600
                     stepSize: 1
                     value: 60
-                    textFromValue: function(value) { return i18np("%1 second", "%1 seconds", value) }
+                    textFromValue: function(value) {
+                        return Translation.plural("%1 second", "%1 seconds", value,
+                            typeof i18np === "function" ? i18np : null)
+                    }
                     valueFromText: function(text) { return Number(text.replace(/\D/g, "")) }
                     Accessible.name: i18n("Custom request timeout in seconds")
                     Accessible.description: i18n("Enter a whole number from 30 to 600 seconds. Invalid values use 60 seconds.")
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 10
                     onValueChanged: requestTimeoutPreset.currentIndex = page.timeoutPresetIndex(value)
+                }
+
+                QQC2.ComboBox {
+                    id: preferredWindow
+                    objectName: "preferredRepresentativeWindow"
+                    property string selectedKey: "automatic"
+                    Kirigami.FormData.label: i18n("Representative window:")
+                    model: [
+                        Translation.translate("Automatic", [], typeof i18n === "function" ? i18n : null),
+                        Translation.translate("Session", [], typeof i18n === "function" ? i18n : null),
+                        Translation.translate("Weekly", [], typeof i18n === "function" ? i18n : null),
+                        Translation.translate("Monthly", [], typeof i18n === "function" ? i18n : null)
+                    ]
+                    Accessible.name: i18n("Preferred representative window")
+                    Accessible.description: i18n("Choose which usage window every provider summary shows in All. Automatic uses Session, then Weekly, then Monthly.")
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 10
+                    onActivated: selectedKey = page.preferredWindowKeyAt(currentIndex)
+                    onSelectedKeyChanged: currentIndex = page.preferredWindowIndex(selectedKey)
+                    Component.onCompleted: currentIndex = page.preferredWindowIndex(selectedKey)
                 }
 
                 PlasmaComponents.Label {
@@ -138,6 +183,16 @@ KCM.SimpleKCM {
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                     Accessible.name: i18n("Request timeout guidance")
+                }
+
+                PlasmaComponents.Label {
+                    id: preferredWindowGuidanceLabel
+                    objectName: "preferredWindowGuidance"
+                    text: i18n("Every provider summary in All shows this usage window. Automatic picks the first available of Session, Weekly, then Monthly. A provider without the chosen window falls back to that automatic order. The panel badge is unaffected.")
+                    color: Kirigami.Theme.disabledTextColor
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                    Accessible.name: qsTr("Representative window guidance")
                 }
 
                 PlasmaComponents.Label {

@@ -8,6 +8,7 @@ import org.kde.plasma.components as PlasmaComponents
 import "../code/UsageModel.js" as UsageModel
 import "../code/RefreshInterval.js" as RefreshInterval
 import "../code/RequestTimeout.js" as RequestTimeout
+import "../code/PreferredWindow.js" as PreferredWindow
 
 PlasmoidItem {
     id: root
@@ -16,6 +17,7 @@ PlasmoidItem {
     property bool suppressNextCommandRefresh: false
     property int refreshSeconds: RefreshInterval.valueOrDefault(Plasmoid.configuration.refreshInterval, 60)
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(Plasmoid.configuration.requestTimeout)
+    property string preferredWindowKey: PreferredWindow.keyOrDefault(Plasmoid.configuration.preferredRepresentativeWindow)
     readonly property var compactSelection: UsageModel.selectCompact(controller.committedProviders)
 
     preferredRepresentation: compactRepresentation
@@ -84,24 +86,43 @@ PlasmoidItem {
                     width: parent.availableWidth
                     spacing: Kirigami.Units.largeSpacing
 
-                    PlasmaComponents.Label {
+                     PlasmaComponents.Label {
                         visible: controller.phase === "loading" || controller.phase === "noData" || controller.phase === "error"
                         text: controller.phase === "loading" ? i18n("Loading usage…")
                             : controller.phase === "noData" ? i18n("No usage data available") : controller.errorMessage
                         color: controller.phase === "error" ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.disabledTextColor
                         wrapMode: Text.WordWrap
+                         Layout.fillWidth: true
+                     }
+
+                    ProviderSelector {
+                        id: providerSelector
+                        providers: controller.committedProviders
+                        phase: controller.phase
+                        popupOpen: root.expanded
                         Layout.fillWidth: true
                     }
 
                     Repeater {
-                        model: controller.committedProviders
+                        model: providerSelector.allSelected ? providerSelector.usableProviders : []
 
                         delegate: ProviderRow {
                             required property var modelData
 
                             providerData: modelData
+                            summary: true
+                            preferredWindowKey: root.preferredWindowKey
+                            iconResolver: providerSelector.iconResolver
                             Layout.fillWidth: true
                         }
+                    }
+
+                    ProviderRow {
+                        visible: !providerSelector.allSelected && providerSelector.selectedProvider !== null
+                        providerData: providerSelector.selectedProvider || ({})
+                        compact: false
+                        iconResolver: providerSelector.iconResolver
+                        Layout.fillWidth: true
                     }
 
                     ErrorSummary {

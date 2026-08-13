@@ -28,6 +28,7 @@ done
 
 for harness in \
     RequestTimeoutHarness \
+    PreferredWindowHarness \
     RequestTimeoutSettingsHarness \
     RefreshIntervalHarness \
     UsageModelHarness \
@@ -42,6 +43,7 @@ for harness in \
     MainCompactHarness \
     CompactUsageButtonHarness \
     ProviderRowHarness \
+    ProviderSelectorHarness \
     ErrorSummaryHarness; do
     printf 'Running tests/%s.qml\n' "$harness"
     if [ "$harness" = "UsageControllerDataSourceLifecycleHarness" ]; then

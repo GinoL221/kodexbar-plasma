@@ -10,6 +10,10 @@ function finiteNumber(value) {
     return typeof value === "number" && isFinite(value)
 }
 
+function isUsableWindow(window) {
+    return window && finiteNumber(window.usedPercent)
+}
+
 function rawValue(object, key) {
     return Object.prototype.hasOwnProperty.call(object, key) ? object[key] : null
 }
@@ -78,6 +82,64 @@ function normalize(payload) {
     }
 }
 
+function firstFiniteWindow(windows) {
+    var rows = windows instanceof Array ? windows : []
+
+    for (var i = 0; i < rows.length; i++) {
+        var window = rows[i]
+        if (isUsableWindow(window)) {
+            return window
+        }
+    }
+
+    return null
+}
+
+var preferredWindowKeys = {
+    "session": "primary",
+    "weekly": "secondary",
+    "monthly": "tertiary"
+}
+
+function definitionForPreferred(preferredKey) {
+    if (typeof preferredKey !== "string"
+        || !Object.prototype.hasOwnProperty.call(preferredWindowKeys, preferredKey)) {
+        return null
+    }
+    var definitionKey = preferredWindowKeys[preferredKey]
+    for (var i = 0; i < windowDefinitions.length; i++) {
+        if (windowDefinitions[i].key === definitionKey) {
+            return windowDefinitions[i]
+        }
+    }
+    return null
+}
+
+function matchesDefinition(window, definition) {
+    return window.key === definition.key || window.label === definition.label
+}
+
+function preferredFiniteWindow(windows, definition) {
+    var rows = windows instanceof Array ? windows : []
+    for (var i = 0; i < rows.length; i++) {
+        if (isUsableWindow(rows[i]) && matchesDefinition(rows[i], definition)) {
+            return rows[i]
+        }
+    }
+    return null
+}
+
+function selectRepresentative(windows, preferredKey) {
+    var definition = definitionForPreferred(preferredKey)
+    if (definition !== null) {
+        var preferred = preferredFiniteWindow(windows, definition)
+        if (preferred !== null) {
+            return preferred
+        }
+    }
+    return firstFiniteWindow(windows)
+}
+
 function selectCompact(providers) {
     var best = null
     var rows = providers instanceof Array ? providers : []
@@ -90,7 +152,7 @@ function selectCompact(providers) {
 
         for (var windowIndex = 0; windowIndex < provider.windows.length; windowIndex++) {
             var window = provider.windows[windowIndex]
-            if (!window || !finiteNumber(window.usedPercent)) {
+            if (!isUsableWindow(window)) {
                 continue
             }
 

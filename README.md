@@ -89,6 +89,8 @@ plasmashell --replace
 - Use the refresh button in the popup to query the CLI immediately.
 - Open widget settings to configure the absolute CLI path, refresh interval, and request timeout.
 
+Provider selection is presentation-only and resets when the popup is reopened. The first response-ordered provider with usable windows opens by default; select `All` for a compact, response-ordered summary of usable providers. Individual provider detail preserves the current Session, Weekly, Monthly, and raw reset data returned by the CLI.
+
 The popup renders supported CLI fields:
 
 - Session, Weekly, and Monthly usage windows when present
@@ -97,7 +99,7 @@ The popup renders supported CLI fields:
 
 ## MVP exclusions
 
-KodexBar Plasma deliberately does not implement cost data, charts, provider or source switching, authentication or cookie automation, provider implementations, fallback probing, or reset/account actions. Use CodexBar and provider tools for those responsibilities.
+KodexBar Plasma deliberately does not implement cost data, credits, tokens, calculated reset durations, charts, provider or source switching, authentication or cookie automation, provider implementations, fallback probing, or reset/account actions. Use CodexBar and provider tools for those responsibilities.
 
 ## Settings
 

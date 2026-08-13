@@ -18,5 +18,8 @@
       <min>30</min>
       <max>600</max>
     </entry>
+    <entry name="preferredRepresentativeWindow" type="String">
+      <default>automatic</default>
+    </entry>
   </group>
 </kcfg>

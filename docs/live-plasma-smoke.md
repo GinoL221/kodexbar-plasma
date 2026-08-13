@@ -77,6 +77,28 @@ plasmawindowed org.kde.plasma.kodexbar.plasma
 - Press `Enter` and `Space` on the error disclosure; verify it expands and collapses.
 - Press `Escape`; verify the popup closes and focus returns to the panel context.
 
+## Provider-focused popup
+
+Use fixture-backed data where available, or a real CLI response containing multiple providers, missing fields, and a mixed provider error. Confirm the refresh command remains exactly:
+
+```sh
+usage --provider all --format json --json-only
+```
+
+- Open the popup and verify the first response-ordered provider with usable windows is selected by default; a provider without windows must be skipped.
+- Verify every selector entry shows its provider name, authoritative themed icon or fallback, and exact source; use keyboard focus to confirm the full source remains available when text is elided.
+- Select `All` and verify each usable provider renders exactly one representative usage bar in response order, selecting the first finite Session, then Weekly, then Monthly percentage.
+- Verify providers without a finite Session/Weekly/Monthly percentage show identity only (name, icon, source) with no invented percentage or bar.
+- Verify `All` rows are not expandable and do not reveal additional window details when navigated or activated.
+- Select each usable provider and verify its supplied Session, Weekly, and Monthly windows, exact raw reset text, and finite-percentage progress bars are shown in detail.
+- Verify missing, nonnumeric, or non-finite percentages have no percentage/progress bar, and absent or empty reset fields have no placeholder.
+- Traverse `All` and provider entries with `Tab`, Left/Right, Home/End, `Enter`, and `Space`; verify focus order, selected state, and displayed view stay aligned.
+- In a narrow window with long provider names and sources, verify the selector scrolls or elides without horizontal clipping and wrapped detail/reset text stays readable.
+- Verify the `All` representative bar and percentage remain readable and are not clipped in the narrow layout.
+- Repeat the provider-focused checks in Breeze Light and Breeze Dark; verify icons, labels, progress, focus, and errors remain readable.
+- Refresh with a selected provider after reordering providers; verify it remains selected by identity. Then remove that provider or its windows and verify selection falls back to the first usable provider, or `All` when none remain.
+- With usable providers plus failures, verify provider content precedes one global collapsed error summary, its count is correct, and its bounded expansion preserves error order.
+
 ## Settings
 
 - With no CLI path configured, verify the configuration-first guidance explains how to save an executable absolute path.
@@ -84,6 +106,16 @@ plasmawindowed org.kde.plasma.kodexbar.plasma
 - Open widget settings and use `Tab` to reach Request timeout, its preset selector, and the custom seconds input.
 - Confirm 60, 120, and 180 presets, then enter a custom whole number from 30 to 600; verify Refresh interval remains unchanged.
 - Verify the correction guidance wraps, labels remain readable, and focus is visible in both Breeze themes.
+
+### Representative window setting
+
+- With `Tab`, confirm the "Representative window:" control is reachable immediately after the custom Request timeout field, is labeled, and its guidance text is readable in both Breeze themes.
+- With Automatic selected (the default), verify `All` renders exactly the same representative bar per provider as before this change: first finite Session, then Weekly, then Monthly.
+- Select Weekly; verify every provider with a finite Weekly percentage now shows its Weekly bar in `All`, with the same styling as any other representative bar.
+- Select Monthly; verify a provider lacking a finite Monthly percentage still shows a bar — falling back to its own automatic order (Session, then Weekly) — while a provider with a finite Monthly percentage shows Monthly.
+- Verify a provider with no finite percentage under any of the four settings still shows identity only, with no invented bar or percentage.
+- Verify the panel compact badge (the percentage shown in the panel itself) does not change when the representative-window setting changes.
+- Repeat the Automatic/Weekly/Monthly checks in Breeze Light and Breeze Dark; verify the control, its guidance text, and every representative bar remain readable.
 
 ## Provider and error navigation
 
@@ -102,3 +134,4 @@ plasma-apply-colorscheme BreezeDark
 ```
 
 Verify text, icons, focus indication, negative error text, timeout guidance, settings labels, Refresh, and disabled text remain readable in both themes.
+Verify `All` provider rows, representative bars, and identity-only fallback rows remain readable in both Breeze Light and Breeze Dark.

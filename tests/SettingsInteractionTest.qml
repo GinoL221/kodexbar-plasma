@@ -11,6 +11,8 @@ TestCase {
     property var cliControl
     property var refreshControl
     property var setupGuidance
+    property var preferredWindowControl
+    property var preferredWindowGuidance
 
     Window {
         id: testWindow
@@ -28,12 +30,15 @@ TestCase {
                 "cfg_codexbarCommandDefault": "",
                 "cfg_codexbarCommand": "",
                 "cfg_refreshInterval": 60,
-                "cfg_requestTimeout": 60
+                "cfg_requestTimeout": 60,
+                "cfg_preferredRepresentativeWindow": "automatic"
             })
             verify(testCase.settings !== null, "the native settings page must instantiate")
             testCase.cliControl = testCase.findByProperty(testCase.settings, "objectName", "codexbarCommand")
             testCase.refreshControl = testCase.findByRange(testCase.settings, 1, 3600)
             testCase.setupGuidance = testCase.findByProperty(testCase.settings, "objectName", "codexbarSetupGuidance")
+            testCase.preferredWindowControl = testCase.findByProperty(testCase.settings, "objectName", "preferredRepresentativeWindow")
+            testCase.preferredWindowGuidance = testCase.findByProperty(testCase.settings, "objectName", "preferredWindowGuidance")
         }
     }
 
@@ -76,6 +81,8 @@ TestCase {
         verify(cliControl !== null, "the native CLI path field must be discoverable")
         verify(refreshControl !== null, "the native refresh control must be discoverable")
         verify(setupGuidance !== null, "the native setup guidance must be discoverable")
+        verify(preferredWindowControl !== null, "the native representative window control must be discoverable")
+        verify(preferredWindowGuidance !== null, "the native representative window guidance must be discoverable")
         testWindow.requestActivate()
         tryCompare(testWindow, "active", true)
     }
@@ -84,6 +91,7 @@ TestCase {
         settings.cfg_codexbarCommand = ""
         settings.cfg_refreshInterval = 60
         settings.cfg_requestTimeout = 60
+        settings.cfg_preferredRepresentativeWindow = "automatic"
         wait(0)
     }
 
@@ -148,6 +156,54 @@ TestCase {
         verify(settings.requestTimeoutPresetControl.activeFocus, "Tab must move focus to timeout preset")
         keyClick(Qt.Key_Tab)
         verify(settings.requestTimeoutCustomControl.activeFocus, "Tab must move focus to custom timeout")
+        keyClick(Qt.Key_Tab)
+        verify(preferredWindowControl.activeFocus, "Tab must move focus to the representative window control")
+    }
+
+    function test_preferredWindowControlIsDiscoverableAndDefaulted() {
+        compare(preferredWindowControl.currentIndex, 0, "the representative window control must default to index 0")
+        compare(settings.cfg_preferredRepresentativeWindow, "automatic", "the default persisted value must be automatic")
+        verify(preferredWindowGuidance.visible, "the representative window guidance must be visible")
+        verify(preferredWindowGuidance.Accessible.name.length > 0,
+               "the representative window guidance must have a non-empty accessible name")
+    }
+
+    function test_preferredWindowSelectionPersistsKeys() {
+        preferredWindowControl.forceActiveFocus()
+        mouseClick(preferredWindowControl)
+        tryCompare(preferredWindowControl.popup, "visible", true)
+        keyClick(Qt.Key_Down)
+        keyClick(Qt.Key_Enter)
+        compare(settings.cfg_preferredRepresentativeWindow, "session")
+        compare(preferredWindowControl.currentIndex, 1)
+
+        mouseClick(preferredWindowControl)
+        tryCompare(preferredWindowControl.popup, "visible", true)
+        keyClick(Qt.Key_Down)
+        keyClick(Qt.Key_Enter)
+        compare(settings.cfg_preferredRepresentativeWindow, "weekly")
+        compare(preferredWindowControl.currentIndex, 2)
+
+        mouseClick(preferredWindowControl)
+        tryCompare(preferredWindowControl.popup, "visible", true)
+        keyClick(Qt.Key_Down)
+        keyClick(Qt.Key_Enter)
+        compare(settings.cfg_preferredRepresentativeWindow, "monthly")
+        compare(preferredWindowControl.currentIndex, 3)
+    }
+
+    function test_preferredWindowIsIndependentFromTimeout() {
+        settings.cfg_requestTimeout = 180
+        settings.cfg_refreshInterval = 75
+
+        mouseClick(preferredWindowControl)
+        tryCompare(preferredWindowControl.popup, "visible", true)
+        keyClick(Qt.Key_Down)
+        keyClick(Qt.Key_Enter)
+
+        compare(settings.cfg_preferredRepresentativeWindow, "session")
+        compare(settings.cfg_requestTimeout, 180)
+        compare(settings.cfg_refreshInterval, 75)
     }
 
     function test_timeoutPresetMouseSelection() {

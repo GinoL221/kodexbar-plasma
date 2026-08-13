@@ -35,22 +35,41 @@ ColumnLayout {
     }
 
     function failureText(failure) {
-        if (failure === null || failure === undefined) {
-            return translate("Provider returned an unknown error")
+        var kind = ""
+        var message = ""
+        var details = failure
+
+        if (details && typeof details === "object" && details.error !== undefined) {
+            details = details.error
         }
-        if (typeof failure === "string") {
-            return failure
+        if (typeof details === "string") {
+            message = details
+        } else if (details && typeof details === "object") {
+            kind = valueText(details.kind)
+            message = valueText(details.message)
         }
-        if (typeof failure.error === "string") {
-            return failure.error
+
+        var normalizedKind = kind.toLowerCase()
+        var normalizedMessage = message.toLowerCase()
+        if (["auth", "authentication", "credential", "credentials"].indexOf(normalizedKind) !== -1
+            || /\b(?:authentication|auth)\s+(?:failed|required|missing|expired|invalid|error)\b/.test(normalizedMessage)
+            || /\b(?:api key|api_key)\s+(?:missing|required|expired|invalid)\b/.test(normalizedMessage)
+            || /\b(?:sign[\s-]?in)\s+(?:failed|required|needed)\b/.test(normalizedMessage)
+            || /\b(?:unauthori[sz]ed|forbidden)\b/.test(normalizedMessage)) {
+            return translate("Provider authentication is required")
         }
-        if (failure.error && typeof failure.error.message === "string") {
-            return failure.error.message
+        if (["platform", "unsupported_platform", "unsupported-platform"].indexOf(normalizedKind) !== -1
+            || /\bunsupported platform\b/.test(normalizedMessage)
+            || /\b(?:enoexec|exec format error|architecture mismatch)\b/.test(normalizedMessage)) {
+            return translate("Provider is not supported on this platform")
         }
-        if (typeof failure.message === "string") {
-            return failure.message
+        if (["config", "configuration", "misconfigured"].indexOf(normalizedKind) !== -1
+            || /\bmisconfigured\b/.test(normalizedMessage)
+            || /\b(?:configuration|config)\s+(?:required|invalid|missing|error)\b/.test(normalizedMessage)
+            || /\binvalid setting\b/.test(normalizedMessage)) {
+            return translate("Provider configuration needs attention")
         }
-        return String(failure.error || failure)
+        return translate("Provider is unavailable")
     }
 
     visible: errorCount > 0
