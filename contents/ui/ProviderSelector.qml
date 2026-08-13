@@ -104,7 +104,7 @@ ColumnLayout {
 
     function _providerText(provider) {
         return provider && provider.provider !== null && provider.provider !== undefined
-            ? String(provider.provider) : root.translate("Provider")
+            ? String(provider.provider) : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
     }
 
     function _sourceText(provider) {
@@ -114,7 +114,7 @@ ColumnLayout {
 
     function _setIndex(index) {
         root._selectedIndex = index - 1
-        root._requestedIndex = index
+        root._requestedIndex = tabBar.currentIndex === index ? -1 : index
         tabBar.currentIndex = index
     }
 
@@ -130,7 +130,7 @@ ColumnLayout {
         if (!root.popupOpen) {
             return
         }
-        var usable = root.usableProviders
+        var usable = root._usable(root.providers)
         if (root._pendingDefault) {
             if (root.phase === "loading") {
                 _setIndex(0)

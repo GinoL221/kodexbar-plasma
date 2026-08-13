@@ -70,6 +70,8 @@ Item {
         s.providers = [p("dup","src-dup-a",[w("S",5,null,null)]), p("dup","src-dup-b",[w("W",6,null,null)])]
         s.popupOpen = false; s.popupOpen = true
         assert(s.usableProviders.length === 2 && s.selectedProvider.provider === "dup", "duplicate identity")
+        assert(s.tabBar.currentIndex === 1 && s._requestedIndex === -1,
+            "reconciliation must settle without currentIndex feedback")
 
         s.width = root.width
         assert(s.width <= root.width && s.tabBar.width <= s.width, "narrow geometry")

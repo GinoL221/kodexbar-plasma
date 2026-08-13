@@ -11,7 +11,7 @@
       }
     ],
     "Category": "System Information",
-    "Description": "KDE Plasma panel widget for CodexBar usage, quotas, and credits.",
+    "Description": "KDE Plasma panel widget for CodexBar usage windows.",
     "Icon": "codex",
     "Id": "org.kde.plasma.kodexbar.plasma",
     "License": "MIT",

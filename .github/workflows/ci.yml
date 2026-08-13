@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  package-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Plasma package
+        run: ./scripts/validate-package.sh
+
+      - name: Lint production QML
+        run: ./scripts/lint-qml.sh
+
+      - name: Check whitespace in changed lines
+        shell: sh
+        run: |
+          set -eu
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --check "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            root_commit=$(git rev-list --max-parents=0 HEAD)
+            git diff --check "$root_commit" "${{ github.sha }}"
+          else
+            git diff --check "${{ github.event.before }}" "${{ github.sha }}"
+          fi
+
+# The full QML suite remains a required local/runtime gate:
+# ./scripts/run-qml-tests.sh

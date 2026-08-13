@@ -117,6 +117,22 @@ The repository runner resolves `qmltestrunner` from `PATH` and from the common A
 ./scripts/run-qml-tests.sh
 ```
 
+## Package validation
+
+Validate package metadata and required paths locally or in CI:
+
+```sh
+./scripts/validate-package.sh
+```
+
+Lint production QML with the same deterministic executable lookup used by CI:
+
+```sh
+./scripts/lint-qml.sh
+```
+
+The runner uses `qmllint` from `PATH`, then `/usr/lib/qt6/bin/qmllint` or `/usr/lib64/qt6/bin/qmllint` (currently Qt/qmllint 6.11.1). Structural diagnostics fail the command; existing `unqualified` warnings remain visible without failing it. No formatter or source mutation is involved. CI runs package validation, QML lint, and a whitespace check over changed lines. The full QML suite remains a required local/runtime gate because GitHub-hosted runners do not provide the Plasma 6 runtime.
+
 The runner uses `QT_QPA_PLATFORM=offscreen` and `QT_QUICK_BACKEND=software`. The remaining executable QML harnesses can be run directly, for example:
 
 ```sh

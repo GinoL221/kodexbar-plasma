@@ -4,7 +4,7 @@ context: |
   Project: kodexbar-plasma, a Plasma 6 QML/Kirigami widget for displaying external CodexBar usage.
   Runtime boundary: consume the external `codexbar` CLI; do not reimplement providers, auth, or fetching.
   Architecture: Plasma applet metadata and configuration, a QML controller/model boundary, native Kirigami/QtQuick UI, and executable QML harnesses.
-  Testing: qml6 offscreen harnesses, QtTest inputs resolved by scripts/run-qml-tests.sh, package lifecycle smoke, and a manual live-Plasma smoke checklist.
+  Testing: qml6 offscreen harnesses, QtTest inputs resolved by scripts/run-qml-tests.sh, package lifecycle smoke, and a manual live-Plasma smoke checklist. QML runtime tests are currently local/manual because CI lacks the Plasma 6 runtime.
   Delivery strategy: ask-on-risk; review budget: 400 changed lines.
 
 strict_tdd: true
@@ -14,15 +14,17 @@ testing:
   runner_command: ./scripts/run-qml-tests.sh
   runner_resolution: PATH, /usr/lib/qt6/bin/qmltestrunner, or /usr/lib64/qt6/bin/qmltestrunner
   framework: QtTest plus executable qml6 QML harnesses
-  unit: tests/UsageModelTest.qml and tests/UsageControllerFixture.qml via qmltestrunner; model/controller harnesses via qml6
+  unit: tests/UsageModelTest.qml, tests/UsageControllerFixture.qml, and tests/SettingsInteractionTest.qml via qmltestrunner; model/controller harnesses via qml6
   integration: QML controller and executable DataSource lifecycle harnesses
   e2e: manual package and live-Plasma smoke; kpackagetool6 and plasmawindowed when available
   coverage: null
-  linter: null
+  linter: qmllint
+  linter_command: ./scripts/lint-qml.sh
+  linter_resolution: PATH, /usr/lib/qt6/bin/qmllint, or /usr/lib64/qt6/bin/qmllint
   type_checker: null
   formatter: clang-format
   formatter_command: clang-format
-  notes: qml6 harnesses run offscreen with QT_QPA_PLATFORM=offscreen and QT_QUICK_BACKEND=software. Coverage and QML type-checking are not configured. clang-format is available but no project-specific QML formatting contract exists. Live keyboard traversal and live theme switching require manual Plasma execution.
+  notes: qml6 harnesses run offscreen with QT_QPA_PLATFORM=offscreen and QT_QUICK_BACKEND=software. qmllint is resolved in deterministic order from PATH, /usr/lib/qt6/bin/qmllint, or /usr/lib64/qt6/bin/qmllint; the current discovered Qt/qmllint version is 6.11.1. The lint command makes import, missing-property, unresolved-alias, uncreatable-type, incompatible-type, required, and read-only-property diagnostics errors. Existing unqualified diagnostics remain visible warnings and do not fail the build. The QML suite is currently a local/manual gate because CI lacks the Plasma 6 runtime and dependencies. Coverage and QML type-checking are not configured. clang-format is available but no project-specific QML formatting contract exists. Live keyboard traversal and live theme switching require manual Plasma execution.
 
 rules:
   proposal:
