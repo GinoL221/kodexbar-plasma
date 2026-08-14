@@ -33,7 +33,7 @@ class BoundQmlComponentsTest(unittest.TestCase):
 
     def test_nested_components_use_explicit_outer_scope(self):
         expected_access = {
-            "main.qml": ("root.controller", "root.providerSelector"),
+            "main.qml": ("root.controller", "root.preferredWindowKey"),
             "ProviderSelector.qml": ("root._selectAll", "root._selectProviderAt"),
             "ProviderRow.qml": ("root.compact", "root.summary"),
             "UsageWindowRow.qml": ("root.windowData", "root.hasFinitePercent"),
