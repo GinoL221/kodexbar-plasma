@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   package-validation:
     runs-on: ubuntu-latest
@@ -31,20 +35,35 @@ jobs:
 
   qml-lint:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ginol221/kde-suse-qt611:latest
-      options: --user root
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      QML_LINT_IMAGE: ghcr.io/ginol221/kodexbar-qml-lint:qt6.11-plasma6-v1
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare QML lint image
+        shell: sh
+        run: |
+          set -eu
+          if ! docker pull "$QML_LINT_IMAGE"; then
+            docker build --file ci/qml-lint.Dockerfile --tag "$QML_LINT_IMAGE" .
+          fi
+
       - name: Lint production QML
-        run: ./scripts/lint-qml.sh
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace \
+            "$QML_LINT_IMAGE" ./scripts/lint-qml.sh
 
 # The full QML suite remains a required local/runtime gate:
 # ./scripts/run-qml-tests.sh

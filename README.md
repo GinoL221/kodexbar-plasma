@@ -181,7 +181,7 @@ Validate package metadata and required paths locally or in CI:
 ./scripts/validate-package.sh
 ```
 
-CI runs package validation, QML lint, and a whitespace check over changed lines. The full QML suite remains a required local/runtime gate because GitHub-hosted runners do not provide the Plasma 6 runtime. No formatter or source mutation is involved.
+CI runs package validation, QML lint, and a whitespace check over changed lines. QML lint uses the versioned, project-owned image defined by `ci/qml-lint.Dockerfile`; it contains only Qt 6.11, Kirigami, Plasma QML modules, and the command-line dependencies needed by the lint gate. The image is rebuilt only when its definition changes or the dedicated workflow is dispatched manually. The full QML suite remains a required local/runtime gate because GitHub-hosted runners do not provide the Plasma 6 runtime. No formatter or source mutation is involved.
 
 The runner uses `QT_QPA_PLATFORM=offscreen` and `QT_QUICK_BACKEND=software`. The remaining executable QML harnesses can be run directly, for example:
 
