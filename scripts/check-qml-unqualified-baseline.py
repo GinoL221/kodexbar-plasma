@@ -138,13 +138,21 @@ def main():
     args = parser.parse_args()
     root = args.repo_root.resolve()
     binary, import_root, import_path = resolve_environment(os.environ)
-    command = [binary, "--json", "-", "--max-warnings", "-1"]
+    base_command = [binary, "--json", "-"]
     if import_root:
-        command += ["-I", import_root]
+        base_command += ["-I", import_root]
     if import_path:
-        command += ["-E"]
-    command += [str(path) for path in targets(root)]
+        base_command += ["-E"]
+    base_command += [str(path) for path in targets(root)]
+
+    # --max-warnings -1 (disable qmllint's warning cap so the full report is
+    # validated) is only supported by newer qmllint releases. Older builds
+    # (e.g. the Qt6 packaged for Ubuntu 24.04's GitHub Actions runners)
+    # reject the flag outright; retry without it in that case.
+    command = base_command[:1] + ["--max-warnings", "-1"] + base_command[1:]
     result = subprocess.run(command, cwd=root, capture_output=True, text=True)
+    if result.returncode and "Unknown options: max-warnings" in result.stderr:
+        result = subprocess.run(base_command, cwd=root, capture_output=True, text=True)
     if result.returncode:
         fail("qmllint exited %s: %s" % (result.returncode, result.stderr.strip()))
     accepted = 0
