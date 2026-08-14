@@ -4,12 +4,16 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   package-validation:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -23,28 +27,48 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git diff --check "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
           elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            root_commit=$(git rev-list --max-parents=0 HEAD)
-            git diff --check "$root_commit" "${{ github.sha }}"
+            parent_commit=$(git rev-parse "${{ github.sha }}^" 2>/dev/null || true)
+            if [ -n "$parent_commit" ]; then
+              git diff --check "$parent_commit" "${{ github.sha }}"
+            else
+              root_commit=$(git rev-list --max-parents=0 HEAD)
+              git diff --check "$root_commit" "${{ github.sha }}"
+            fi
           else
             git diff --check "${{ github.event.before }}" "${{ github.sha }}"
           fi
 
   qml-lint:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ginol221/kde-suse-qt611:latest
-      options: --user root
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      QML_LINT_IMAGE: ghcr.io/ginol221/kodexbar-qml-lint:qt6.11-plasma6-v1
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare QML lint image
+        shell: sh
+        run: |
+          set -eu
+          if ! docker pull "$QML_LINT_IMAGE"; then
+            docker build --file ci/qml-lint.Dockerfile --tag "$QML_LINT_IMAGE" .
+          fi
+
       - name: Lint production QML
-        run: ./scripts/lint-qml.sh
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace \
+            "$QML_LINT_IMAGE" ./scripts/lint-qml.sh
 
 # The full QML suite remains a required local/runtime gate:
 # ./scripts/run-qml-tests.sh
