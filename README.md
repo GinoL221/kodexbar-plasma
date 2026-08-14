@@ -181,7 +181,17 @@ Validate package metadata and required paths locally or in CI:
 ./scripts/validate-package.sh
 ```
 
-CI runs package validation, QML lint, and a whitespace check over changed lines. QML lint uses the versioned, project-owned image defined by `ci/qml-lint.Dockerfile`; it contains only Qt 6.11, Kirigami, Plasma QML modules, and the command-line dependencies needed by the lint gate. The image is rebuilt only when its definition changes or the dedicated workflow is dispatched manually. The full QML suite remains a required local/runtime gate because GitHub-hosted runners do not provide the Plasma 6 runtime. No formatter or source mutation is involved.
+CI runs package validation, QML lint, provider icon asset validation, and a whitespace check over changed lines. QML lint uses the versioned, project-owned image defined by `ci/qml-lint.Dockerfile`; it contains only Qt 6.11, Kirigami, Plasma QML modules, and the command-line dependencies needed by the lint gate. The image is rebuilt only when its definition changes or the dedicated workflow is dispatched manually. The full QML suite remains a required local/runtime gate because GitHub-hosted runners do not provide the Plasma 6 runtime. No formatter or source mutation is involved.
+
+## Provider icon asset validation
+
+`scripts/check-provider-icons.py` is a standard-library (no new dependency) gate over `contents/icons/providers/*.svg`. It enforces that every `knownProviders` key in `contents/code/ProviderIcons.js` has a matching SVG (coverage), every SVG maps back to a known key (no orphans), every SVG is well-formed XML with the correct root tag (parseable), and no two provider SVGs share a content hash outside the documented sanctioned brand-family duplicates (distinctness). Run it locally:
+
+```sh
+python3 scripts/check-provider-icons.py
+```
+
+`tests/test_provider_icons.py` (`python3 -m unittest tests/test_provider_icons.py`) is the RED-first `unittest` contract for the checker's pure functions plus one integration test against the real repository tree. This gate cannot prove visual legibility of a `currentColor` icon in either Breeze theme; see [docs/live-plasma-smoke.md](docs/live-plasma-smoke.md)'s provider icon color smoke section for that mandatory manual check.
 
 The runner uses `QT_QPA_PLATFORM=offscreen` and `QT_QUICK_BACKEND=software`. The remaining executable QML harnesses can be run directly, for example:
 

@@ -127,6 +127,68 @@ usage --provider all --format json --json-only
 - With a mixed provider response, open the bounded error disclosure and verify usable providers remain visible.
 - Verify the disclosure reports the full count while rendering no more than 20 failures.
 
+## Provider icon color smoke (currentColor gate)
+
+`scripts/check-provider-icons.py` (wired into CI) proves coverage, no-orphan,
+parseable-XML, and distinctness invariants over `contents/icons/providers/*.svg`,
+but it cannot prove that a recolored `currentColor` icon actually renders
+legibly against both Breeze themes — that is a rendering fact, not a file
+fact. This manual two-theme check is the mandatory acceptance gate for every
+slice of the `provider-icon-rendering` change that recolors or replaces
+provider SVGs.
+
+```sh
+plasmawindowed org.kde.plasma.kodexbar.plasma
+plasma-apply-colorscheme BreezeLight   # run with the window open
+plasma-apply-colorscheme BreezeDark
+```
+
+Open the popup, select `All`, and inspect the icon(s) under test at
+`Kirigami.Units.iconSizes.smallMedium`.
+
+**PASS** requires all of:
+
+- The mark renders as a dark glyph on the light background under BreezeLight
+  and as a light glyph on the dark background under BreezeDark.
+- The silhouette is identical in both theme runs and identical to the
+  pre-edit geometry.
+- The glyph is neither blank nor a solid filled block nor clipped.
+
+**FAIL** is any of:
+
+- A solid filled square or block.
+- An invisible or blank mark in either theme.
+- A mark that does not invert with the theme (stays white on light, or stays
+  dark on dark).
+- Changed geometry versus pre-edit (a stroke became a fill, or a knockout
+  closed).
+
+### Per-icon literal-color fallback
+
+Applied only to a file that genuinely FAILs the smoke above:
+
+1. First re-diagnose: if a `style` declaration on the element or an
+   ancestor still carries a literal color, the failure is a P5 cascade
+   defect (an inline `style` outranks a presentation `fill`/`stroke`
+   attribute), not a genuine `currentColor` defect — fix inside `style`
+   and re-smoke. Likewise check for a surviving nested override.
+2. Only if `currentColor` genuinely does not resolve for that file's
+   structure, set that file's literal to the documented fallback
+   `#7F7F7F` (neutral mid-gray, chosen to sit between both Breeze panel
+   backgrounds), re-run the same two-theme smoke to confirm legibility,
+   record the file and the reason in the exception table below, and add
+   the file to the checker's `LITERAL_COLOR_ALLOWLIST`.
+3. The fallback is per-file. A single failure never converts the whole
+   batch to literal colors.
+
+### Literal-color exception table
+
+Empty by default. Add one row only when the fallback above is genuinely
+applied to a specific file.
+
+| File | Reason `currentColor` did not resolve | Fallback color | Verified in (BreezeLight/BreezeDark) | Date |
+|---|---|---|---|---|
+
 ## Breeze themes
 
 Run each command while the live window is open and repeat the keyboard checks:
