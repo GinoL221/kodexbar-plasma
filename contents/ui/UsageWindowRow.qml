@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
@@ -18,6 +20,7 @@ ColumnLayout {
     readonly property string resetDescriptionText: root.windowData.resetDescription !== null && root.windowData.resetDescription !== undefined ? String(root.windowData.resetDescription) : ""
 
     property var progressBar: progressLoader.item
+    property alias windowLabel: windowLabel
     property alias percentageLabel: percentageLabel
     property alias resetsAtLabel: resetsAtLabel
     property alias resetDescriptionLabel: resetDescriptionLabel
@@ -50,13 +53,26 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: Kirigami.Units.smallSpacing
 
-            PlasmaComponents.Label {
-                id: windowLabel
-                text: root.valueText(root.windowData.label)
-                font.weight: Font.Medium
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
+        PlasmaComponents.Label {
+            id: windowLabel
+            text: root.valueText(root.windowData.label)
+            font.weight: Font.Medium
+            elide: Text.ElideRight
+            Layout.minimumWidth: 0
+            Layout.preferredWidth: Math.min(implicitWidth, Kirigami.Units.gridUnit * 4)
+            Layout.maximumWidth: Kirigami.Units.gridUnit * 4
+            Layout.fillWidth: true
+            Layout.horizontalStretchFactor: 0
+        }
+
+        Loader {
+            id: progressLoader
+            sourceComponent: root.hasFinitePercent && !root.compact ? progressComponent : inactiveProgressComponent
+            active: true
+            Layout.fillWidth: true
+            Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+            Layout.horizontalStretchFactor: 1
+        }
 
         PlasmaComponents.Label {
             id: percentageLabel
@@ -64,22 +80,16 @@ ColumnLayout {
             text: visible ? Translation.translate("%1% used", [root.windowData.usedPercent],
                 typeof i18n === "function" ? i18n : null) : ""
             color: Kirigami.Theme.textColor
-            elide: Text.ElideRight
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 9
+            Layout.minimumWidth: implicitWidth
+            Layout.maximumWidth: implicitWidth
         }
-    }
-
-    Loader {
-        id: progressLoader
-        sourceComponent: root.hasFinitePercent && !root.compact ? progressComponent : inactiveProgressComponent
-        active: true
-        Layout.fillWidth: true
     }
 
     Component {
         id: progressComponent
 
         QQC2.ProgressBar {
+            implicitWidth: Kirigami.Units.gridUnit * 3
             from: 0
             to: 100
             value: root.windowData.usedPercent

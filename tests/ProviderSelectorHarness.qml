@@ -50,6 +50,10 @@ Item {
         assert(s.selectedProvider.provider === "alpha", "default alpha")
         s.tabBar.currentIndex = 2
         assert(s.selectedProvider.provider === "beta", "select beta")
+        assert(s.tabBar.contentChildren[2].visible && s.tabBar.contentChildren[2].text.indexOf("beta") !== -1,
+               "the second provider delegate must expose the selected provider")
+        assert(s.tabBar.contentChildren[2].checked,
+               "the selected provider delegate must retain the tab-bar checked state")
         s.providers = [p("beta","b",[w("M",30,null,null)]), p("alpha","a",[w("W",20,null,null)])]
         assert(s.selectedProvider.provider === "beta", "reorder preserves identity")
 

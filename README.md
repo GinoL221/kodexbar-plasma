@@ -68,20 +68,40 @@ KodexBar Plasma never runs this command, configures credentials, or automates co
 
 ## Install
 
-From this repository root, install the applet:
+KodexBar has two independent Plasma package IDs during this transition:
+
+| Package ID | Status |
+| --- | --- |
+| `org.kde.plasma.kodexbar` | Legacy package; it may remain installed with its existing panel instances. |
+| `org.kde.plasma.kodexbar.plasma` | Current KodexBar Plasma product. Install and update this package only. |
+
+From this repository root, install the current applet:
 
 ```sh
 kpackagetool6 -t Plasma/Applet -i .
 ```
 
-Then add **KodexBar Plasma** to a Plasma panel.
+Then use Plasma's **Add Widgets** flow to add a new **KodexBar Plasma** widget to the panel. Do not expect a legacy instance to change identity.
 
-For development reloads:
+For development updates of the current product only:
 
 ```sh
 kpackagetool6 -t Plasma/Applet -u .
 plasmashell --replace
 ```
+
+Both package IDs can coexist. Do not remove either package, mutate panel containments, or attempt an automatic cross-ID migration.
+
+### Optional manual settings copy
+
+Each widget instance keeps independent `General` settings. If a new current-product widget should match a legacy instance, manually copy these values in its settings:
+
+- `codexbarCommand` (CLI path)
+- Refresh interval
+- Request timeout
+- Representative window
+
+This is an optional per-instance setup step; it does not rewrite package identity or panel configuration.
 
 ## Usage
 
@@ -111,11 +131,47 @@ KodexBar Plasma deliberately does not implement cost data, credits, tokens, calc
 
 ## Run QtTest
 
-The repository runner resolves `qmltestrunner` from `PATH` and from the common Arch Linux Qt 6 locations `/usr/lib/qt6/bin/qmltestrunner` and `/usr/lib64/qt6/bin/qmltestrunner`:
+Use the behavioral/QML authority after a UI change. The repository runner resolves `qmltestrunner` from `PATH` and from the common Qt 6 locations `/usr/lib/qt6/bin/qmltestrunner` and `/usr/lib64/qt6/bin/qmltestrunner`:
 
 ```sh
 ./scripts/run-qml-tests.sh
 ```
+
+## Qt 6/KDE QML editor and static analysis
+
+This Plasma package is not a CMake project. Open it with a Qt 6/KDE-capable QML editor and keep the repository `.qmlls.ini`: it disables CMake calls and supplies the common Qt QML import root (`/usr/lib/qt6/qml`). If that root differs on the host, configure the editor or environment with the host's Qt/KDE import locations; do not add CMake build metadata for this package.
+
+`.qmllint.ini` keeps import, missing-property, unresolved-alias, uncreatable-type, incompatible-type, required-property, and read-only-property diagnostics as errors. `UnqualifiedAccess` remains visible as a warning; it is not globally disabled and warning count is unlimited so the semantic gate can inspect every diagnostic.
+
+### Portable lint overrides
+
+`./scripts/lint-qml.sh` resolves `qmllint` from `PATH`, `qtpaths6`, and common Qt 6 install locations. Use these optional overrides only when the host layout needs them; every explicitly supplied path is validated and an invalid override fails clearly:
+
+```sh
+QMLLINT_BIN=/absolute/path/to/qmllint ./scripts/lint-qml.sh
+QML_IMPORT_ROOT=/absolute/path/to/qt6/qml ./scripts/lint-qml.sh
+QML_IMPORT_PATH=/absolute/path/to/extra/qml:another/absolute/qml/path ./scripts/lint-qml.sh
+```
+
+The static-analysis authority recursively checks `contents/ui/**/*.qml`, including `contents/ui/config/configGeneral.qml` and future nested UI QML. It deliberately excludes `contents/config`, including `contents/config/config.qml`; configuration modernization is follow-up work.
+
+### Accepted Plasma warning baseline
+
+The lint gate accepts only `unqualified` diagnostics whose exact source span is the KDE translation function name `i18n` or `i18np`. All structural diagnostics still fail. The current accepted baseline is reported as `Accepted 56 exact KDE translation warning(s).`; it preserves translation extraction rather than suppressing warnings globally.
+
+### Required verification commands
+
+Run both authorities before handing off a QML or tooling change:
+
+```sh
+# Behavioral and QML runtime verification
+./scripts/run-qml-tests.sh
+
+# Static analysis for the recursive contents/ui scope
+./scripts/lint-qml.sh
+```
+
+Also run `git diff --check` before review to catch changed-line whitespace errors.
 
 ## Package validation
 
@@ -125,13 +181,7 @@ Validate package metadata and required paths locally or in CI:
 ./scripts/validate-package.sh
 ```
 
-Lint production QML with the same deterministic executable lookup used by CI:
-
-```sh
-./scripts/lint-qml.sh
-```
-
-The runner uses `qmllint` from `PATH`, then `/usr/lib/qt6/bin/qmllint` or `/usr/lib64/qt6/bin/qmllint` (currently Qt/qmllint 6.11.1). Structural diagnostics fail the command; existing `unqualified` warnings remain visible without failing it. No formatter or source mutation is involved. CI runs package validation, QML lint, and a whitespace check over changed lines. The full QML suite remains a required local/runtime gate because GitHub-hosted runners do not provide the Plasma 6 runtime.
+CI runs package validation, QML lint, and a whitespace check over changed lines. The full QML suite remains a required local/runtime gate because GitHub-hosted runners do not provide the Plasma 6 runtime. No formatter or source mutation is involved.
 
 The runner uses `QT_QPA_PLATFORM=offscreen` and `QT_QUICK_BACKEND=software`. The remaining executable QML harnesses can be run directly, for example:
 

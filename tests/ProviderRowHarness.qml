@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QQC2
+import QtQuick.Layouts
 import "../contents/ui" as UsageUi
 
 Item {
@@ -32,6 +33,15 @@ Item {
         return n
     }
 
+    function firstUsageWindowRow(item) {
+        if (item instanceof UsageUi.UsageWindowRow) return item
+        for (var i = 0; i < item.children.length; i++) {
+            var result = firstUsageWindowRow(item.children[i])
+            if (result !== null) return result
+        }
+        return null
+    }
+
     function allResetLabelsHidden(item) {
         if (item instanceof UsageUi.UsageWindowRow) {
             if (item.resetsAtLabel.visible || item.resetDescriptionLabel.visible) return false
@@ -60,6 +70,54 @@ Item {
             if (result !== null) return result
         }
         return null
+    }
+
+    function assertResponsiveGeometry(row, widerWidth, message) {
+        var barWidth = row.progressBar.width
+        assert(row.percentageLabel.visible,
+               message + ": finite percentage must remain visible")
+        assert(row.percentageLabel.paintedWidth <= row.percentageLabel.width,
+               message + ": percentage must remain fully visible")
+        assert(row.windowLabel.x >= 0 && row.windowLabel.x + row.windowLabel.width <= row.width
+               && row.progressBar.x >= 0 && row.progressBar.x + row.progressBar.width <= row.width
+               && row.percentageLabel.x >= 0 && row.percentageLabel.x + row.percentageLabel.width <= row.width,
+                message + ": visible content must stay within row bounds")
+        assert(row.progressBar.width > 0, message + ": progress bar must retain available width")
+        row.width = widerWidth
+        assert(row.percentageLabel.paintedWidth <= row.percentageLabel.width,
+               message + ": wider percentage must remain fully visible")
+        assert(row.windowLabel.width <= row.windowLabel.implicitWidth,
+               message + ": label must not consume progress-bar width beyond its preferred size")
+        assert(row.progressBar.width > row.windowLabel.width,
+               message + ": progress bar must consume the width remaining after the label")
+        assert(row.progressBar.width > barWidth,
+                message + ": progress bar must grow with additional width")
+    }
+
+    function assertProviderPopupGeometry(providerRow, windowRow, popupComposition, popupColumn, message) {
+        assert(windowRow.Layout.fillWidth,
+                "provider-composed row must opt into its parent's width allocation")
+        assert(popupColumn.width === popupComposition.availableWidth,
+                message + ": popup content must use the ScrollView viewport width")
+        assert(providerRow.width === popupColumn.width && windowRow.width === providerRow.width,
+                message + ": provider-composed row must receive the popup column width")
+        assert(windowRow.windowLabel.x >= 0
+                && windowRow.windowLabel.x + windowRow.windowLabel.width <= windowRow.width
+                && windowRow.progressBar.x >= 0
+                && windowRow.progressBar.x + windowRow.progressBar.width <= windowRow.width
+                && windowRow.percentageLabel.x >= 0
+                && windowRow.percentageLabel.x + windowRow.percentageLabel.width <= windowRow.width,
+                message + ": label, progress bar, and percentage must stay within the composed row")
+        assert(windowRow.progressBar.width > 0,
+                message + ": provider-composed progress bar must retain popup-provided width")
+        assert(windowRow.percentageLabel.visible
+                && windowRow.percentageLabel.paintedWidth <= windowRow.percentageLabel.width,
+                message + ": provider-composed percentage must remain fully visible")
+        assert(windowRow.windowLabel.width <= windowRow.windowLabel.implicitWidth,
+                message + ": label must not consume progress-bar width beyond its preferred size")
+        assert(windowRow.progressBar.width > windowRow.windowLabel.width,
+                message + ": progress bar must consume the width remaining after the label"
+                + " (bar=" + windowRow.progressBar.width + ", label=" + windowRow.windowLabel.width + ")")
     }
 
     UsageUi.ProviderRow {
@@ -215,6 +273,51 @@ Item {
         windowData: ({ label: "Session", usedPercent: 72, resetsAt: "2026-08-09T12:00:00Z", resetDescription: "Exact reset note" })
     }
 
+    UsageUi.UsageWindowRow {
+        id: constrainedWindowRow
+        width: 120
+        windowData: ({ label: "Long Session Window", usedPercent: 100, resetsAt: null, resetDescription: null })
+    }
+
+    UsageUi.UsageWindowRow {
+        id: constrainedSummaryWindowRow
+        width: 120
+        summary: true
+        windowData: ({ label: "Long Summary Window", usedPercent: 100, resetsAt: null, resetDescription: null })
+    }
+
+    ColumnLayout {
+        id: popupShell
+        width: 120
+        height: 180
+
+        QQC2.ScrollView {
+            id: popupComposition
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            contentWidth: availableWidth
+
+            ColumnLayout {
+                id: popupColumn
+                width: popupComposition.availableWidth
+                spacing: 0
+
+                UsageUi.ProviderRow {
+                    id: constrainedProviderRow
+                    Layout.fillWidth: true
+                    summary: true
+                    providerData: ({
+                        provider: "responsive-provider",
+                        source: "Responsive CLI source",
+                        windows: [
+                            { label: "Long Provider Window", usedPercent: 100, resetsAt: null, resetDescription: null }
+                        ]
+                    })
+                }
+            }
+        }
+    }
+
     Component.onCompleted: {
         assert(row.providerValue === "unknown-provider", "provider must remain raw")
         assert(row.sourceValue === "CLI raw source", "source must remain raw")
@@ -304,6 +407,43 @@ Item {
         assert(windowRow.resetsAtLabel.elide === Text.ElideNone && windowRow.resetsAtLabel.wrapMode === Text.Wrap,
                "detail reset text must wrap")
 
-        finish()
+    }
+
+    Timer {
+        interval: 50
+        running: true
+        repeat: true
+        property int stage: 0
+        property real narrowBarWidth: 0
+        property real mediumBarWidth: 0
+        onTriggered: {
+            var providerWindowRow = firstUsageWindowRow(constrainedProviderRow)
+            assert(providerWindowRow !== null,
+                    "provider-composed constrained row must render one usage window")
+            if (stage === 0) {
+                assertResponsiveGeometry(constrainedWindowRow, 600, "direct constrained row")
+                assertResponsiveGeometry(constrainedSummaryWindowRow, 600, "summary constrained row")
+                assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
+                                            "narrow popup composition")
+                narrowBarWidth = providerWindowRow.progressBar.width
+                stage++
+                popupShell.width = 220
+            } else if (stage === 1) {
+                assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
+                                            "medium popup composition")
+                assert(providerWindowRow.progressBar.width > narrowBarWidth,
+                        "medium popup composition progress bar must grow from the narrow allocation")
+                mediumBarWidth = providerWindowRow.progressBar.width
+                stage++
+                popupShell.width = 600
+            } else {
+                assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
+                                            "wide popup composition")
+                assert(providerWindowRow.progressBar.width > mediumBarWidth,
+                        "wide popup composition progress bar must grow from the medium allocation")
+                running = false
+                finish()
+            }
+        }
     }
 }

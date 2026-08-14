@@ -4,7 +4,7 @@ This is a **manual** checklist for a real Plasma desktop. The offscreen `Timeout
 
 ## Start
 
-Install or update the applet, then launch it without offscreen rendering:
+The legacy `org.kde.plasma.kodexbar` and current `org.kde.plasma.kodexbar.plasma` packages may coexist. Install or update only the current package, then launch it without offscreen rendering:
 
 ```sh
 kpackagetool6 -t Plasma/Applet -u .
@@ -12,6 +12,8 @@ plasmawindowed org.kde.plasma.kodexbar.plasma
 ```
 
 If the package is not installed yet, use `-i .` instead of `-u .`.
+
+Use Plasma's **Add Widgets** flow to add a new **KodexBar Plasma** widget. Do not remove a package, modify panel containments, or expect a legacy widget to change package identity. If equivalent behavior is wanted, optionally re-enter `General` settings (`codexbarCommand`, refresh interval, request timeout, and representative window) for the new instance; settings remain independent per instance.
 
 ## Configuration-first recovery evidence
 
@@ -95,6 +97,7 @@ usage --provider all --format json --json-only
 - Traverse `All` and provider entries with `Tab`, Left/Right, Home/End, `Enter`, and `Space`; verify focus order, selected state, and displayed view stay aligned.
 - In a narrow window with long provider names and sources, verify the selector scrolls or elides without horizontal clipping and wrapped detail/reset text stays readable.
 - Verify the `All` representative bar and percentage remain readable and are not clipped in the narrow layout.
+- With a constrained popup width and then a wider width, verify every finite window percentage remains fully visible, visible row content stays inside the popup, and each progress bar expands into the newly available width.
 - Repeat the provider-focused checks in Breeze Light and Breeze Dark; verify icons, labels, progress, focus, and errors remain readable.
 - Refresh with a selected provider after reordering providers; verify it remains selected by identity. Then remove that provider or its windows and verify selection falls back to the first usable provider, or `All` when none remain.
 - With usable providers plus failures, verify provider content precedes one global collapsed error summary, its count is correct, and its bounded expansion preserves error order.

@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
@@ -18,18 +20,20 @@ PlasmoidItem {
     property int refreshSeconds: RefreshInterval.valueOrDefault(Plasmoid.configuration.refreshInterval, 60)
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(Plasmoid.configuration.requestTimeout)
     property string preferredWindowKey: PreferredWindow.keyOrDefault(Plasmoid.configuration.preferredRepresentativeWindow)
-    readonly property var compactSelection: UsageModel.selectCompact(controller.committedProviders)
+    property alias controller: controller
+    property alias providerSelector: providerSelector
+    readonly property var compactSelection: UsageModel.selectCompact(root.controller.committedProviders)
 
     preferredRepresentation: compactRepresentation
     toolTipMainText: "KodexBar Plasma"
-    toolTipSubText: panelText()
+    toolTipSubText: root.panelText()
 
     function panelText() {
         if (compactSelection !== null) {
             return Math.round(compactSelection.usedPercent) + "%"
         }
-        return controller.phase === "loading" || controller.phase === "idle"
-            ? i18n("Loading") : controller.phase === "error" ? i18n("Error") : i18n("No data")
+        return root.controller.phase === "loading" || root.controller.phase === "idle"
+            ? i18n("Loading") : root.controller.phase === "error" ? i18n("Error") : i18n("No data")
     }
 
     UsageController {
@@ -45,10 +49,10 @@ PlasmoidItem {
         }
     }
 
-    Plasmoid.configurationRequired: controller.configurationRequired
+    Plasmoid.configurationRequired: root.controller.configurationRequired
 
     function refresh() {
-        controller.requestRefresh()
+        root.controller.requestRefresh()
     }
 
     compactRepresentation: CompactUsageButton {
@@ -58,6 +62,7 @@ PlasmoidItem {
 
     fullRepresentation: Item {
         id: full
+        property alias scrollView: usageScrollView
         readonly property int popupMargin: Kirigami.Units.largeSpacing * 2
         readonly property int maxPopupHeight: Kirigami.Units.gridUnit * 44
 
@@ -75,36 +80,38 @@ PlasmoidItem {
                 icon.name: "view-refresh"
                 display: QQC2.AbstractButton.IconOnly
                 text: i18n("Refresh")
-                onClicked: controller.requestRefresh()
+                onClicked: root.controller.requestRefresh()
             }
 
             QQC2.ScrollView {
+                id: usageScrollView
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                contentWidth: availableWidth
 
                 ColumnLayout {
-                    width: parent.availableWidth
+                    width: full.scrollView.availableWidth
                     spacing: Kirigami.Units.largeSpacing
 
                      PlasmaComponents.Label {
-                        visible: controller.phase === "loading" || controller.phase === "noData" || controller.phase === "error"
-                        text: controller.phase === "loading" ? i18n("Loading usage…")
-                            : controller.phase === "noData" ? i18n("No usage data available") : controller.errorMessage
-                        color: controller.phase === "error" ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.disabledTextColor
+                        visible: root.controller.phase === "loading" || root.controller.phase === "noData" || root.controller.phase === "error"
+                        text: root.controller.phase === "loading" ? i18n("Loading usage…")
+                            : root.controller.phase === "noData" ? i18n("No usage data available") : root.controller.errorMessage
+                        color: root.controller.phase === "error" ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.disabledTextColor
                         wrapMode: Text.WordWrap
                          Layout.fillWidth: true
                      }
 
                     ProviderSelector {
                         id: providerSelector
-                        providers: controller.committedProviders
-                        phase: controller.phase
+                        providers: root.controller.committedProviders
+                        phase: root.controller.phase
                         popupOpen: root.expanded
                         Layout.fillWidth: true
                     }
 
                     Repeater {
-                        model: providerSelector.allSelected ? providerSelector.usableProviders : []
+                        model: root.providerSelector.allSelected ? root.providerSelector.usableProviders : []
 
                         delegate: ProviderRow {
                             required property var modelData
@@ -112,21 +119,21 @@ PlasmoidItem {
                             providerData: modelData
                             summary: true
                             preferredWindowKey: root.preferredWindowKey
-                            iconResolver: providerSelector.iconResolver
+                            iconResolver: root.providerSelector.iconResolver
                             Layout.fillWidth: true
                         }
                     }
 
                     ProviderRow {
-                        visible: !providerSelector.allSelected && providerSelector.selectedProvider !== null
-                        providerData: providerSelector.selectedProvider || ({})
+                        visible: !root.providerSelector.allSelected && root.providerSelector.selectedProvider !== null
+                        providerData: root.providerSelector.selectedProvider || ({})
                         compact: false
-                        iconResolver: providerSelector.iconResolver
+                        iconResolver: root.providerSelector.iconResolver
                         Layout.fillWidth: true
                     }
 
                     ErrorSummary {
-                        errors: controller.committedErrors
+                        errors: root.controller.committedErrors
                         Layout.fillWidth: true
                     }
                 }

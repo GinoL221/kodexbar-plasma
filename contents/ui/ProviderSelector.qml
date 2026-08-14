@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
@@ -13,9 +15,9 @@ ColumnLayout {
     property string phase: "idle"
     property bool popupOpen: false
 
-    readonly property var usableProviders: _usable(root.providers)
-    readonly property bool allSelected: _isAllSelected(root.usableProviders)
-    readonly property var selectedProvider: _resolveSelectedProvider(root.usableProviders)
+    readonly property var usableProviders: root._usable(root.providers)
+    readonly property bool allSelected: root._isAllSelected(root.usableProviders)
+    readonly property var selectedProvider: root._resolveSelectedProvider(root.usableProviders)
     property alias tabBar: tabBar
 
     property bool _allSelected: true
@@ -41,15 +43,15 @@ ColumnLayout {
 
     function _isAllSelected(usable) {
         return _pendingDefault
-            ? root.phase === "loading" || usable.length === 0 : _allSelected
+            ? root.phase === "loading" || usable.length === 0 : root._allSelected
     }
 
     function _resolveSelectedProvider(usable) {
         if (root.allSelected) {
             return null
         }
-        if (_pendingDefault) {
-            return _firstUsable(usable)
+        if (root._pendingDefault) {
+            return root._firstUsable(usable)
         }
         if (_hasSelectedIdentity) {
             for (var i = 0; i < usable.length; i++) {
@@ -58,7 +60,7 @@ ColumnLayout {
                 }
             }
         }
-        return _selectedIndex >= 0 && _selectedIndex < usable.length ? usable[_selectedIndex] : null
+        return root._selectedIndex >= 0 && root._selectedIndex < usable.length ? usable[root._selectedIndex] : null
     }
 
     function _firstUsable(usable) {
@@ -71,13 +73,13 @@ ColumnLayout {
         root._hasSelectedIdentity = false
         root._selectedIdentity = undefined
         root._selectedIndex = -1
-        _setIndex(0)
+        root._setIndex(0)
     }
 
     function _selectFirstOrAll(usable) {
-        var first = _firstUsable(usable)
+        var first = root._firstUsable(usable)
         if (first === null) {
-            _selectAll(false)
+            root._selectAll(false)
             return
         }
         root._pendingDefault = false
@@ -85,7 +87,7 @@ ColumnLayout {
         root._selectedIndex = 0
         root._selectedIdentity = first.provider
         root._hasSelectedIdentity = true
-        _setIndex(1)
+        root._setIndex(1)
     }
 
     function _selectProviderAt(index, usable) {
@@ -93,7 +95,7 @@ ColumnLayout {
         root._selectedIndex = index
         root._selectedIdentity = usable[index].provider
         root._hasSelectedIdentity = true
-        _setIndex(index + 1)
+        root._setIndex(index + 1)
     }
 
     function iconResolver(value) {
@@ -114,16 +116,16 @@ ColumnLayout {
 
     function _setIndex(index) {
         root._selectedIndex = index - 1
-        root._requestedIndex = tabBar.currentIndex === index ? -1 : index
-        tabBar.currentIndex = index
+        root._requestedIndex = root.tabBar.currentIndex === index ? -1 : index
+        root.tabBar.currentIndex = index
     }
 
     function _selectDefault() {
         if (root.phase === "loading") {
-            _selectAll(true)
+            root._selectAll(true)
             return
         }
-        _selectFirstOrAll(root.usableProviders)
+        root._selectFirstOrAll(root.usableProviders)
     }
 
     function _reconcile() {
@@ -133,14 +135,14 @@ ColumnLayout {
         var usable = root._usable(root.providers)
         if (root._pendingDefault) {
             if (root.phase === "loading") {
-                _setIndex(0)
+                root._setIndex(0)
                 return
             }
-            _selectFirstOrAll(usable)
+            root._selectFirstOrAll(usable)
             return
         }
         if (root._allSelected) {
-            _setIndex(0)
+            root._setIndex(0)
             return
         }
         var target = -1
@@ -153,16 +155,16 @@ ColumnLayout {
             }
         }
         if (target < 0) {
-            _selectFirstOrAll(usable)
+            root._selectFirstOrAll(usable)
         } else {
             root._selectedIndex = target
-            _setIndex(target + 1)
+            root._setIndex(target + 1)
         }
     }
 
     onPopupOpenChanged: {
         if (root.popupOpen) {
-            _selectDefault()
+            root._selectDefault()
         }
     }
     onProvidersChanged: {
@@ -196,9 +198,9 @@ ColumnLayout {
                 }
                 root._requestedIndex = currentIndex
                 if (currentIndex === 0) {
-                    _selectAll(false)
+                    root._selectAll(false)
                 } else if (currentIndex - 1 < root.usableProviders.length) {
-                    _selectProviderAt(currentIndex - 1, root.usableProviders)
+                    root._selectProviderAt(currentIndex - 1, root.usableProviders)
                 }
             }
 
@@ -215,6 +217,8 @@ ColumnLayout {
             Repeater {
                 model: root._delegateCapacity
                 delegate: QQC2.TabButton {
+                    required property int index
+
                     property var providerData: index < root.usableProviders.length
                         ? root.usableProviders[index] : null
                     property string providerText: root._providerText(providerData)

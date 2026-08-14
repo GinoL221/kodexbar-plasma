@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
@@ -96,6 +98,8 @@ ColumnLayout {
             windowData: modelData
             compact: root.compact
             summary: root.summary
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
         }
     }
 
