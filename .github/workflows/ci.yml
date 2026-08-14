@@ -32,8 +32,11 @@ jobs:
   qml-lint:
     runs-on: ubuntu-latest
     container:
-      image: invent-registry.kde.org/sysadmin/ci-images/suse-qt611:latest
+      image: ghcr.io/ginol221/kde-suse-qt611:latest
       options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
