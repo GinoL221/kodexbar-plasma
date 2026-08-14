@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Standard-library asset invariant checker for contents/icons/providers/*.svg.
 
-Implements invariants 1 (coverage), 2 (no orphans), 3 (parseable XML with
-the correct SVG root tag), and 5 (distinctness, with the
-SANCTIONED_DUPLICATES allowlist). Invariant 4 (no theme-defeating literal
-fill/stroke color) is added in Slice 3.
+Implements all 5 asset invariants: 1 (coverage), 2 (no orphans), 3
+(parseable XML with the correct SVG root tag), 4 (no theme-defeating
+literal fill/stroke color), and 5 (distinctness, with the
+SANCTIONED_DUPLICATES allowlist).
 
 Standard library only: pathlib, re, hashlib, xml.etree.ElementTree.
 """
@@ -26,6 +26,51 @@ SANCTIONED_DUPLICATES = [
     frozenset({"kimi", "kimik2", "moonshot"}),
     frozenset({"opencode", "opencodego"}),
 ]
+
+# Invariant 4: literal colors that defeat theme adaptation if they appear
+# as a `fill`/`stroke` attribute or a `fill:`/`stroke:` style declaration.
+# Comparison is case-insensitive; `none` is never banned (it is structural).
+BANNED_COLOR_TOKENS = {
+    "white",
+    "#fff",
+    "#ffffff",
+    "#111111",
+    "#1a1a18",
+    "#34322d",
+    "#211e1e",
+    "#000",
+    "#000000",
+    "black",
+}
+
+# Files where a literal color is a documented, intentional exception (see
+# design.md's "Documented literal-color fallback" scenario), plus any file
+# added by the Slice 2 de-risking fallback procedure (none were needed).
+LITERAL_COLOR_ALLOWLIST = {"codebuff.svg", "stepfun.svg", "vertexai.svg"}
+
+# Elements inside these subtrees are skipped by tree position: paint here
+# never renders directly (clipPath geometry, mask luminance source).
+SKIP_SUBTREE_LOCAL_NAMES = {"clipPath", "mask"}
+
+_STYLE_FILL_RE = re.compile(r"(?<![\w-])fill\s*:\s*([^;]+)", re.IGNORECASE)
+_STYLE_STROKE_RE = re.compile(r"(?<![\w-])stroke\s*:\s*([^;]+)", re.IGNORECASE)
+
+
+def _local_name(tag):
+    """Strip the XML namespace off an ElementTree tag, e.g.
+    '{http://www.w3.org/2000/svg}clipPath' -> 'clipPath'.
+    """
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def _is_banned(value):
+    if value is None:
+        return False
+    normalized = value.strip().lower()
+    if normalized == "none":
+        return False
+    return normalized in BANNED_COLOR_TOKENS
+
 
 def parse_known_providers(js_path):
     """Parse the `knownProviders` string array out of ProviderIcons.js."""
@@ -79,6 +124,62 @@ def check_parseable(svg_paths):
     return violations
 
 
+def _walk_for_banned_colors(element, path, violations, inside_skip_subtree):
+    tag = _local_name(element.tag)
+    skip_here = inside_skip_subtree or tag in SKIP_SUBTREE_LOCAL_NAMES
+
+    if not skip_here:
+        fill = element.get("fill")
+        if _is_banned(fill):
+            violations.append(
+                "banned-color: %s <%s fill=%r> uses banned literal color"
+                % (path.name, tag, fill)
+            )
+        stroke = element.get("stroke")
+        if _is_banned(stroke):
+            violations.append(
+                "banned-color: %s <%s stroke=%r> uses banned literal color"
+                % (path.name, tag, stroke)
+            )
+        style = element.get("style")
+        if style:
+            fill_match = _STYLE_FILL_RE.search(style)
+            if fill_match and _is_banned(fill_match.group(1)):
+                violations.append(
+                    "banned-color: %s <%s style=%r> uses banned literal fill:"
+                    % (path.name, tag, style)
+                )
+            stroke_match = _STYLE_STROKE_RE.search(style)
+            if stroke_match and _is_banned(stroke_match.group(1)):
+                violations.append(
+                    "banned-color: %s <%s style=%r> uses banned literal stroke:"
+                    % (path.name, tag, style)
+                )
+
+    for child in element:
+        _walk_for_banned_colors(child, path, violations, skip_here)
+
+
+def check_banned_colors(svg_paths, allowlist):
+    """Invariant 4: no `fill`/`stroke` attribute or `style` `fill:`/`stroke:`
+    declaration may equal a banned literal color (case-insensitive).
+    Elements inside a `<clipPath>`/`<mask>` subtree are skipped by tree
+    position; files in `allowlist` are skipped entirely; `none` is never
+    banned.
+    """
+    violations = []
+    for path in svg_paths:
+        if path.name in allowlist:
+            continue
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError:
+            # Malformed XML is invariant 3's concern, not invariant 4's.
+            continue
+        _walk_for_banned_colors(root, path, violations, inside_skip_subtree=False)
+    return violations
+
+
 def check_distinctness(svg_paths, sanctioned_duplicates):
     """Invariant 5: no two SVGs share a content hash, except sanctioned groups."""
     by_hash = {}
@@ -108,6 +209,7 @@ def run_checks(repo_root):
     violations += check_coverage(known_providers, svg_dir)
     violations += check_orphans(known_providers, svg_dir)
     violations += check_parseable(svg_paths)
+    violations += check_banned_colors(svg_paths, LITERAL_COLOR_ALLOWLIST)
     violations += check_distinctness(svg_paths, SANCTIONED_DUPLICATES)
     return violations
 
@@ -127,7 +229,7 @@ def main():
             print(violation, file=sys.stderr)
         sys.exit(1)
     print("check-provider-icons: coverage, no-orphans, parseable, "
-          "distinctness all pass.")
+          "no-banned-color, distinctness all pass.")
 
 
 if __name__ == "__main__":
