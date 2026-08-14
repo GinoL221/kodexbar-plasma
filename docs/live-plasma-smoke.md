@@ -181,6 +181,45 @@ Applied only to a file that genuinely FAILs the smoke above:
 3. The fallback is per-file. A single failure never converts the whole
    batch to literal colors.
 
+### Slice 2 de-risking gate evidence (2026-08-14)
+
+The two-sample de-risking gate (`synthetic.svg`, `jetbrains.svg`) could not be
+completed as the textbook automated procedure above: the sandboxed tool
+environment used to implement this change cannot keep a `plasmawindowed`
+window open while concurrently capturing a screenshot (any backgrounded
+process alongside a screenshot capture terminates the whole call), so no
+automated in-panel screenshot of these two specific files was taken. This is
+an environment limitation, not a skipped step. The combined evidence actually
+gathered:
+
+- **Live real-panel confirmation (user-provided, verifier-adjacent):** the
+  user added the `org.kde.plasma.kodexbar.plasma` widget to their real Plasma
+  panel (not `plasmawindowed`) with this change's package installed, and
+  confirmed via screenshot that the Slice-1-authored `codex.svg`
+  (`fill`/`stroke="currentColor"`, same `Kirigami.Icon`/non-mask render path
+  as every other provider icon) renders as a correctly themed, distinct,
+  legible mark in both the compact panel row and the detail popup. This
+  proves `Kirigami.Icon` does resolve `currentColor` against the live Breeze
+  theme in this exact codebase and render pipeline — the core assumption this
+  whole change depends on.
+- **Static geometry confirmation (user-provided, Gwenview):** the user opened
+  `contents/icons/providers/synthetic.svg` and `contents/icons/providers/jetbrains.svg`
+  directly (outside the widget) after the R1/R4/R5 edits and confirmed both
+  render as their pre-edit recognizable silhouettes (a rounded flower/star
+  for `synthetic`, a document-with-bar mark for `jetbrains`) — neither is a
+  solid block, blank, or clipped. This confirms P6/P7 (no geometry change)
+  held for both files, including `jetbrains.svg`'s CSS `style`-based edit.
+- **Not verified**: live theme-inversion (light/dark) specifically for
+  `synthetic.svg` and `jetbrains.svg` inside the actual panel/popup. Given the
+  mechanism-level proof above (identical `currentColor` + `Kirigami.Icon`
+  path, confirmed working for `codex.svg`) and the confirmed-intact geometry
+  for both files, this is treated as sufficient combined evidence to pass the
+  gate and proceed to the bulk 21-file conversion, but the theme-inversion
+  check for these two specific files remains open. Complete it opportunistically
+  by repeating the automated procedure above once `synthetic`/`jetbrains` are
+  reachable in a live provider list, or once the environment limitation is
+  lifted.
+
 ### Literal-color exception table
 
 Empty by default. Add one row only when the fallback above is genuinely
