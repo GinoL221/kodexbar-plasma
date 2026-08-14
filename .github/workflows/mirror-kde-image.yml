@@ -1,0 +1,22 @@
+name: Mirror KDE CI image
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull, tag, and push the KDE Qt6/Kirigami CI image
+        run: |
+          docker pull invent-registry.kde.org/sysadmin/ci-images/suse-qt611:latest
+          docker tag invent-registry.kde.org/sysadmin/ci-images/suse-qt611:latest ghcr.io/ginol221/kde-suse-qt611:latest
+          docker push ghcr.io/ginol221/kde-suse-qt611:latest

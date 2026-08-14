@@ -16,9 +16,6 @@ jobs:
       - name: Validate Plasma package
         run: ./scripts/validate-package.sh
 
-      - name: Lint production QML
-        run: ./scripts/lint-qml.sh
-
       - name: Check whitespace in changed lines
         shell: sh
         run: |
@@ -31,6 +28,23 @@ jobs:
           else
             git diff --check "${{ github.event.before }}" "${{ github.sha }}"
           fi
+
+  qml-lint:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ginol221/kde-suse-qt611:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Lint production QML
+        run: ./scripts/lint-qml.sh
 
 # The full QML suite remains a required local/runtime gate:
 # ./scripts/run-qml-tests.sh
