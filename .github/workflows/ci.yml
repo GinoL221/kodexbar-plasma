@@ -20,6 +20,9 @@ jobs:
       - name: Validate Plasma package
         run: ./scripts/validate-package.sh
 
+      - name: Check provider icon assets
+        run: python3 scripts/check-provider-icons.py
+
       - name: Check whitespace in changed lines
         shell: sh
         run: |
