@@ -21,7 +21,6 @@ PlasmoidItem {
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(Plasmoid.configuration.requestTimeout)
     property string preferredWindowKey: PreferredWindow.keyOrDefault(Plasmoid.configuration.preferredRepresentativeWindow)
     property alias controller: controller
-    property alias providerSelector: providerSelector
     readonly property var compactSelection: UsageModel.selectCompact(root.controller.committedProviders)
 
     preferredRepresentation: compactRepresentation
@@ -111,7 +110,7 @@ PlasmoidItem {
                     }
 
                     Repeater {
-                        model: root.providerSelector.allSelected ? root.providerSelector.usableProviders : []
+                        model: providerSelector.allSelected ? providerSelector.usableProviders : []
 
                         delegate: ProviderRow {
                             required property var modelData
@@ -119,16 +118,16 @@ PlasmoidItem {
                             providerData: modelData
                             summary: true
                             preferredWindowKey: root.preferredWindowKey
-                            iconResolver: root.providerSelector.iconResolver
+                            iconResolver: providerSelector.iconResolver
                             Layout.fillWidth: true
                         }
                     }
 
                     ProviderRow {
-                        visible: !root.providerSelector.allSelected && root.providerSelector.selectedProvider !== null
-                        providerData: root.providerSelector.selectedProvider || ({})
+                        visible: !providerSelector.allSelected && providerSelector.selectedProvider !== null
+                        providerData: providerSelector.selectedProvider || ({})
                         compact: false
-                        iconResolver: root.providerSelector.iconResolver
+                        iconResolver: providerSelector.iconResolver
                         Layout.fillWidth: true
                     }
 
