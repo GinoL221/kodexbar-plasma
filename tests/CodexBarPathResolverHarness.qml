@@ -87,12 +87,12 @@ Item {
             var exitCode = Number(data["exit code"])
             var stdout = String(data.stdout || "").replace(/\r?\n$/, "")
             if (scenario === "multiple") {
-                assert(exitCode === 0, "multiple executable fixture candidates must resolve")
-                assert(/\/home\/\.local\/bin\/codexbar$/.test(stdout),
+                root.assert(exitCode === 0, "multiple executable fixture candidates must resolve")
+                root.assert(/\/home\/\.local\/bin\/codexbar$/.test(stdout),
                        "the earliest executable fixture candidate must win")
             } else {
-                assert(exitCode !== 0, scenario + " Homebrew prefix must fail closed")
-                assert(stdout === "", scenario + " Homebrew prefix must not emit a candidate")
+                root.assert(exitCode !== 0, scenario + " Homebrew prefix must fail closed")
+                root.assert(stdout === "", scenario + " Homebrew prefix must not emit a candidate")
             }
 
             root.runtimeScenarioIndex += 1

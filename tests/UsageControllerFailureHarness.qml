@@ -4,6 +4,7 @@ import "../contents/ui" as UsageUi
 Item {
     id: root
     property bool assertionFailed: false
+    property var controller: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -22,7 +23,7 @@ Item {
     }
 
     Component.onCompleted: {
-        var controller = controllerComponent.createObject(root, {
+        controller = controllerComponent.createObject(root, {
             commandPath: "/tmp/codexbar",
             testMode: true,
             timeoutMs: 180000

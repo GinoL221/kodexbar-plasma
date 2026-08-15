@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import "../contents/ui" as UsageUi
 
 Item {

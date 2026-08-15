@@ -6,6 +6,9 @@ import "../contents/ui" as UsageUi
 Item {
     id: root
     property bool assertionFailed: false
+    property var controller: null
+    property var firstSummary: null
+    property var secondSummary: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -26,7 +29,7 @@ Item {
     }
 
     Component.onCompleted: {
-        var controller = controllerComponent.createObject(root, {
+        controller = controllerComponent.createObject(root, {
             commandPath: "/tmp/codexbar",
             testMode: true
         })
@@ -47,11 +50,11 @@ Item {
         assert(secondRep.label === "Session" && secondRep.usedPercent === 60,
                "second provider representative must be its own Session window, not the global Weekly peak")
 
-        var firstSummary = summaryRowComponent.createObject(root, {
+        firstSummary = summaryRowComponent.createObject(root, {
             providerData: controller.committedProviders[0],
             summary: true
         })
-        var secondSummary = summaryRowComponent.createObject(root, {
+        secondSummary = summaryRowComponent.createObject(root, {
             providerData: controller.committedProviders[1],
             summary: true
         })

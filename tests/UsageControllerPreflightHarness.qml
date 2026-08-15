@@ -4,6 +4,7 @@ import "../contents/ui" as UsageUi
 Item {
     id: root
     property bool assertionFailed: false
+    property var controller: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -17,7 +18,7 @@ Item {
     function finish() { Qt.exit(assertionFailed ? 1 : 0) }
 
     Component.onCompleted: {
-        var controller = controllerComponent.createObject(root, {
+        controller = controllerComponent.createObject(root, {
             commandPath: "/definitely/missing/codexbar",
             testMode: true
         })

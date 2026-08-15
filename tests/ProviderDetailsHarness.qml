@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import "../contents/ui" as UsageUi
@@ -208,11 +207,11 @@ Item {
         running: true
         repeat: false
         onTriggered: {
-            var narrowTitle = firstLabelWithText(detailsNarrow, "Very long title that must wrap inside the narrow column")
-            assert(narrowTitle !== null, "narrow row must render long title")
-            assert(narrowTitle.width <= detailsNarrow.width, "long title must not exceed component width")
-            assert(!hasHardcodedColor(detailsWithData), "details must use theme colors, not literal colors")
-            finish()
+            var narrowTitle = root.firstLabelWithText(detailsNarrow, "Very long title that must wrap inside the narrow column")
+            root.assert(narrowTitle !== null, "narrow row must render long title")
+            root.assert(narrowTitle.width <= detailsNarrow.width, "long title must not exceed component width")
+            root.assert(!root.hasHardcodedColor(detailsWithData), "details must use theme colors, not literal colors")
+            root.finish()
         }
     }
 

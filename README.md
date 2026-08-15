@@ -159,11 +159,11 @@ QML_IMPORT_ROOT=/absolute/path/to/qt6/qml ./scripts/lint-qml.sh
 QML_IMPORT_PATH=/absolute/path/to/extra/qml:another/absolute/qml/path ./scripts/lint-qml.sh
 ```
 
-The static-analysis authority recursively checks `contents/ui/**/*.qml`, including `contents/ui/config/configGeneral.qml` and future nested UI QML. It deliberately excludes `contents/config`, including `contents/config/config.qml`; configuration modernization is follow-up work.
+The static-analysis authority recursively checks `contents/ui/**/*.qml`, `contents/config/**/*.qml`, and `tests/**/*.qml`, including future nested QML under each target root. `ci/qml-import-smoke.qml` is intentionally excluded from this gate because its unused imports are intentional.
 
 ### Accepted Plasma warning baseline
 
-The lint gate accepts only `unqualified` diagnostics whose exact source span is the KDE translation function name `i18n` or `i18np`. All structural diagnostics still fail. The current accepted baseline is reported as `Accepted 56 exact KDE translation warning(s).`; it preserves translation extraction rather than suppressing warnings globally.
+The lint gate accepts only `unqualified` diagnostics whose exact source span is the KDE translation function name `i18n` or `i18np`. All structural diagnostics still fail. The accepted-warning count is informational and may change as UI strings are added or removed; `./scripts/lint-qml.sh` prints the live total as `Accepted N exact KDE translation warning(s).` The exact-span rule, not a fixed count, is the authority, and it preserves translation extraction rather than suppressing warnings globally.
 
 ### Required verification commands
 
@@ -173,7 +173,7 @@ Run both authorities before handing off a QML or tooling change:
 # Behavioral and QML runtime verification
 ./scripts/run-qml-tests.sh
 
-# Static analysis for the recursive contents/ui scope
+# Static analysis for the recursive contents/ui, contents/config, and tests scope
 ./scripts/lint-qml.sh
 ```
 

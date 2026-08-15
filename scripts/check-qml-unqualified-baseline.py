@@ -55,14 +55,16 @@ def resolve_environment(env):
 
 
 def targets(root):
-    ui = root / "contents/ui"
+    target_roots = (root / "contents/ui", root / "contents/config", root / "tests")
     files = []
     try:
-        files = sorted(path for path in ui.rglob("*.qml") if path.is_file())
+        files = sorted(
+            path for target_root in target_roots
+            for path in target_root.rglob("*.qml") if path.is_file())
     except OSError as error:
         fail("cannot enumerate QML files: %s" % error)
     if not files:
-        fail("no QML files under contents/ui")
+        fail("no QML files under contents/ui, contents/config, or tests")
     for path in files:
         try:
             path.read_text(encoding="utf-8")

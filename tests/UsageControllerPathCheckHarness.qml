@@ -76,7 +76,7 @@ Item {
         id: timeout
         interval: 6000
         onTriggered: {
-            assert(false, "path preflight did not finish")
+            root.assert(false, "path preflight did not finish")
             Qt.exit(1)
         }
     }

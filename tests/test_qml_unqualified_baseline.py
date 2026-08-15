@@ -60,6 +60,7 @@ class BaselineTest(unittest.TestCase):
             self.warning("contents/ui/one.qml"),
             self.warning("contents/ui/config/configGeneral.qml", "i18np"),
             {"filename": "contents/ui/config/deeper/two.qml", "warnings": [], "success": True},
+            {"filename": "contents/config/config.qml", "warnings": [], "success": True},
         )
         self.assertEqual(self.checker.validate_report(self.root, report), 2)
 

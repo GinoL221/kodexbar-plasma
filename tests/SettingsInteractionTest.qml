@@ -23,7 +23,7 @@ TestCase {
 
         Component.onCompleted: {
             var component = Qt.createComponent(Qt.resolvedUrl("../contents/ui/config/configGeneral.qml"))
-            verify(component.status === Component.Ready, "the native settings page must load")
+            testCase.verify(component.status === Component.Ready, "the native settings page must load")
             testCase.settings = component.createObject(contentItem, {
                 "width": width,
                 "height": height,
@@ -33,7 +33,7 @@ TestCase {
                 "cfg_requestTimeout": 60,
                 "cfg_preferredRepresentativeWindow": "automatic"
             })
-            verify(testCase.settings !== null, "the native settings page must instantiate")
+            testCase.verify(testCase.settings !== null, "the native settings page must instantiate")
             testCase.cliControl = testCase.findByProperty(testCase.settings, "objectName", "codexbarCommand")
             testCase.refreshControl = testCase.findByRange(testCase.settings, 1, 3600)
             testCase.setupGuidance = testCase.findByProperty(testCase.settings, "objectName", "codexbarSetupGuidance")

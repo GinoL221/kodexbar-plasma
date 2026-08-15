@@ -417,32 +417,32 @@ Item {
         property real narrowBarWidth: 0
         property real mediumBarWidth: 0
         onTriggered: {
-            var providerWindowRow = firstUsageWindowRow(constrainedProviderRow)
-            assert(providerWindowRow !== null,
+            var providerWindowRow = root.firstUsageWindowRow(constrainedProviderRow)
+            root.assert(providerWindowRow !== null,
                     "provider-composed constrained row must render one usage window")
             if (stage === 0) {
-                assertResponsiveGeometry(constrainedWindowRow, 600, "direct constrained row")
-                assertResponsiveGeometry(constrainedSummaryWindowRow, 600, "summary constrained row")
-                assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
+                root.assertResponsiveGeometry(constrainedWindowRow, 600, "direct constrained row")
+                root.assertResponsiveGeometry(constrainedSummaryWindowRow, 600, "summary constrained row")
+                root.assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
                                             "narrow popup composition")
                 narrowBarWidth = providerWindowRow.progressBar.width
                 stage++
                 popupShell.width = 220
             } else if (stage === 1) {
-                assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
+                root.assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
                                             "medium popup composition")
-                assert(providerWindowRow.progressBar.width > narrowBarWidth,
+                root.assert(providerWindowRow.progressBar.width > narrowBarWidth,
                         "medium popup composition progress bar must grow from the narrow allocation")
                 mediumBarWidth = providerWindowRow.progressBar.width
                 stage++
                 popupShell.width = 600
             } else {
-                assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
+                root.assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
                                             "wide popup composition")
-                assert(providerWindowRow.progressBar.width > mediumBarWidth,
+                root.assert(providerWindowRow.progressBar.width > mediumBarWidth,
                         "wide popup composition progress bar must grow from the medium allocation")
                 running = false
-                finish()
+                root.finish()
             }
         }
     }

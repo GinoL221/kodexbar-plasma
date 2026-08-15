@@ -4,6 +4,7 @@ import "../contents/code/UsageModel.js" as UsageModel
 
 Item {
     property bool assertionFailed: false
+    property var configPage: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -62,7 +63,7 @@ Item {
 
         var configComponent = Qt.createComponent(Qt.resolvedUrl("../contents/ui/config/configGeneral.qml"))
         assert(configComponent.status === Component.Ready, "configGeneral.qml must load to verify key-list consistency")
-        var configPage = configComponent.createObject(null, {
+        configPage = configComponent.createObject(null, {
             "cfg_codexbarCommandDefault": "",
             "cfg_codexbarCommand": "",
             "cfg_refreshInterval": 60,
