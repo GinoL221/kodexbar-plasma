@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as QQC2
 import "../contents/ui" as UsageUi
 
 Item {
@@ -87,6 +88,132 @@ Item {
         assert(t.Accessible.name.indexOf("src-dup-a") !== -1 || t.Accessible.description.indexOf("src-dup-a") !== -1, "tab full source")
         assert(t.checked === (s.tabBar.currentIndex === 1), "checked state")
 
-        finish()
+        assert(t.text === "dup", "tab text must contain only the short provider name, no source suffix")
+        assert(t.text.indexOf("·") === -1, "tab text must never combine provider and source")
+        var allTab = s.tabBar.contentChildren[0]
+        assert(allTab.text.indexOf("·") === -1 && allTab.icon.name.length > 0, "All tab must remain a compact icon-plus-label control")
+
+        // Narrow-width scroll reachability regression: 6 real providers (the
+        // maintainer's exact set) + "All" = 7 tabs, at a width far narrower
+        // than their combined natural size, so the tab bar must scroll.
+        s.popupOpen = false
+        s.width = 200
+        s.providers = [
+            p("codex", "src-codex", [w("Weekly", 10, null, null)]),
+            p("claude", "src-claude", [w("Weekly", 20, null, null)]),
+            p("opencodego", "src-ocg", [w("Weekly", 30, null, null)]),
+            p("gemini", "src-gemini", [w("Weekly", 40, null, null)]),
+            p("copilot", "src-copilot", [w("Weekly", 50, null, null)]),
+            p("grok", "src-grok", [w("Weekly", 60, null, null)])
+        ]
+        s.popupOpen = true
+        assert(s.usableProviders.length === 6, "narrow-width fixture carries all six real providers")
+        assert(s.tabBar.width < s.tabBar.implicitWidth,
+            "seven tabs must not fit naturally at this narrow width -- the fixture must actually exercise scrolling")
+
+        s.tabBar.currentIndex = 6 // last real tab: grok
+        var grokDelegate = s.tabBar.contentChildren[6]
+        assert(grokDelegate !== null, "grok delegate must be instantiated once selected")
+        var grokRect = grokDelegate.mapToItem(s, 0, 0)
+        assert(grokRect.x >= 0 && grokRect.x + grokDelegate.width <= s.width,
+            "selecting a not-fully-visible tab must scroll it fully into the tab bar's visible viewport")
+
+        var settledGrokX = grokRect.x
+        s.providers = [
+            p("codex", "src-codex", [w("Weekly", 11, null, null)]),
+            p("claude", "src-claude", [w("Weekly", 21, null, null)]),
+            p("opencodego", "src-ocg", [w("Weekly", 31, null, null)]),
+            p("gemini", "src-gemini", [w("Weekly", 41, null, null)]),
+            p("copilot", "src-copilot", [w("Weekly", 51, null, null)]),
+            p("grok", "src-grok", [w("Weekly", 61, null, null)])
+        ]
+        assert(s.selectedProvider && s.selectedProvider.provider === "grok", "selection survives a same-set data refresh")
+        var grokDelegateAfterRefresh = s.tabBar.contentChildren[6]
+        assert(grokDelegateAfterRefresh !== null, "grok delegate must still be instantiated after refresh")
+        var grokRectAfterRefresh = grokDelegateAfterRefresh.mapToItem(s, 0, 0)
+        assert(Math.abs(grokRectAfterRefresh.x - settledGrokX) < 0.01,
+            "a same-provider-set data refresh must not shift the already-visible selected tab's scrolled position")
+
+        // Triangulate: scrolling back to the first real tab (now off the
+        // left edge, since the viewport followed grok to the right) must be
+        // just as reachable as scrolling forward was.
+        s.tabBar.currentIndex = 1 // first real tab: codex
+        assert(s.selectedProvider && s.selectedProvider.provider === "codex", "codex becomes selected")
+        var codexDelegate = s.tabBar.contentChildren[1]
+        assert(codexDelegate !== null, "codex delegate must be instantiated once selected")
+        var codexRect = codexDelegate.mapToItem(s, 0, 0)
+        assert(codexRect.x >= 0 && codexRect.x + codexDelegate.width <= s.width,
+            "scrolling back to an earlier not-fully-visible tab must also bring it fully into view")
+
+        // Discoverability regression: removing the outer ScrollView also
+        // removed its scrollbar, leaving no visual affordance that hidden
+        // tabs (e.g. grok) exist beyond the visible window. A horizontal
+        // ScrollBar must be attached directly to the tab bar's own internal
+        // Flickable (its contentItem), so there is still exactly one
+        // Flickable driving scroll position -- just with a visible
+        // thumb/track on top of it. The attachment happens in the
+        // production component's own Component.onCompleted, which fires on
+        // a later event-loop pass than this harness's synchronous script
+        // (a real, reproducible ordering difference introduced by `pragma
+        // ComponentBehavior: Bound` in ProviderSelector.qml -- verified with
+        // standalone repro cases before writing this deferral). It always
+        // settles before the popup is ever painted for a real user, so
+        // deferring this assertion with Qt.callLater matches real-world
+        // timing without weakening what is proven.
+        Qt.callLater(function () {
+            var scrollBar = (s.tabBar.contentItem as ListView).QQC2.ScrollBar.horizontal
+            assert(scrollBar !== null && scrollBar !== undefined,
+                "the tab bar's internal Flickable must have a horizontal ScrollBar attached for discoverability")
+            assert(scrollBar.size < 1.0,
+                "at this narrow overflowing width the scrollbar must report a visible fraction below 1.0")
+            assert(scrollBar.policy === QQC2.ScrollBar.AsNeeded,
+                "the scrollbar must use AsNeeded policy so it only appears when the tab bar actually overflows")
+
+            // Layout-position regression: a scrollbar merely attached for
+            // scroll-position tracking is not enough -- it must also be
+            // rendered as a dedicated strip below the tab row, never
+            // overlapping it. Map both items into the selector's own
+            // coordinate space (mapToItem) so this holds regardless of the
+            // scrollbar's actual parent in the tree.
+            var tabBarBottom = s.tabBar.mapToItem(s, 0, s.tabBar.height).y
+            var scrollBarTop = scrollBar.mapToItem(s, 0, 0).y
+            assert(scrollBarTop >= tabBarBottom - 0.01,
+                "the scrollbar's top edge must be at or below the tab bar's bottom edge, never overlapping the tab row")
+
+            // ProviderSelector.qml's ColumnLayout currently contains only
+            // the tab bar and this scrollbar, so the ColumnLayout's own
+            // reserved height must genuinely grow to include the
+            // scrollbar's height -- proving space was reserved by layout,
+            // not just visually non-overlapping by coincidence.
+            assert(s.implicitHeight >= s.tabBar.height + scrollBar.height - 0.01,
+                "the ColumnLayout must reserve dedicated height for the scrollbar as a real layout sibling")
+
+            // Triangulate: once the popup is wide enough for all seven tabs
+            // to fit without scrolling, the scrollbar must report full
+            // visibility (AsNeeded semantics -- no affordance shown when
+            // nothing is hidden). Widening the fixture requires one more
+            // event-loop pass for the ColumnLayout/Flickable geometry to
+            // resettle before re-reading width and size (a >= 0.999
+            // tolerance absorbs float rounding in the settled ratio, same
+            // as the existing < 0.01 tolerance used above for position).
+            var naturalWidth = s.tabBar.implicitWidth
+            s.width = naturalWidth + 200
+            Qt.callLater(function () {
+                assert(s.tabBar.width >= s.tabBar.implicitWidth,
+                    "the fixture must actually exercise the non-overflowing case")
+                assert(scrollBar.size >= 0.999,
+                    "once every tab fits the visible fraction must settle back to 1.0 (nothing hidden)")
+
+                // Same overlap check after widening: still must never sit
+                // above the tab bar's bottom edge, even when less visually
+                // prominent (size settled near 1.0).
+                var widenedTabBarBottom = s.tabBar.mapToItem(s, 0, s.tabBar.height).y
+                var widenedScrollBarTop = scrollBar.mapToItem(s, 0, 0).y
+                assert(widenedScrollBarTop >= widenedTabBarBottom - 0.01,
+                    "after widening, the scrollbar must still be positioned at or below the tab bar's bottom edge")
+
+                finish()
+            })
+        })
     }
 }

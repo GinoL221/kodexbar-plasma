@@ -167,6 +167,156 @@ function validLoginMethod(providerData) {
     return isNonEmptyString(login) ? login : ""
 }
 
+// --- Phase 3: selected-provider enrichment extractors -----------------
+// Narrow, validated, read-only display extractors for the selected-provider
+// header and detail sections. Every function returns a copied primitive or
+// plain object -- never the live raw reference -- and fails closed (empty
+// string / null / empty collection) on anything missing or malformed.
+// Identity fields prefer `usage.identity`, then the documented `usage`-level
+// fallback observed in the real committed CLI fixture.
+
+var uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+var hexLikePattern = /^[0-9a-f]{16,}$/i
+var opaqueTokenPattern = /^[A-Za-z0-9_-]{20,}$/
+var anchoredEmailPattern = new RegExp("^" + emailAddressPattern.source + "$", "i")
+
+function rawUsage(providerData) {
+    if (!providerData || typeof providerData !== "object" || providerData instanceof Array) {
+        return null
+    }
+    var raw = rawValue(providerData, "raw")
+    if (!raw || typeof raw !== "object" || raw instanceof Array) {
+        return null
+    }
+    var usage = rawValue(raw, "usage")
+    return usage && typeof usage === "object" && !(usage instanceof Array) ? usage : null
+}
+
+function rawTopLevel(providerData) {
+    if (!providerData || typeof providerData !== "object" || providerData instanceof Array) {
+        return null
+    }
+    var raw = rawValue(providerData, "raw")
+    return raw && typeof raw === "object" && !(raw instanceof Array) ? raw : null
+}
+
+function identityValue(usage, key) {
+    if (!usage) {
+        return null
+    }
+    var identity = rawValue(usage, "identity")
+    if (identity && typeof identity === "object" && !(identity instanceof Array)) {
+        var fromIdentity = rawValue(identity, key)
+        if (isNonEmptyString(fromIdentity)) {
+            return fromIdentity
+        }
+    }
+    var fromUsage = rawValue(usage, key)
+    return isNonEmptyString(fromUsage) ? fromUsage : null
+}
+
+function validEmail(providerData) {
+    var email = identityValue(rawUsage(providerData), "accountEmail")
+    return email !== null && anchoredEmailPattern.test(email) ? email : ""
+}
+
+function looksOpaque(text) {
+    return uuidPattern.test(text) || hexLikePattern.test(text) || opaqueTokenPattern.test(text)
+}
+
+function validOrganization(providerData) {
+    var organization = identityValue(rawUsage(providerData), "accountOrganization")
+    if (organization === null || containsEmailAddress(organization) || looksOpaque(organization)) {
+        return ""
+    }
+    return organization
+}
+
+function validUpdatedAt(providerData) {
+    var usage = rawUsage(providerData)
+    var updatedAt = usage ? rawValue(usage, "updatedAt") : null
+    return isNonEmptyString(updatedAt) ? updatedAt : ""
+}
+
+var paceWindowDefinitions = [
+    { key: "primary", label: "Session" },
+    { key: "secondary", label: "Weekly" },
+    { key: "tertiary", label: "Monthly" }
+]
+
+// Maps valid CLI-supplied pace.primary/secondary/tertiary to Session/Weekly/
+// Monthly, keyed by label so callers can attach a pace summary onto the
+// matching usage window. Entries without a human-readable summary are
+// omitted -- never fabricated.
+function paceSummaryByLabel(providerData) {
+    var raw = rawTopLevel(providerData)
+    var pace = raw ? rawValue(raw, "pace") : null
+    var result = {}
+    if (!pace || typeof pace !== "object" || pace instanceof Array) {
+        return result
+    }
+    for (var i = 0; i < paceWindowDefinitions.length; i++) {
+        var definition = paceWindowDefinitions[i]
+        var entry = rawValue(pace, definition.key)
+        if (entry && typeof entry === "object" && !(entry instanceof Array) && isNonEmptyString(entry.summary)) {
+            result[definition.label] = entry.summary
+        }
+    }
+    return result
+}
+
+function isFiniteNonNegative(value) {
+    return typeof value === "number" && isFinite(value) && value >= 0
+}
+
+function validCreditsRemaining(providerData) {
+    var raw = rawTopLevel(providerData)
+    var credits = raw ? rawValue(raw, "credits") : null
+    if (!credits || typeof credits !== "object" || credits instanceof Array) {
+        return null
+    }
+    var remaining = rawValue(credits, "remaining")
+    return isFiniteNonNegative(remaining) ? remaining : null
+}
+
+function validResetCreditEntry(entry) {
+    if (!entry || typeof entry !== "object" || entry instanceof Array) {
+        return null
+    }
+    var amount = rawValue(entry, "amount")
+    var expiresAt = rawValue(entry, "expiresAt")
+    if (!isFiniteNonNegative(amount) || !isNonEmptyString(expiresAt)) {
+        return null
+    }
+    return { amount: amount, expiresAt: expiresAt }
+}
+
+// Returns { availableCount, credits: [{amount, expiresAt}] } only when a
+// structurally valid, positive reset-credit inventory exists; otherwise null
+// so the whole section is omitted rather than shown with a placeholder.
+function validResetCredits(providerData) {
+    var usage = rawUsage(providerData)
+    var reset = usage ? rawValue(usage, "codexResetCredits") : null
+    if (!reset || typeof reset !== "object" || reset instanceof Array) {
+        return null
+    }
+    var availableCount = rawValue(reset, "availableCount")
+    if (!isFiniteNonNegative(availableCount) || availableCount <= 0) {
+        return null
+    }
+    var creditsArray = rawValue(reset, "credits")
+    var accepted = []
+    if (creditsArray instanceof Array) {
+        for (var i = 0; i < creditsArray.length; i++) {
+            var validated = validResetCreditEntry(creditsArray[i])
+            if (validated !== null) {
+                accepted.push(validated)
+            }
+        }
+    }
+    return { availableCount: availableCount, credits: accepted }
+}
+
 function acceptedDetails(providerData) {
     if (!providerData || typeof providerData !== "object" || providerData instanceof Array) {
         return []

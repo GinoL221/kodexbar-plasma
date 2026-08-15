@@ -158,6 +158,53 @@ Item {
         assert(verbatim[0].rows[0].value === "<script>alert('x')</script>", "verbatim value must not be altered")
         assert(verbatim[0].rows[0].secondaryValue === null, "null secondaryValue must stay null")
 
+        // Phase 3: selected-provider enrichment extractors -- pure, narrow,
+        // and fail-closed. Identity fields prefer usage.identity, then the
+        // documented usage-level fallback.
+        assert(ProviderDetails.validEmail({ raw: { usage: { identity: { accountEmail: "user@example.com" } } } }) === "user@example.com",
+               "identity accountEmail must be preferred")
+        assert(ProviderDetails.validEmail({ raw: { usage: { accountEmail: "fallback@example.com" } } }) === "fallback@example.com",
+               "usage accountEmail must be the documented fallback")
+        assert(ProviderDetails.validEmail({ raw: { usage: { identity: { accountEmail: "not-an-email" } } } }) === "",
+               "a malformed email must be omitted")
+        assert(ProviderDetails.validEmail({ raw: {} }) === "", "missing email must be omitted")
+
+        assert(ProviderDetails.validOrganization({ raw: { usage: { identity: { accountOrganization: "Acme Corp" } } } }) === "Acme Corp",
+               "a human-readable organization must be shown")
+        assert(ProviderDetails.validOrganization({ raw: { usage: { identity: { accountOrganization: "3f2504e0-4f89-41d3-9a0c-0305e82c3301" } } } }) === "",
+               "a UUID organization must be rejected")
+        assert(ProviderDetails.validOrganization({ raw: { usage: { identity: { accountOrganization: "5f2c9b7a1e3d4f6a8b9c0d1e2f3a4b5c" } } } }) === "",
+               "a long hex-like organization must be rejected")
+        assert(ProviderDetails.validOrganization({ raw: { usage: { identity: { accountOrganization: "org_9K3lM2pQ7rS1tU4vW8xY0z" } } } }) === "",
+               "a long opaque token organization must be rejected")
+        assert(ProviderDetails.validOrganization({ raw: { usage: { accountOrganization: "Fallback Labs" } } }) === "Fallback Labs",
+               "usage accountOrganization must be the documented fallback")
+
+        assert(ProviderDetails.validCreditsRemaining({ raw: { credits: { remaining: 12 } } }) === 12, "finite remaining credit must be shown")
+        assert(ProviderDetails.validCreditsRemaining({ raw: { credits: { remaining: 0 } } }) === 0, "zero remaining credit must still be shown")
+        assert(ProviderDetails.validCreditsRemaining({ raw: { credits: { remaining: "12" } } }) === null, "a non-numeric remaining credit must be omitted")
+        assert(ProviderDetails.validCreditsRemaining({ raw: {} }) === null, "a missing credits object must be omitted")
+
+        assert(ProviderDetails.paceSummaryByLabel({ raw: { pace: { primary: { summary: "42% used" } } } }).Session === "42% used",
+               "pace.primary must map to Session")
+        assert(ProviderDetails.paceSummaryByLabel({ raw: { pace: { secondary: { summary: "67% used" } } } }).Weekly === "67% used",
+               "pace.secondary must map to Weekly")
+        assert(ProviderDetails.paceSummaryByLabel({ raw: { pace: { tertiary: { stage: "farAhead" } } } }).Monthly === undefined,
+               "a pace entry without a summary must be omitted")
+        assert(Object.keys(ProviderDetails.paceSummaryByLabel({ raw: {} })).length === 0, "a missing pace object must be omitted")
+
+        var resetCredits = ProviderDetails.validResetCredits({
+            raw: { usage: { codexResetCredits: { availableCount: 2, credits: [
+                { amount: 1, expiresAt: "2026-09-01T00:00:00Z" }, { amount: 1, expiresAt: "2026-10-01T00:00:00Z" }
+            ] } } }
+        })
+        assert(resetCredits !== null && resetCredits.availableCount === 2 && resetCredits.credits.length === 2,
+               "a positive reset-credit inventory with valid expirations must be returned")
+        assert(ProviderDetails.validResetCredits({ raw: { usage: { codexResetCredits: { availableCount: 0, credits: [] } } } }) === null,
+               "a zero-count reset-credit inventory must be omitted")
+        assert(ProviderDetails.validResetCredits({ raw: { usage: { codexResetCredits: "opaque" } } }) === null,
+               "a malformed reset-credit inventory must be omitted")
+
         detailsWithData.providerData = { raw: rawBase }
         assert(detailsWithData.acceptedDetails.length === 1, "component must compute accepted details")
         assert(detailsWithData.visible, "component with accepted details must be visible")

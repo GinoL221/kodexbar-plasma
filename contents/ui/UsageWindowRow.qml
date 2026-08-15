@@ -14,6 +14,10 @@ ColumnLayout {
     property var windowData: ({})
     property bool compact: false
     property bool summary: false
+    // Selected-provider-only pace summary text (e.g. "42% in deficit |
+    // Expected 18% used"), attached by the caller when this window's label
+    // matches a valid CLI-supplied pace.primary/secondary/tertiary entry.
+    property string paceSummary: ""
 
     readonly property bool hasFinitePercent: typeof root.windowData.usedPercent === "number" && isFinite(root.windowData.usedPercent)
     readonly property string resetText: root.windowData.resetsAt !== null && root.windowData.resetsAt !== undefined ? String(root.windowData.resetsAt) : ""
@@ -45,6 +49,9 @@ ColumnLayout {
         }
         if (root.resetDescriptionText.length > 0) {
             details.push(root.resetDescriptionText)
+        }
+        if (root.paceSummary.length > 0) {
+            details.push(root.paceSummary)
         }
         return details.join(", ")
     }
@@ -119,6 +126,17 @@ ColumnLayout {
         id: resetDescriptionLabel
         visible: root.resetDescriptionText.length > 0 && !root.summary
         text: visible ? root.resetDescriptionText : ""
+        color: Kirigami.Theme.disabledTextColor
+        elide: root.compact ? Text.ElideRight : Text.ElideNone
+        wrapMode: root.compact ? Text.NoWrap : Text.Wrap
+        Layout.fillWidth: true
+    }
+
+    PlasmaComponents.Label {
+        id: paceSummaryLabel
+        objectName: "paceSummaryLabel"
+        visible: root.paceSummary.length > 0 && !root.summary
+        text: visible ? root.paceSummary : ""
         color: Kirigami.Theme.disabledTextColor
         elide: root.compact ? Text.ElideRight : Text.ElideNone
         wrapMode: root.compact ? Text.NoWrap : Text.Wrap

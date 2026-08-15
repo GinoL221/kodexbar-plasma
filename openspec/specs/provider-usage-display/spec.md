@@ -189,6 +189,39 @@ On open, the popup MUST select the first response-ordered provider having a wind
 - WHEN it is normalized
 - THEN it is still routed to `errors` with `{provider, source, error}` and does not appear in `providers`, and gains no `raw` sibling
 
+### Requirement: Selected-provider enrichment
+
+Selected-provider detail MUST map valid CLI-supplied `pace.primary`, `pace.secondary`, and `pace.tertiary` to Session, Weekly, and Monthly; show valid `credits.remaining`; and show reset-credit `availableCount` plus an expandable list of valid `credits[]` expirations only when the count is positive. Its header MUST show supplied account email and MAY show a human-readable organization, but MUST omit UUID/hex-like organizations. Tabs MUST contain an icon and short provider name only; `All` MUST remain compact and omit email, organization, pace, credits, resets, and cost.
+
+#### Scenario: Valid enrichment is displayed
+- GIVEN a selected provider supplies valid identity, pace, credit, and positive reset-credit data
+- WHEN its detail is shown
+- THEN values appear in the specified header, window, credit, and reset sections
+
+#### Scenario: Invalid or zero data is hidden
+- GIVEN enrichment is absent, malformed, non-finite, or reset `availableCount` is zero
+- WHEN detail is shown
+- THEN affected fields or sections are omitted without placeholders or failure
+
+#### Scenario: Expirations are accessible
+- GIVEN positive reset credits include valid expirations
+- WHEN the keyboard-reachable disclosure is activated
+- THEN it announces expanded state and exposes the expirations without a redeem action
+
+#### Scenario: Privacy remains provider-scoped
+- GIVEN email and an opaque organization are supplied
+- WHEN tabs, `All`, and selected detail render
+- THEN only the selected header shows email, organization is omitted, and tabs show icon plus short name
+
+### Requirement: Protected native presentation
+
+Enrichment MUST preserve exactly `usage --provider all --format json --json-only`, usage ownership, snapshots, timeout/failure distinctions, coalescing, and stale-response handling. Native Plasma/Kirigami UI MUST remain keyboard operable, popup-bounded, horizontally unclipped, and readable in Breeze Light and Dark.
+
+#### Scenario: Usage regression and responsive checks
+- GIVEN enriched fixtures at narrow and normal popup widths
+- WHEN `./scripts/run-qml-tests.sh`, lint, package validation, and live theme/keyboard smoke run
+- THEN the exact usage lifecycle passes and all content remains reachable and theme-readable
+
 ### Requirement: Deterministic compact summary
 
 The compact view MUST select the highest finite percentage. Ties MUST prefer Session, Weekly, Monthly, then the first provider in CLI order.
@@ -381,34 +414,28 @@ The selected-provider header MUST show only CLI-supplied `version` and `loginMet
 
 ### Requirement: Provider-focused exclusions
 
-The plasmoid MUST NOT compute, request, fabricate, or display pace, credit, cost, or token data; it MAY preserve those and other unmodeled CLI-supplied fields verbatim in the normalized snapshot without rendering them. It MUST NOT display email or organization. From preserved richer data, the popup MAY display only conditional version, login method, and valid `usage.details[]` content that does not carry an excluded field. The plasmoid MUST NOT add calculated reset durations, auth, CLI/provider switching, persistent selection, or external data changes.
-
-(Previously: preserved richer data could not be rendered; version, login method, and dynamic details had no narrowly authorized display path.)
+The plasmoid MUST NOT compute or fabricate pace, credits, resets, identity, organization, cost, or tokens. It MAY display only the selected-provider fields authorized above, prior version/login/details, and cost governed by `provider-cost-estimate`; other raw fields MUST remain unrendered. It MUST NOT add auth, Add Account, Quit, redeem/mutation, pricing tables, QML price calculation, CLI/provider switching, persistent selection, provider implementation, or external data changes.
+(Previously: pace, credits, cost, email, organization, and tokens were prohibited from display.)
 
 #### Scenario: Missing commercial or reset data
-
-- GIVEN output lacks commercial fields or calculated reset duration
+- GIVEN output lacks valid commercial or reset data
 - WHEN usage is displayed
-- THEN none is fabricated or requested
+- THEN none is fabricated or requested and unavailable sections are absent
 
-#### Scenario: Verbatim passthrough of unmodeled provider fields
+#### Scenario: Verbatim passthrough of unmodeled fields
+- GIVEN a provider carries unmodeled CLI-supplied fields
+- WHEN normalized
+- THEN they remain unmodified under `raw` and are neither computed nor fabricated
 
-- GIVEN a provider entry carries CLI-supplied top-level fields the normalizer does not model, such as `pace` (e.g. `pace.secondary.stage`, `pace.secondary.summary`, `pace.secondary.deltaPercent`), `credits.remaining`, `identity.accountEmail`, `version`, `loginMethod`, `codexResetCredits`, `providerCost`, or a generic `usage.details[]` array of `{title, rows: [{label, value, secondaryValue}]}` entries
-- WHEN the entry is normalized
-- THEN those fields are preserved unmodified under a `raw` key on the normalized provider entry, and none of them is computed, requested, or fabricated
+#### Scenario: Raw preservation authorizes bounded display
+- GIVEN richer raw data is normalized
+- WHEN any non-selected or selected-provider surface renders
+- THEN only fields authorized for that surface appear and no raw diagnostics are exposed
 
-#### Scenario: Raw preservation authorizes only approved display fields
-
-- GIVEN a normalized provider entry carries preserved richer data
-- WHEN the popup renders that provider
-- THEN only version, login method, and valid non-excluded details MAY be newly displayed
-- AND email, organization, pace, credit, cost, and token values are never displayed
-
-#### Scenario: Real capture fixture provenance and redaction
-
-- GIVEN the committed contract fixture under `tests/fixtures/`
-- WHEN it is inspected
-- THEN it originates from a documented run of the real CLI on the user's machine, records its CodexBar version and capture date, contains no fabricated field, and every key and type present in the original capture survives redaction with only sensitive leaf values substituted
+#### Scenario: Fixture provenance and redaction
+- GIVEN committed usage fixtures and capture documentation
+- WHEN inspected
+- THEN real CLI version/date and key/type fidelity are recorded while sensitive leaf values are substituted
 
 ### Requirement: Preserved runtime boundaries
 
