@@ -23,12 +23,21 @@ Chain strategy: feature-branch-chain
 |---|---|---|---|---|---|
 | 1 | Cost fixture/model contract | PR 1 | `./scripts/run-qml-tests.sh` | Offscreen cost-model fixture | `CostModel.js`, cost fixture, capture docs/tests |
 | 2 | Isolated cost lifecycle | PR 2 | `./scripts/run-qml-tests.sh` | Offscreen DataSource lifecycle race harness | `CostController.qml`, usage generation, lifecycle tests |
-| 3 | Safe selected-detail UI | PR 3 | `./scripts/run-qml-tests.sh` | ProviderRow/Selector narrow-width harness | extractors, popup components, UI tests |
+| 3 | Safe selected-detail UI | PR 3a + PR 3b (split) | `./scripts/run-qml-tests.sh` | ProviderRow/Selector narrow-width harness | extractors, popup components, UI tests |
 | 4 | Release evidence | PR 4 | `./scripts/lint-qml.sh` | `plasmawindowed` Breeze/keyboard smoke | docs, package/lint/smoke evidence |
 
 ### PR 2 Size Exception (accepted)
 
 PR 2 landed at ~569 authored changed lines, above the ~400-line per-unit target. Maintainer accepted `size:exception` on 2026-08-15: the overage is real-subprocess race/coalescing/60s-termination coverage for `CostController.qml` (the exact runtime boundary this work unit exists to prove), not padding. No further split was requested. `./scripts/run-qml-tests.sh` exit 0, all pre-existing `UsageController*` regressions and the 17/17 `UsageControllerFixture` suite (including the new `committedGeneration` case) remain green.
+
+### PR 3 Split (accepted, replaces single PR 3)
+
+Work Unit 3 landed at ~894 authored changed lines as one batch, well above target and above PR2's exception. Maintainer chose to split rather than accept a size:exception on 2026-08-15:
+
+- **PR 3a** (`feat/final-popup-parity-03a-provider-details-extractors`, targets PR 2 branch): tasks 3.1–3.2. `contents/code/ProviderDetails.js` fail-closed extractors (email, organization, pace-by-window, credits remaining, reset credits, updatedAt) plus `tests/ProviderDetailsHarness.qml` and `tests/ProviderDetailsIntegrationTest.qml`. ~324 authored lines.
+- **PR 3b** (`feat/final-popup-parity-03b-native-detail-components`, targets PR 3a branch): tasks 3.3–3.4. Native `ProviderHeader.qml`, `ResetCreditsSection.qml`, `CostSection.qml`, `contents/code/CostRequestPolicy.js`; wiring in `main.qml`, `ProviderSelector.qml`, `ProviderRow.qml`, `UsageWindowRow.qml`; `tests/ProviderRowHarness.qml`, `tests/ProviderSelectorHarness.qml`, `tests/CostRequestPolicyHarness.qml`. Consumes PR 3a's extractors — cannot land independently of it.
+
+Both slices verified together as one working tree before the split: `./scripts/run-qml-tests.sh` exit 0 (0 FAIL), `./scripts/lint-qml.sh` exit 0 (68 accepted i18n warnings, 0 unaccepted).
 
 ## Phase 1: Contract Foundation
 
@@ -45,10 +54,10 @@ PR 2 landed at ~569 authored changed lines, above the ~400-line per-unit target.
 
 ## Phase 3: Selected-Provider Presentation
 
-- [ ] 3.1 RED: Extend `tests/ProviderDetailsIntegrationTest.qml` for valid/invalid pace, remaining credit, positive reset expiries, email-only header, opaque UUID/hex org rejection, raw preservation, and fixture PII fail-closed cases.
-- [ ] 3.2 GREEN: Extend `contents/code/ProviderDetails.js` with copied normalized extractors and identity fallback; keep all unmodeled fields under `raw` and unrendered.
-- [ ] 3.3 RED: Extend `tests/ProviderSelectorHarness.qml` and `tests/ProviderRowHarness.qml` for icon/short-name tabs, compact `All`, cost-free `All`, conditional cost failure, disclosure accessibility, and narrow-width reachability.
-- [ ] 3.4 GREEN/REFACTOR: Wire selected-provider cost in `contents/ui/main.qml`; update `ProviderSelector.qml`, `ProviderRow.qml`, `UsageWindowRow.qml`; add native `ProviderHeader.qml`, `ResetCreditsSection.qml`, and `CostSection.qml` with Breeze-safe wrapping and no redeem.
+- [x] 3.1 RED: Extend `tests/ProviderDetailsIntegrationTest.qml` for valid/invalid pace, remaining credit, positive reset expiries, email-only header, opaque UUID/hex org rejection, raw preservation, and fixture PII fail-closed cases.
+- [x] 3.2 GREEN: Extend `contents/code/ProviderDetails.js` with copied normalized extractors and identity fallback; keep all unmodeled fields under `raw` and unrendered.
+- [x] 3.3 RED: Extend `tests/ProviderSelectorHarness.qml` and `tests/ProviderRowHarness.qml` for icon/short-name tabs, compact `All`, cost-free `All`, conditional cost failure, disclosure accessibility, and narrow-width reachability.
+- [x] 3.4 GREEN/REFACTOR: Wire selected-provider cost in `contents/ui/main.qml`; update `ProviderSelector.qml`, `ProviderRow.qml`, `UsageWindowRow.qml`; add native `ProviderHeader.qml`, `ResetCreditsSection.qml`, and `CostSection.qml` with Breeze-safe wrapping and no redeem.
 
 ## Phase 4: Release Verification
 
