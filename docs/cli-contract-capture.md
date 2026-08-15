@@ -77,3 +77,43 @@ This build does not self-report a version. `codexbar --version` prints exactly `
 ## Re-capture cadence
 
 No CI QML runtime exists, so nothing detects drift automatically. Re-capture manually after any CodexBar upgrade or when a provider is added or removed, repeat the redaction rule and both gates, and update the provenance table's sha256 and date in the same commit as the new fixture.
+
+## Cost contract capture (`tests/fixtures/codexbar-cost-capture.json`)
+
+This is a second, independent contract fixture for the optional per-provider cost estimate. It is evidence for `contents/code/CostModel.js`, not a test input — no QML test reads it at runtime.
+
+### Capture command
+
+Run once per allowlisted provider, on the target machine, as the user that owns the configured CodexBar install:
+
+```sh
+CODEXBAR_PATH="$(command -v codexbar)"
+"$CODEXBAR_PATH" cost --provider {provider} --format json --json-only \
+  | python3 -m json.tool > /tmp/codexbar-cost-real-capture.json
+```
+
+This is the exact invocation the planned `CostController.qml` will emit at runtime for the selected provider (`codex` or `claude`). Do not add flags; a fixture captured under different flags is not the same contract.
+
+### Redaction rule
+
+The same leaf-only redaction rule from above applies. In addition, the cost contract's `projects[*].name` and `projects[*].sources[*].{name,path}` fields identify local project directories and are treated as sensitive leaves:
+
+| Field class | Action |
+|---|---|
+| `projects[*].sources[*].path`, any absolute filesystem path | Replace the home segment with `redacted-user` and the final project directory with `redacted-project` |
+| `projects[*].name`, `projects[*].sources[*].name` | Replace a real project name with `redacted-project`; leave `"Unknown project"` untouched |
+| `provider`, `source`, `sessionCostUSD`, `sessionTokens`, `last30DaysCostUSD`, `last30DaysTokens`, `currencyCode`, `updatedAt`, `historyDays`, `historyCoverageIsEstablished`, `totals.*`, `daily[*].*`, `modelBreakdowns[*].*` | **Leave untouched** — these are exactly what this change needs to observe |
+
+### Provenance of the committed cost fixture
+
+| Field | Value |
+|---|---|
+| Fixture | `tests/fixtures/codexbar-cost-capture.json` |
+| Captured | 2026-08-15 |
+| Command | `codexbar cost --provider {provider} --format json --json-only` |
+| Binary | `~/.local/bin/codexbar`, mtime 2026-08-08, sha256 `2a914798540109cabba2f600a3ae4f19d8c95096ff686b346eaf4851f3078b4d` |
+| Platform | Linux (CachyOS), Plasma 6, Qt 6.11.1 |
+| Providers present | 2 entries — `codex`, `claude`, both `source: "local"` |
+| Redacted | local project directory path and name (`redacted-project`, home path `redacted-user`) |
+
+`sessionCostUSD`, `sessionTokens`, `last30DaysCostUSD`, and `last30DaysTokens` are left at their real captured magnitudes, matching the `usedPercent`-style precedent above: they are exactly the fields this change needs to observe, and none of them identify an account or a person the way an email or organization ID would.

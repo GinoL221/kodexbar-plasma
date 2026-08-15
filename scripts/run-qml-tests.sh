@@ -55,7 +55,8 @@ for harness in \
     ProviderRowHarness \
     ProviderDetailsHarness \
     ProviderSelectorHarness \
-    ErrorSummaryHarness; do
+    ErrorSummaryHarness \
+    CostModelHarness; do
     printf 'Running tests/%s.qml\n' "$harness"
     if [ "$harness" = "UsageControllerDataSourceLifecycleHarness" ]; then
         args_file=$(mktemp)
