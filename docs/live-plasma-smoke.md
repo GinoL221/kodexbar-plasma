@@ -2,6 +2,8 @@
 
 This is a **manual** checklist for a real Plasma desktop. The offscreen `TimeoutFeedbackPopupHarness.qml` checks constrained timeout guidance, Refresh reachability, and retained snapshots, but it does not replace live Plasma keyboard traversal or Breeze theme smoke checks.
 
+For popup craft and CodexBar→Plasma structural parity (tabs, header identity, pace, resets, cost, anti-patterns), also complete [ui-parity-checklist.md](ui-parity-checklist.md). Load `skills/plasma-kirigami-ui/SKILL.md` before UI implementation work.
+
 ## Start
 
 The legacy `org.kde.plasma.kodexbar` and current `org.kde.plasma.kodexbar.plasma` packages may coexist. Install or update only the current package, then launch it without offscreen rendering:
@@ -310,3 +312,5 @@ plasma-apply-colorscheme BreezeDark
 
 Verify text, icons, focus indication, negative error text, timeout guidance, settings labels, Refresh, and disabled text remain readable in both themes.
 Verify `All` provider rows, representative bars, and identity-only fallback rows remain readable in both Breeze Light and Breeze Dark.
+
+After layout or polish changes, finish with the sign-off table in [ui-parity-checklist.md](ui-parity-checklist.md).

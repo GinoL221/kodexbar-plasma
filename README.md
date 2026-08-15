@@ -230,6 +230,12 @@ QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software qml6 --software -f tests/Err
 
 For the manual real-desktop checklist, including keyboard traversal and Breeze theme checks, see [docs/live-plasma-smoke.md](docs/live-plasma-smoke.md). It must be run with `plasmawindowed` without offscreen rendering; it is not automated.
 
+For popup craft and structural parity after UI changes, see [docs/ui-parity-checklist.md](docs/ui-parity-checklist.md) and load `skills/plasma-kirigami-ui/SKILL.md` before editing QML.
+
+## Development backlog
+
+Near-term hygiene, UI craft, and test-infra items live in [ROADMAP.md](ROADMAP.md).
+
 ## How it works
 
 1. Plasma runs the applet from `metadata.json` and `contents/ui/main.qml`.
