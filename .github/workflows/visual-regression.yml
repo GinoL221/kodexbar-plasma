@@ -1,0 +1,48 @@
+name: Visual regression
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  visual-regression:
+    runs-on: ubuntu-latest
+    # Informational only: a visual capture/comparison failure must never gate
+    # a merge. See docs/visual-regression.md#continuous-integration.
+    continue-on-error: true
+    env:
+      VISUAL_TEST_IMAGE: ghcr.io/ginol221/kodexbar-visual-test:qt6.11-plasma6-v1
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare visual regression image
+        shell: sh
+        run: |
+          set -eu
+          if ! docker pull "$VISUAL_TEST_IMAGE"; then
+            docker build --file ci/visual-regression.Dockerfile --tag "$VISUAL_TEST_IMAGE" .
+          fi
+
+      - name: Run visual regression suite
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace \
+            "$VISUAL_TEST_IMAGE" ./scripts/run-visual-tests.sh
+
+# Behavioral coverage remains the only required, blocking gate:
+# ./scripts/run-qml-tests.sh

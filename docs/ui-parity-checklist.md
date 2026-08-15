@@ -2,6 +2,8 @@
 
 Manual craft checklist for the KodexBar Plasma popup and compact representation. Use this with [live-plasma-smoke.md](live-plasma-smoke.md) after layout or polish changes.
 
+Deterministic offscreen selected-provider pixel checks are documented in [visual-regression.md](visual-regression.md); they supplement, but do not replace, this manual sign-off.
+
 **Authority:** structure and information hierarchy may follow CodexBar (Linux/macOS) as a **wireframe**. Styling must remain Plasma 6 + Kirigami + Breeze (`Kirigami.Units`, `Kirigami.Theme`). Do not copy macOS glass, fixed brand blues, or web dashboard cards.
 
 Load `skills/plasma-kirigami-ui/SKILL.md` before implementing UI changes.
