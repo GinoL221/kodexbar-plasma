@@ -11,6 +11,7 @@ import "../code/UsageModel.js" as UsageModel
 import "../code/RefreshInterval.js" as RefreshInterval
 import "../code/RequestTimeout.js" as RequestTimeout
 import "../code/PreferredWindow.js" as PreferredWindow
+import "../code/CostRequestPolicy.js" as CostRequestPolicy
 
 PlasmoidItem {
     id: root
@@ -21,6 +22,7 @@ PlasmoidItem {
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(Plasmoid.configuration.requestTimeout)
     property string preferredWindowKey: PreferredWindow.keyOrDefault(Plasmoid.configuration.preferredRepresentativeWindow)
     property alias controller: controller
+    property alias providerSelector: providerSelector
     readonly property var compactSelection: UsageModel.selectCompact(root.controller.committedProviders)
 
     preferredRepresentation: compactRepresentation
@@ -45,6 +47,27 @@ PlasmoidItem {
             }
             root.suppressNextCommandRefresh = true
             Plasmoid.configuration.codexbarCommand = path
+        }
+    }
+
+    // Isolated, optional cost lifecycle -- never touched while "All" is
+    // selected, and never able to affect usage state (see CostController.qml).
+    CostController {
+        id: costController
+        commandPath: root.codexbarCommand
+    }
+
+    // Requests cost only for a supported selected provider missing its
+    // current-generation snapshot; "All" and unsupported providers never
+    // start cost work or read a cost record (CostRequestPolicy.js).
+    function maybeRequestCost() {
+        var isAllSelected = root.providerSelector.allSelected
+        var selected = root.providerSelector.selectedProvider
+        var provider = selected ? selected.provider : null
+        var usageGeneration = root.controller.committedGeneration
+        var hasSnapshot = typeof provider === "string" && costController.snapshotFor(provider, usageGeneration) !== null
+        if (CostRequestPolicy.shouldRequestCost(isAllSelected, provider, usageGeneration, hasSnapshot)) {
+            costController.request(provider, usageGeneration)
         }
     }
 
@@ -109,6 +132,7 @@ PlasmoidItem {
                         phase: root.controller.phase
                         popupOpen: root.expanded
                         Layout.fillWidth: true
+                        onSelectedProviderChanged: root.maybeRequestCost()
                     }
 
                     Repeater {
@@ -130,6 +154,11 @@ PlasmoidItem {
                         providerData: providerSelector.selectedProvider || ({})
                         compact: false
                         iconResolver: providerSelector.iconResolver
+                        // "All" is never bound here: selectedProvider is null
+                        // whenever allSelected, so no cost record is ever read.
+                        costSnapshot: providerSelector.selectedProvider
+                            ? costController.snapshotFor(providerSelector.selectedProvider.provider, root.controller.committedGeneration)
+                            : null
                         Layout.fillWidth: true
                     }
 
@@ -141,6 +170,11 @@ PlasmoidItem {
             }
         }
 
+    }
+
+    Connections {
+        target: root.controller
+        function onCommittedGenerationChanged() { root.maybeRequestCost() }
     }
 
     Timer {

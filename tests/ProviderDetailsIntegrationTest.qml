@@ -30,8 +30,19 @@ TestCase {
                     windows: [{ label: "Session", usedPercent: 42 }],
                     raw: {
                         version: "9.8.7",
+                        pace: { primary: { summary: "On pace, 42% used" } },
+                        credits: { remaining: 12 },
                         usage: {
                             loginMethod: "synthetic-login",
+                            updatedAt: "2026-08-14T19:01:20Z",
+                            identity: { accountEmail: "synthetic@example.invalid", accountOrganization: "Synthetic Labs Inc." },
+                            codexResetCredits: {
+                                availableCount: 2,
+                                credits: [
+                                    { amount: 1, expiresAt: "2026-09-01T00:00:00Z" },
+                                    { amount: 1, expiresAt: "2026-10-01T00:00:00Z" }
+                                ]
+                            },
                             details: [{
                                 title: "Synthetic limits",
                                 rows: [{ label: "Requests", value: "42" }]
@@ -73,7 +84,12 @@ TestCase {
                         pace: { secondary: { stage: "excluded pace" } }, credits: { remaining: "excluded credits" }, codexResetCredits: "excluded reset credits", providerCost: "excluded cost", token: "excluded token",
                         usage: {
                             loginMethod: "approved-login",
-                            identity: { accountEmail: "excluded@example.invalid", organization: "Excluded Organization", token: "identity token" },
+                            identity: {
+                                accountEmail: "authorized@example.invalid",
+                                accountOrganization: "5f2c9b7a1e3d4f6a8b9c0d1e2f3a4b5c",
+                                token: "identity token"
+                            },
+                            codexResetCredits: { availableCount: 0, credits: [] },
                             details: [
                                 { title: "Approved details", rows: [{ label: "Approved label", value: "Approved value" }] },
                                 { title: "Email secret@example.invalid", rows: [{ label: "Email", value: "secret@example.invalid" }] },
@@ -84,6 +100,28 @@ TestCase {
                                 { title: "Tokens", rows: [{ label: "Tokens", value: "100" }] },
                                 { title: "Reach us", rows: [{ label: "Support", value: "help@example.com" }] }
                             ]
+                        }
+                    }
+                })
+            }
+
+            UsageUi.ProviderRow {
+                id: codexFixtureRow
+                y: maliciousRow.y + maliciousRow.height
+                width: parent.width
+                providerData: ({
+                    provider: "codex",
+                    source: "oauth",
+                    windows: [{ label: "Weekly", usedPercent: 67, resetsAt: "2026-08-20T12:21:18Z", resetDescription: "Aug 20 at 9:21 AM" }],
+                    raw: {
+                        version: "0.147.0",
+                        pace: { secondary: { stage: "farAhead", summary: "49% in deficit | Expected 18% used | Runs out in 15h 7m" } },
+                        credits: { remaining: 0 },
+                        usage: {
+                            loginMethod: "plus",
+                            codexResetCredits: { credits: [], availableCount: 0 },
+                            identity: { accountEmail: "gxxxxxxxxxxxx@gmail.com", loginMethod: "plus" },
+                            accountEmail: "gxxxxxxxxxxxx@gmail.com"
                         }
                     }
                 })
@@ -158,6 +196,17 @@ TestCase {
         return null
     }
 
+    function findTextContaining(item, substring) {
+        if (item.text !== undefined && String(item.text).indexOf(substring) !== -1)
+            return item
+        for (var index = 0; index < item.children.length; ++index) {
+            var result = findTextContaining(item.children[index], substring)
+            if (result)
+                return result
+        }
+        return null
+    }
+
     function assertMetadataOmitted(row) {
         var version = findByObjectName(row, "versionLabel")
         var login = findByObjectName(row, "loginLabel")
@@ -165,6 +214,14 @@ TestCase {
         compare(version.text, "")
         verify(!login.visible)
         compare(login.text, "")
+    }
+
+    function assertEnrichmentOmitted(row) {
+        verify(!findByObjectName(row, "emailLabel").visible)
+        verify(!findByObjectName(row, "organizationLabel").visible)
+        verify(!findByObjectName(row, "updatedAtLabel").visible)
+        verify(!findByObjectName(row, "creditsRemainingLabel").visible)
+        verify(!row.resetCreditsSection.visible)
     }
 
     function initTestCase() {
@@ -189,6 +246,24 @@ TestCase {
         compare(malformedLogin.text, "safe-login")
         verify(findText(malformedRow, "Session") !== null)
         verify(!malformedRow.providerDetails.visible)
+
+        var email = findByObjectName(validRow, "emailLabel")
+        var organization = findByObjectName(validRow, "organizationLabel")
+        var updatedAt = findByObjectName(validRow, "updatedAtLabel")
+        var creditsRemaining = findByObjectName(validRow, "creditsRemainingLabel")
+        var resetAvailable = findByObjectName(validRow, "resetAvailableLabel")
+        verify(email.visible)
+        compare(email.text, "synthetic@example.invalid")
+        verify(organization.visible)
+        compare(organization.text, "Synthetic Labs Inc.")
+        verify(updatedAt.visible)
+        verify(creditsRemaining.visible)
+        verify(creditsRemaining.text.indexOf("12") !== -1)
+        verify(resetAvailable.visible)
+        verify(resetAvailable.text.indexOf("2") !== -1)
+        verify(findText(validRow, "On pace, 42% used") !== null)
+        verify(!validRow.resetCreditsSection.expanded)
+        verify(findText(validRow, "2026-09-01T00:00:00Z") === null, "collapsed disclosure must not render expiry rows")
     }
 
     function test_invalidMetadataIsOmittedWithoutPlaceholdersInRealProviderRows() {
@@ -196,6 +271,12 @@ TestCase {
         assertMetadataOmitted(emptyMetadataRow)
         assertMetadataOmitted(malformedMetadataRow)
         verify(findText(absentMetadataRow, "Session") !== null)
+    }
+
+    function test_invalidOrMissingEnrichmentIsOmitted() {
+        assertEnrichmentOmitted(absentMetadataRow)
+        assertEnrichmentOmitted(emptyMetadataRow)
+        assertEnrichmentOmitted(malformedMetadataRow)
     }
 
     function test_returnAndSpaceToggleRealDisclosureAccessibleState() {
@@ -212,6 +293,23 @@ TestCase {
         keyClick(Qt.Key_Space)
         verify(!details.expanded)
         verify(details.disclosureButton.Accessible.description.indexOf("Expand") !== -1)
+    }
+
+    function test_returnAndSpaceToggleResetCreditsDisclosureAccessibleState() {
+        var reset = validRow.resetCreditsSection
+        verify(reset.visible)
+        verify(!reset.expanded)
+        reset.disclosureButton.forceActiveFocus()
+        verify(reset.disclosureButton.activeFocus)
+        compare(testWindow.activeFocusItem, reset.disclosureButton)
+        wait(0)
+        keyClick(Qt.Key_Return)
+        verify(reset.expanded)
+        verify(reset.disclosureButton.Accessible.description.indexOf("Collapse") !== -1)
+        verify(findTextContaining(validRow, "2026-09-01T00:00:00Z") !== null)
+        keyClick(Qt.Key_Space)
+        verify(!reset.expanded)
+        verify(reset.disclosureButton.Accessible.description.indexOf("Expand") !== -1)
     }
 
     function test_maliciousProviderDisplaysOnlyApprovedFields() {
@@ -233,10 +331,33 @@ TestCase {
         verify(findText(details, "help@example.com") === null)
         verify(findText(details, "Reach us") === null)
         verify(findText(details, "Support") === null)
-        var excludedValues = ["excluded@example.invalid", "Excluded Organization", "excluded pace", "excluded credits", "excluded reset credits", "excluded cost", "excluded token", "identity token", "help@example.com"]
-        compare(excludedValues.length, 9)
+
+        // A correctly-shaped, authorized identity field must still display
+        // even inside an otherwise hostile payload; every incorrectly-shaped
+        // or opaque field around it must stay hidden.
+        var email = findByObjectName(maliciousRow, "emailLabel")
+        verify(email.visible)
+        compare(email.text, "authorized@example.invalid")
+        verify(!findByObjectName(maliciousRow, "organizationLabel").visible)
+        verify(!maliciousRow.resetCreditsSection.visible)
+        verify(!findByObjectName(maliciousRow, "creditsRemainingLabel").visible)
+
+        var excludedValues = ["5f2c9b7a1e3d4f6a8b9c0d1e2f3a4b5c", "excluded pace", "excluded credits", "excluded reset credits", "excluded cost", "excluded token", "identity token", "help@example.com"]
+        compare(excludedValues.length, 8)
         for (var index = 0; index < excludedValues.length; ++index)
             verify(findText(maliciousRow, excludedValues[index]) === null)
+    }
+
+    function test_fixturePiiRemainsFailClosedForRealCapturedShape() {
+        var email = findByObjectName(codexFixtureRow, "emailLabel")
+        verify(email.visible)
+        compare(email.text, "gxxxxxxxxxxxx@gmail.com")
+        verify(!findByObjectName(codexFixtureRow, "organizationLabel").visible)
+        verify(!codexFixtureRow.resetCreditsSection.visible)
+        var creditsRemaining = findByObjectName(codexFixtureRow, "creditsRemainingLabel")
+        verify(creditsRemaining.visible)
+        verify(creditsRemaining.text.indexOf("0") !== -1)
+        verify(findText(codexFixtureRow, "49% in deficit | Expected 18% used | Runs out in 15h 7m") !== null)
     }
 
     function test_themeAdaptiveDisclosureIsReadable() {

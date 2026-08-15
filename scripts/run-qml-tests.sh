@@ -58,6 +58,7 @@ for harness in \
     ErrorSummaryHarness \
     CostModelHarness \
     CostControllerHarness \
+    CostRequestPolicyHarness \
     CostControllerDataSourceLifecycleHarness; do
     printf 'Running tests/%s.qml\n' "$harness"
     if [ "$harness" = "UsageControllerDataSourceLifecycleHarness" ]; then

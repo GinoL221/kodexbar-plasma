@@ -262,6 +262,36 @@ Item {
         })
     }
 
+    UsageUi.ProviderRow {
+        id: enrichedDetailRow
+        width: 160
+        providerData: ({
+            provider: "enriched-provider",
+            source: "Enriched CLI source",
+            windows: [{ label: "Session", usedPercent: 40 }],
+            raw: {
+                pace: { primary: { summary: "Enriched pace summary that is somewhat long" } },
+                credits: { remaining: 7 },
+                usage: {
+                    identity: { accountEmail: "enriched@example.invalid", accountOrganization: "Enriched Org" },
+                    codexResetCredits: { availableCount: 1, credits: [{ amount: 1, expiresAt: "2026-11-01T00:00:00Z" }] }
+                }
+            }
+        })
+        costSnapshot: ({ provider: "enriched-provider", source: "local", sessionCostUSD: 1.5, sessionTokens: 1000, last30DaysCostUSD: 12, last30DaysTokens: 50000 })
+    }
+
+    UsageUi.ProviderRow {
+        id: costFailureRow
+        width: 160
+        providerData: ({
+            provider: "cost-failure-provider",
+            source: "Cost Failure CLI source",
+            windows: [{ label: "Session", usedPercent: 40 }]
+        })
+        costSnapshot: null
+    }
+
     UsageUi.UsageWindowRow {
         id: windowRow
         windowData: ({ label: "Session", usedPercent: 72, resetsAt: "2026-08-09T12:00:00Z", resetDescription: "Exact reset note" })
@@ -374,6 +404,44 @@ Item {
 
         assert(resolverRow.iconSource("openai") === "custom-openai", "iconResolver must be used")
         assert(row.iconSource("openai") !== "custom-openai", "default lookup must remain without iconResolver")
+
+        // Compact/summary rows never render selected-provider enrichment or
+        // cost, matching "All" remaining compact and cost-free.
+        var summaryEmail = findObject(summaryRow, "emailLabel")
+        assert(summaryEmail === null || !summaryEmail.visible, "summary row must never show email")
+        var compactCredits = findObject(compactRow, "creditsRemainingLabel")
+        assert(compactCredits === null || !compactCredits.visible, "compact row must never show credits")
+        var summaryCost = findObject(summaryRow, "costLabel")
+        assert(summaryCost === null || !summaryCost.visible, "summary row must remain cost-free")
+
+        // Conditional cost failure: usage/header stay visible, Cost section is absent.
+        assert(findObject(costFailureRow, "providerLabel").visible, "usage/header must remain visible when cost is unavailable")
+        var costFailureCostLabel = findObject(costFailureRow, "costLabel")
+        assert(costFailureCostLabel === null || !costFailureCostLabel.visible, "Cost section must be absent without a snapshot")
+
+        // Full enrichment renders together: pace, credits, reset disclosure, and cost.
+        assert(findObject(enrichedDetailRow, "emailLabel").visible, "enriched row must show email")
+        assert(findObject(enrichedDetailRow, "organizationLabel").visible, "enriched row must show a human-readable organization")
+        assert(findObject(enrichedDetailRow, "creditsRemainingLabel").visible, "enriched row must show remaining credits")
+        assert(findObject(enrichedDetailRow, "resetAvailableLabel").visible, "enriched row must show reset-credit availability")
+        assert(findObject(enrichedDetailRow, "costLabel").visible, "enriched row must show the local cost estimate label")
+        assert(findObject(enrichedDetailRow, "costSessionLabel").text.indexOf("1.5") !== -1, "enriched row must show session cost")
+
+        var resetDisclosure = enrichedDetailRow.resetCreditsSection.disclosureButton
+        assert(resetDisclosure.checkable && resetDisclosure.focusPolicy === Qt.StrongFocus && resetDisclosure.activeFocusOnTab,
+               "reset-credit disclosure must be keyboard reachable")
+        assert(resetDisclosure.Accessible.name.length > 0, "reset-credit disclosure must expose an accessible name")
+
+        // Narrow-width reachability: wrapping labels must stay safe at narrow widths.
+        var narrowCredits = findObject(enrichedDetailRow, "creditsRemainingLabel")
+        assert(narrowCredits.wrapMode === Text.WordWrap && narrowCredits.Layout.minimumWidth === 0,
+               "credits label must wrap safely at narrow widths")
+        var narrowReset = findObject(enrichedDetailRow, "resetAvailableLabel")
+        assert(narrowReset.wrapMode === Text.WordWrap && narrowReset.Layout.minimumWidth === 0,
+               "reset-credit availability label must wrap safely at narrow widths")
+        var narrowCost = findObject(enrichedDetailRow, "costSessionLabel")
+        assert(narrowCost.wrapMode === Text.WordWrap && narrowCost.Layout.minimumWidth === 0,
+               "cost label must wrap safely at narrow widths")
 
         var providerLabel = findObject(row, "providerLabel")
         var sourceLabel = findObject(row, "sourceLabel")
