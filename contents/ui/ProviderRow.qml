@@ -18,7 +18,12 @@ ColumnLayout {
     property bool summary: false
     property string preferredWindowKey: "automatic"
     property var iconResolver: function(value) { return root.defaultIconSource(value) }
+    // Validated CostModel snapshot for the selected provider, or null. Only
+    // ever bound for the single selected-detail row; summary/All rows never
+    // receive one, so CostSection never renders for them.
+    property var costSnapshot: null
     readonly property alias providerDetails: providerDetails
+    readonly property alias resetCreditsSection: resetCreditsSection
 
     readonly property var windows: providerData && providerData.windows instanceof Array
         ? providerData.windows : []
@@ -37,10 +42,13 @@ ColumnLayout {
             typeof i18np === "function" ? i18np : null)
         : Translation.translate("No usage windows available", [], typeof i18n === "function" ? i18n : null)
     readonly property bool showHeaderDetails: !root.compact && !root.summary
-    readonly property string headerVersion: root.showHeaderDetails
-        ? ProviderDetailsLogic.validVersion(root.providerData) : ""
-    readonly property string headerLogin: root.showHeaderDetails
-        ? ProviderDetailsLogic.validLoginMethod(root.providerData) : ""
+    // Selected-provider-only enrichment: pace (attached per matching window
+    // label), remaining credit, and the ResetCreditsSection/CostSection data
+    // objects are all gated on showHeaderDetails, matching ProviderHeader.
+    readonly property var paceByLabel: root.showHeaderDetails
+        ? ProviderDetailsLogic.paceSummaryByLabel(root.providerData) : ({})
+    readonly property var creditsRemaining: root.showHeaderDetails
+        ? ProviderDetailsLogic.validCreditsRemaining(root.providerData) : null
 
     function iconSource(value) {
         return root.iconResolver(value)
@@ -59,64 +67,24 @@ ColumnLayout {
     Accessible.description: sourceValue.length > 0
         ? Translation.translate("Source: %1", [sourceValue], typeof i18n === "function" ? i18n : null) : accessibleState
 
-    RowLayout {
+    ProviderHeader {
+        providerData: root.providerData
+        detailed: root.showHeaderDetails
+        iconResolver: root.iconResolver
         Layout.fillWidth: true
-        spacing: Kirigami.Units.smallSpacing
+    }
 
-        Kirigami.Icon {
-            source: root.iconSource(root.providerValue)
-            isMask: true
-            color: Kirigami.Theme.textColor
-            implicitWidth: Kirigami.Units.iconSizes.smallMedium
-            implicitHeight: Kirigami.Units.iconSizes.smallMedium
-            Layout.alignment: Qt.AlignTop
-            Accessible.name: Translation.translate("%1 provider icon", [root.providerText],
-                typeof i18n === "function" ? i18n : null)
-        }
-
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 0
-
-            PlasmaComponents.Label {
-                id: providerLabel
-                objectName: "providerLabel"
-                text: root.providerText
-                font.weight: Font.DemiBold
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-
-            PlasmaComponents.Label {
-                id: sourceLabel
-                objectName: "sourceLabel"
-                visible: root.sourceValue.length > 0
-                text: root.sourceValue
-                color: Kirigami.Theme.disabledTextColor
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-
-            PlasmaComponents.Label {
-                id: versionLabel
-                objectName: "versionLabel"
-                visible: root.headerVersion.length > 0
-                text: root.headerVersion
-                color: Kirigami.Theme.disabledTextColor
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-
-            PlasmaComponents.Label {
-                id: loginLabel
-                objectName: "loginLabel"
-                visible: root.headerLogin.length > 0
-                text: root.headerLogin
-                color: Kirigami.Theme.disabledTextColor
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-        }
+    PlasmaComponents.Label {
+        id: creditsRemainingLabel
+        objectName: "creditsRemainingLabel"
+        visible: root.creditsRemaining !== null
+        text: root.creditsRemaining !== null
+            ? Translation.translate("Credits remaining: %1", [root.creditsRemaining], typeof i18n === "function" ? i18n : null)
+            : ""
+        color: Kirigami.Theme.disabledTextColor
+        wrapMode: Text.WordWrap
+        Layout.fillWidth: true
+        Layout.minimumWidth: 0
     }
 
     Repeater {
@@ -127,9 +95,21 @@ ColumnLayout {
             windowData: modelData
             compact: root.compact
             summary: root.summary
+            paceSummary: root.paceByLabel[modelData.label] || ""
             Layout.fillWidth: true
             Layout.minimumWidth: 0
         }
+    }
+
+    ResetCreditsSection {
+        id: resetCreditsSection
+        providerData: root.showHeaderDetails ? root.providerData : ({})
+        Layout.fillWidth: true
+    }
+
+    CostSection {
+        snapshot: root.showHeaderDetails ? root.costSnapshot : null
+        Layout.fillWidth: true
     }
 
     ProviderDetails {

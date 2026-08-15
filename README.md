@@ -109,7 +109,7 @@ This is an optional per-instance setup step; it does not rewrite package identit
 - Use the refresh button in the popup to query the CLI immediately.
 - Open widget settings to configure the absolute CLI path, refresh interval, and request timeout.
 
-Provider selection is presentation-only and resets when the popup is reopened. The first response-ordered provider with usable windows opens by default; select `All` for a compact, response-ordered summary of usable providers. Individual provider detail preserves the current Session, Weekly, Monthly, and raw reset data returned by the CLI.
+Provider selection is presentation-only and resets when the popup is reopened. The first response-ordered provider with usable windows opens by default; select `All` for a compact, response-ordered summary of usable providers. Individual provider detail preserves the current Session, Weekly, Monthly, and raw reset data returned by the CLI, plus the selected-provider-only enrichment described below. `All` stays compact and never shows that enrichment.
 
 The popup renders supported CLI fields:
 
@@ -119,13 +119,33 @@ The popup renders supported CLI fields:
 - raw source and reset values when present
 - bounded per-provider CLI/runtime errors
 
-It does **not** render email, organization, pace, credits, cost, or token values, even when they appear inside detail titles, labels, or values. Malformed or missing details are omitted safely.
+`usage.details[]` titles, labels, and values still never surface anything that reads as email, organization, pace, credit, cost, or token content (including camelCase, hyphenated, and `email signature` variants), even nested in that free-form section. Malformed or missing details are omitted safely.
+
+### Selected-provider detail
+
+Selecting a single provider (not `All`) shows additional CLI-supplied context in the header and window rows. Each item below is independently validated and omitted without a placeholder when absent or malformed:
+
+- **Pace by window.** A valid `pace.primary`/`secondary`/`tertiary` summary is attached to its matching Session/Weekly/Monthly row.
+- **Credits remaining.** A finite, non-negative `credits.remaining` value.
+- **Reset-credit inventory.** Shown only when `codexResetCredits.availableCount` is a positive number; the count is always visible, and a keyboard-reachable disclosure (`Tab`-reachable, toggled with `Enter`/`Space`/click, announcing its expanded/collapsed state) reveals the individual `{amount, expiresAt}` entries. There is no redeem or other mutation action.
+- **Identity header.** The CLI-supplied account email (validated as an email address) and, only when present and human-readable, an organization name. UUID-shaped, long hex-like, and other opaque-token-shaped organization values are rejected and omitted rather than shown, so no internal account identifier ever reaches the UI.
+
+`All` never requests, computes, or renders any of the fields above; tabs stay compact (icon plus short provider name only), and each tab's full source string remains available through accessible metadata rather than visible text.
+
+### Optional local cost estimate
+
+For a selected provider that CodexBar's `cost` subcommand supports (`codex` or `claude` only), the widget may additionally request and show a **Cost** section labeled `source: local` — a local token-cost estimate reported directly by the CLI (`sessionCostUSD`, `sessionTokens`, `last30DaysCostUSD`, `last30DaysTokens`). This estimate is:
+
+- Requested only while a supported provider is selected, through its own isolated lifecycle and exact command `cost --provider {provider} --format json --json-only` — never part of, or a precondition for, the unchanged all-provider `usage --provider all --format json --json-only` request.
+- Never requested, computed, or shown for `All`, or for a provider the `cost` subcommand does not support.
+- Fail-closed: an empty, malformed, non-matching, failed, or timed-out (60s) cost result simply hides the Cost section; it never hides, delays, or otherwise affects Usage, and never surfaces raw diagnostics.
+- Reported, not calculated: the widget never prices, estimates, or computes cost or tokens in QML — the numbers shown are exactly what the CLI reports.
 
 ## MVP exclusions
 
 KodexBar Plasma deliberately does not implement provider implementations, authentication or cookie automation, fallback probing, reset or account actions, provider or source switching, calculated reset durations, or charts. Use CodexBar and provider tools for those responsibilities.
 
-Cost, credit, token, and pace values are never computed, estimated, requested, or displayed by this widget. The popup may display only CLI-supplied provider `version`, `usage.loginMethod`, and valid non-excluded `usage.details[]` content; all other richer per-provider fields remain preserved verbatim under a per-provider `raw` key without a display path. Surfacing excluded fields in the UI is planned roadmap work, not current behavior.
+This widget never computes, estimates, or fabricates pace, credits, resets, identity, organization, cost, or token values — every field above is exactly what the CLI reports, validated and passed through unmodified. It does not add authentication, Add Account, Quit, redeem or other credit/reset-mutation actions, price calculation in QML, provider/CLI switching, or any change to the exact `usage --provider all --format json --json-only` invocation. All richer per-provider fields not explicitly covered above remain preserved verbatim under a per-provider `raw` key without a display path.
 
 ## Settings
 

@@ -22,6 +22,7 @@ Item {
     property string errorMessage: ""
     property var committedProviders: []
     property var committedErrors: []
+    property int committedGeneration: 0
     property int generation: 0
     property bool refreshQueued: false
     property bool followUpScheduled: false
@@ -243,6 +244,7 @@ Item {
         var normalized = UsageModel.normalize(payload)
         committedProviders = normalized.providers
         committedErrors = normalized.errors
+        committedGeneration = requestGeneration
         phase = normalized.providers.length > 0 ? "ready"
             : (normalized.errors.length > 0 ? "error" : "noData")
         errorMessage = normalized.errors.length > 0 && normalized.providers.length === 0
