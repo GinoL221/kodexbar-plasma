@@ -226,7 +226,9 @@ ColumnLayout {
                     visible: providerData !== null
                     enabled: visible
                     activeFocusOnTab: visible
-                    text: sourceText.length > 0 ? providerText + " · " + sourceText : providerText
+                    // Tabs stay compact: icon plus short provider name only.
+                    // The full source remains available in Accessible metadata.
+                    text: providerText
                     icon.source: root.iconResolver(providerData ? providerData.provider : null)
                     icon.color: Kirigami.Theme.textColor
                     focusPolicy: Qt.StrongFocus

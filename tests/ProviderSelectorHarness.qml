@@ -87,6 +87,11 @@ Item {
         assert(t.Accessible.name.indexOf("src-dup-a") !== -1 || t.Accessible.description.indexOf("src-dup-a") !== -1, "tab full source")
         assert(t.checked === (s.tabBar.currentIndex === 1), "checked state")
 
+        assert(t.text === "dup", "tab text must contain only the short provider name, no source suffix")
+        assert(t.text.indexOf("·") === -1, "tab text must never combine provider and source")
+        var allTab = s.tabBar.contentChildren[0]
+        assert(allTab.text.indexOf("·") === -1 && allTab.icon.name.length > 0, "All tab must remain a compact icon-plus-label control")
+
         finish()
     }
 }
