@@ -56,7 +56,9 @@ for harness in \
     ProviderDetailsHarness \
     ProviderSelectorHarness \
     ErrorSummaryHarness \
-    CostModelHarness; do
+    CostModelHarness \
+    CostControllerHarness \
+    CostControllerDataSourceLifecycleHarness; do
     printf 'Running tests/%s.qml\n' "$harness"
     if [ "$harness" = "UsageControllerDataSourceLifecycleHarness" ]; then
         args_file=$(mktemp)
@@ -77,6 +79,24 @@ json
             exit 1
         fi
         rm -f "$args_file" "$pid_file"
+        trap - EXIT HUP INT TERM
+    elif [ "$harness" = "CostControllerDataSourceLifecycleHarness" ]; then
+        args_file=$(mktemp)
+        trap 'rm -f "$args_file"' EXIT HUP INT TERM
+        CODEXBAR_COST_ARGS_FILE="$args_file" \
+            QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
+            qml6 --software -f "$repo_root/tests/$harness.qml" -- "$repo_root/tests/fixtures/codexbar-cost-lifecycle-fixture.sh"
+        expected_args='cost
+--provider
+codex
+--format
+json
+--json-only'
+        if ! printf '%s\n' "$expected_args" | cmp -s - "$args_file"; then
+            printf '%s\n' "error: cost fixture received unexpected argv" >&2
+            exit 1
+        fi
+        rm -f "$args_file"
         trap - EXIT HUP INT TERM
     else
         QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
@@ -101,3 +121,22 @@ if kill -0 "$pid" 2>/dev/null; then
     printf '%s\n' "error: disconnect did not terminate the executable fixture" >&2
     exit 1
 fi
+
+printf 'Running tests/CostControllerTerminationHarness.qml\n'
+pid_file=$(mktemp -u)
+rm -f "$pid_file"
+trap 'rm -f "$pid_file"' EXIT HUP INT TERM
+CODEXBAR_COST_MODE=block CODEXBAR_COST_PID_FILE="$pid_file" \
+    QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
+    qml6 --software -f "$repo_root/tests/CostControllerTerminationHarness.qml" -- "$repo_root/tests/fixtures/codexbar-cost-lifecycle-fixture.sh"
+if [ ! -s "$pid_file" ]; then
+    printf '%s\n' "error: cost lifecycle fixture did not record a PID" >&2
+    exit 1
+fi
+read -r pid < "$pid_file"
+if kill -0 "$pid" 2>/dev/null; then
+    printf '%s\n' "error: replacing an in-flight cost request did not terminate the superseded process" >&2
+    exit 1
+fi
+rm -f "$pid_file"
+trap - EXIT HUP INT TERM

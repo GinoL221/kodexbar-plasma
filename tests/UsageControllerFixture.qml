@@ -294,6 +294,41 @@ TestCase {
         controller.destroy()
     }
 
+    function test_committedGenerationTracksOnlySuccessfulSnapshotCommits() {
+        var component = controllerComponent()
+        verify(component.status === Component.Ready, component.errorString())
+        var controller = component.createObject(null, { commandPath: "/tmp/codexbar", testMode: true })
+
+        compare(controller.committedGeneration, 0)
+
+        controller.requestRefresh()
+        var readyGeneration = controller.generation
+        controller.completeForTest(readyGeneration, JSON.stringify([
+            { provider: "usable", usage: { primary: { usedPercent: 42 } } }
+        ]), 0)
+        compare(controller.phase, "ready")
+        compare(controller.committedGeneration, readyGeneration)
+
+        controller.requestRefresh()
+        var noDataGeneration = controller.generation
+        controller.completeForTest(noDataGeneration, "[]", 0)
+        compare(controller.phase, "noData")
+        compare(controller.committedGeneration, noDataGeneration)
+
+        controller.requestRefresh()
+        var timedOutGeneration = controller.generation
+        controller.timeoutForTest(timedOutGeneration)
+        compare(controller.phase, "error")
+        compare(controller.committedGeneration, noDataGeneration)
+
+        controller.requestRefresh()
+        var malformedGeneration = controller.generation
+        controller.completeForTest(malformedGeneration, "{malformed", 0)
+        compare(controller.phase, "error")
+        compare(controller.committedGeneration, noDataGeneration)
+        controller.destroy()
+    }
+
     function test_emptyOutputRemainsDistinctAndRefreshStartsOneNewGeneration() {
         var component = controllerComponent()
         verify(component.status === Component.Ready, component.errorString())
