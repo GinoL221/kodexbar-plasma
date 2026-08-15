@@ -22,7 +22,6 @@ PlasmoidItem {
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(Plasmoid.configuration.requestTimeout)
     property string preferredWindowKey: PreferredWindow.keyOrDefault(Plasmoid.configuration.preferredRepresentativeWindow)
     property alias controller: controller
-    property alias providerSelector: providerSelector
     readonly property var compactSelection: UsageModel.selectCompact(root.controller.committedProviders)
 
     preferredRepresentation: compactRepresentation
@@ -60,9 +59,11 @@ PlasmoidItem {
     // Requests cost only for a supported selected provider missing its
     // current-generation snapshot; "All" and unsupported providers never
     // start cost work or read a cost record (CostRequestPolicy.js).
-    function maybeRequestCost() {
-        var isAllSelected = root.providerSelector.allSelected
-        var selected = root.providerSelector.selectedProvider
+    //
+    // Selection state is read by the caller and passed in: the
+    // ProviderSelector instance lives inside fullRepresentation's implicit
+    // Component, a separate QML id scope root cannot alias into.
+    function maybeRequestCost(isAllSelected, selected) {
         var provider = selected ? selected.provider : null
         var usageGeneration = root.controller.committedGeneration
         var hasSnapshot = typeof provider === "string" && costController.snapshotFor(provider, usageGeneration) !== null
@@ -132,7 +133,7 @@ PlasmoidItem {
                         phase: root.controller.phase
                         popupOpen: root.expanded
                         Layout.fillWidth: true
-                        onSelectedProviderChanged: root.maybeRequestCost()
+                        onSelectedProviderChanged: root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
                     }
 
                     Repeater {
@@ -170,11 +171,12 @@ PlasmoidItem {
             }
         }
 
-    }
-
-    Connections {
-        target: root.controller
-        function onCommittedGenerationChanged() { root.maybeRequestCost() }
+        Connections {
+            target: root.controller
+            function onCommittedGenerationChanged() {
+                root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+            }
+        }
     }
 
     Timer {

@@ -21,6 +21,21 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Kirigami.Units.smallSpacing / 2
 
+    // Plain, deterministic display formatting -- never a price calculation.
+    // i18n()'s locale-aware substitution renders large raw numbers in
+    // scientific notation with a locale decimal separator, so these are
+    // pre-formatted into fixed strings before being handed to %1/%2.
+    function formatUsd(value) {
+        return (Math.round(value * 100) / 100).toFixed(2)
+    }
+
+    function formatTokens(value) {
+        var rounded = Math.round(value)
+        var digits = String(Math.abs(rounded))
+        var grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+        return (rounded < 0 ? "-" : "") + grouped
+    }
+
     PlasmaComponents.Label {
         id: costLabel
         objectName: "costLabel"
@@ -37,7 +52,8 @@ ColumnLayout {
         objectName: "costSessionLabel"
         visible: root.hasSnapshot
         text: root.hasSnapshot
-            ? Translation.translate("Session: $%1 (%2 tokens)", [root.snapshot.sessionCostUSD, root.snapshot.sessionTokens],
+            ? Translation.translate("Session: $%1 (%2 tokens)",
+                [root.formatUsd(root.snapshot.sessionCostUSD), root.formatTokens(root.snapshot.sessionTokens)],
                 typeof i18n === "function" ? i18n : null)
             : ""
         color: Kirigami.Theme.disabledTextColor
@@ -51,7 +67,8 @@ ColumnLayout {
         objectName: "costLast30DaysLabel"
         visible: root.hasSnapshot
         text: root.hasSnapshot
-            ? Translation.translate("Last 30 days: $%1 (%2 tokens)", [root.snapshot.last30DaysCostUSD, root.snapshot.last30DaysTokens],
+            ? Translation.translate("Last 30 days: $%1 (%2 tokens)",
+                [root.formatUsd(root.snapshot.last30DaysCostUSD), root.formatTokens(root.snapshot.last30DaysTokens)],
                 typeof i18n === "function" ? i18n : null)
             : ""
         color: Kirigami.Theme.disabledTextColor
