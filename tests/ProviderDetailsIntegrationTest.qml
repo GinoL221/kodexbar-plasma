@@ -50,6 +50,14 @@ TestCase {
                         }
                     }
                 })
+                costSnapshot: ({
+                    provider: "synthetic-provider",
+                    source: "local",
+                    sessionCostUSD: 1.5,
+                    sessionTokens: 1000,
+                    last30DaysCostUSD: 12,
+                    last30DaysTokens: 50000
+                })
             }
 
             UsageUi.ProviderRow {
@@ -365,6 +373,26 @@ TestCase {
         verify(details.disclosureButton.visible)
         verify(details.disclosureButton.Accessible.name.length > 0)
         verify(Kirigami.Theme.textColor.a > 0)
+    }
+
+    function test_selectedProviderCostStatesStayBoundedAndAccessible() {
+        var costPresent = findByObjectName(validRow, "costLabel")
+        var costAbsent = findByObjectName(malformedRow, "costLabel")
+        var providerLabel = findByObjectName(validRow, "providerLabel")
+        var sourceLabel = findByObjectName(validRow, "sourceLabel")
+
+        verify(costPresent.visible)
+        verify(!costAbsent.visible)
+        verify(validRow.Accessible.name.indexOf("synthetic-provider") !== -1)
+        verify(malformedRow.Accessible.name.indexOf("malformed-provider") !== -1)
+        verify(providerLabel.Accessible.name.length > 0)
+        verify(sourceLabel.Accessible.name.length > 0)
+        verify(validRow.width === testWindow.width && malformedRow.width === testWindow.width)
+        verify(validRow.x >= 0 && validRow.x + validRow.width <= testWindow.width)
+        verify(malformedRow.x >= 0 && malformedRow.x + malformedRow.width <= testWindow.width)
+        verify(providerLabel.x >= 0 && providerLabel.x + providerLabel.width <= validRow.width)
+        verify(sourceLabel.x >= 0 && sourceLabel.x + sourceLabel.width <= validRow.width)
+        verify(costPresent.x >= 0 && costPresent.x + costPresent.width <= validRow.width)
     }
 
     function test_expandedOverHeightDetailsAreVerticallyReachableWithoutHorizontalOverflow() {
