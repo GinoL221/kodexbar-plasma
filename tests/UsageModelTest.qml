@@ -285,4 +285,147 @@ TestCase {
         compare(withIgnoredPreferenceArgument.window.label, withoutPreference.window.label)
         compare(withIgnoredPreferenceArgument.usedPercent, withoutPreference.usedPercent)
     }
+
+    function test_preservesUnmodeledProviderFieldsVerbatimUnderRaw() {
+        var provider = UsageModel.normalize({
+            provider: "codex",
+            source: "oauth",
+            version: "0.147.0",
+            pace: {
+                secondary: {
+                    stage: "farAhead",
+                    summary: "49% in deficit | Expected 18% used | Runs out in 15h 7m",
+                    deltaPercent: 49,
+                    expectedUsedPercent: 18,
+                    willLastToReset: false,
+                    etaSeconds: 54379
+                }
+            },
+            credits: { events: [], updatedAt: "2026-08-14T19:01:20Z", remaining: 0 },
+            usage: {
+                primary: null,
+                tertiary: null,
+                loginMethod: "plus",
+                dataConfidence: "exact",
+                codexResetCredits: { credits: [], updatedAt: "2026-08-14T19:01:20Z", availableCount: 0 },
+                identity: { accountEmail: "redacted@example.com", loginMethod: "plus", providerID: "codex" },
+                secondary: {
+                    windowMinutes: 10080,
+                    resetsAt: "2026-08-20T12:21:18Z",
+                    resetDescription: "Aug 20 at 9:21 AM",
+                    usedPercent: 67
+                }
+            }
+        }).providers[0]
+
+        verify(provider.raw !== undefined, "a normalized provider must expose a raw sibling")
+        compare(provider.raw.version, "0.147.0")
+        compare(provider.raw.credits.remaining, 0)
+        compare(provider.raw.pace.secondary.stage, "farAhead")
+        compare(provider.raw.pace.secondary.deltaPercent, 49)
+        compare(provider.raw.usage.identity.accountEmail, "redacted@example.com")
+        compare(provider.raw.usage.loginMethod, "plus")
+        compare(provider.raw.usage.codexResetCredits.availableCount, 0)
+        compare(provider.windows.length, 1, "unmodeled fields must not become windows")
+        compare(provider.windows[0].label, "Weekly")
+    }
+
+    function test_rawIsTheLiveParsedEntryNotACopy() {
+        var entry = {
+            provider: "claude",
+            source: "claude",
+            pace: { primary: { stage: "farAhead", deltaPercent: 42, willLastToReset: false } },
+            usage: { primary: { windowMinutes: 300, usedPercent: 66 } }
+        }
+
+        var provider = UsageModel.normalize([entry]).providers[0]
+
+        verify(provider.raw === entry, "raw must hold the original entry object, not a copy")
+        verify(provider.raw.pace === entry.pace, "nested raw values must not be cloned")
+    }
+
+    function test_fourKeyContractIsUnregressedByRawAddition() {
+        var result = UsageModel.normalize({
+            provider: null,
+            source: null,
+            version: "0.45.2",
+            pace: { secondary: { stage: "farBehind", deltaPercent: -43 } },
+            usage: {
+                identity: { providerID: "gemini" },
+                primary: {
+                    usedPercent: 42,
+                    resetsAt: "2026-08-09T10:00:00Z",
+                    resetDescription: null
+                }
+            }
+        })
+        var provider = result.providers[0]
+
+        compare(result.providers.length, 1)
+        compare(provider.provider, null)
+        compare(provider.source, null)
+        compare(provider.windows.length, 1)
+        compare(provider.windows[0].key, "primary")
+        compare(provider.windows[0].label, "Session")
+        compare(provider.windows[0].usedPercent, 42)
+        compare(provider.windows[0].resetsAt, "2026-08-09T10:00:00Z")
+        compare(provider.windows[0].resetDescription, null)
+        compare(Object.keys(provider.windows[0]).length, 5,
+                "window objects must keep exactly five keys")
+        compare(UsageModel.selectRepresentative(provider.windows).usedPercent, 42)
+    }
+
+    function test_rawRetainsWindowKeysThatWindowsStillDrop() {
+        var provider = UsageModel.normalize({
+            provider: "copilot",
+            source: "api",
+            usage: {
+                primary: { usedPercent: "70" },
+                secondary: { usedPercent: Infinity },
+                tertiary: { usedPercent: 55 },
+                extraRateWindow: { usedPercent: 99 },
+                details: [
+                    {
+                        title: "Credits",
+                        rows: [
+                            { label: "Credits used", value: "3", secondaryValue: "Aug 31 at 9:00 PM" }
+                        ]
+                    }
+                ]
+            }
+        }).providers[0]
+
+        compare(provider.windows.length, 3, "window-level unknown-key dropping is unchanged")
+        compare(provider.windows[0].key, "primary")
+        compare(provider.windows[1].key, "secondary")
+        compare(provider.windows[2].key, "tertiary")
+        compare(provider.windows[1].usedPercent, null)
+        compare(provider.raw.usage.extraRateWindow.usedPercent, 99,
+                "raw must retain the window key that windows drops")
+        compare(provider.raw.usage.details[0].rows[0].secondaryValue, "Aug 31 at 9:00 PM")
+        verify(provider.raw.usage.secondary.usedPercent === Infinity,
+               "raw must preserve non-finite values that windows normalize to null")
+    }
+
+    function test_errorEntriesGainNoRawSibling() {
+        var result = UsageModel.normalize([
+            {
+                provider: "openai",
+                source: "auto",
+                error: { kind: "provider", code: 1, message: "No available fetch strategy for openai." }
+            },
+            { provider: "grok", source: "web", usage: { primary: { usedPercent: 12 } } }
+        ])
+
+        compare(result.errors.length, 1)
+        compare(result.errors[0].provider, "openai")
+        compare(result.errors[0].source, "auto")
+        compare(result.errors[0].error.message, "No available fetch strategy for openai.")
+        compare(Object.keys(result.errors[0]).length, 3,
+                "error entries must keep exactly provider, source, error")
+        verify(result.errors[0].raw === undefined, "error entries must not gain a raw sibling")
+        compare(result.providers.length, 1)
+        compare(result.providers[0].provider, "grok")
+        verify(result.providers[0].raw !== undefined, "usable providers still expose raw")
+    }
 }

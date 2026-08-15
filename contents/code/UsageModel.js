@@ -46,10 +46,13 @@ function normalizeProvider(entry) {
         }
     }
 
+    // raw is a live reference to the parsed CLI entry, never a copy: normalized
+    // snapshots are read-only, and a JSON round-trip would destroy Infinity/NaN.
     return {
         provider: rawValue(entry, "provider"),
         source: rawValue(entry, "source"),
-        windows: windows
+        windows: windows,
+        raw: entry
     }
 }
 
