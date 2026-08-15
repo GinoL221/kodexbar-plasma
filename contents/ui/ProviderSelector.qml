@@ -181,65 +181,77 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Kirigami.Units.smallSpacing
 
-    QQC2.ScrollView {
-        Layout.fillWidth: true
+    // TabBar already manages its own horizontal overflow: its Qt Quick
+    // Controls contentItem is a Flickable-backed ListView with
+    // highlightRangeMode set, which keeps currentIndex scrolled into view on
+    // its own. Wrapping it in an outer ScrollView is not just redundant --
+    // it is actively harmful: ScrollView auto-wraps a non-Flickable child
+    // (TabBar) in its own internal Flickable whose contentWidth follows
+    // TabBar's *unclamped* implicitWidth (the natural width of all tabs)
+    // while the rendered TabBar itself stays clamped to the available
+    // width. That mismatch creates a second, decoupled scroll surface with
+    // no ties to currentIndex, which both steals/mishandles click and drag
+    // hit-testing meant for TabButton delegates and can silently shift its
+    // contentX whenever that unclamped implicitWidth is recomputed (e.g. on
+    // every usage-data refresh), even with no user-driven scroll action and
+    // no selection change. Keeping TabBar unwrapped lets its own scroll
+    // logic be the single source of truth for what is visible.
+    QQC2.TabBar {
+        id: tabBar
         clip: true
-        QQC2.TabBar {
-            id: tabBar
-            width: Math.min(implicitWidth, root.width)
+        Layout.fillWidth: true
+        focusPolicy: Qt.StrongFocus
+        activeFocusOnTab: true
+        currentIndex: 0
+
+        onCurrentIndexChanged: {
+            if (root._requestedIndex === currentIndex) {
+                root._requestedIndex = -1
+                return
+            }
+            root._requestedIndex = currentIndex
+            if (currentIndex === 0) {
+                root._selectAll(false)
+            } else if (currentIndex - 1 < root.usableProviders.length) {
+                root._selectProviderAt(currentIndex - 1, root.usableProviders)
+            }
+        }
+
+        QQC2.TabButton {
+            text: Translation.translate("All", [], typeof i18n === "function" ? i18n : null)
+            icon.name: "view-list-details"
             focusPolicy: Qt.StrongFocus
             activeFocusOnTab: true
-            currentIndex: 0
+            Accessible.name: Translation.translate("All providers", [], typeof i18n === "function" ? i18n : null)
+            Accessible.description: Translation.translate("Show compact summary for all providers", [],
+                typeof i18n === "function" ? i18n : null)
+        }
 
-            onCurrentIndexChanged: {
-                if (root._requestedIndex === currentIndex) {
-                    root._requestedIndex = -1
-                    return
-                }
-                root._requestedIndex = currentIndex
-                if (currentIndex === 0) {
-                    root._selectAll(false)
-                } else if (currentIndex - 1 < root.usableProviders.length) {
-                    root._selectProviderAt(currentIndex - 1, root.usableProviders)
-                }
-            }
+        Repeater {
+            model: root._delegateCapacity
+            delegate: QQC2.TabButton {
+                required property int index
 
-            QQC2.TabButton {
-                text: Translation.translate("All", [], typeof i18n === "function" ? i18n : null)
-                icon.name: "view-list-details"
+                property var providerData: index < root.usableProviders.length
+                    ? root.usableProviders[index] : null
+                property string providerText: root._providerText(providerData)
+                property string sourceText: root._sourceText(providerData)
+                visible: providerData !== null
+                enabled: visible
+                activeFocusOnTab: visible
+                // Tabs stay compact: icon plus short provider name only.
+                // The full source remains available in Accessible metadata.
+                text: providerText
+                icon.source: root.iconResolver(providerData ? providerData.provider : null)
+                icon.color: Kirigami.Theme.textColor
                 focusPolicy: Qt.StrongFocus
-                activeFocusOnTab: true
-                Accessible.name: Translation.translate("All providers", [], typeof i18n === "function" ? i18n : null)
-                Accessible.description: Translation.translate("Show compact summary for all providers", [],
-                    typeof i18n === "function" ? i18n : null)
-            }
-
-            Repeater {
-                model: root._delegateCapacity
-                delegate: QQC2.TabButton {
-                    required property int index
-
-                    property var providerData: index < root.usableProviders.length
-                        ? root.usableProviders[index] : null
-                    property string providerText: root._providerText(providerData)
-                    property string sourceText: root._sourceText(providerData)
-                    visible: providerData !== null
-                    enabled: visible
-                    activeFocusOnTab: visible
-                    // Tabs stay compact: icon plus short provider name only.
-                    // The full source remains available in Accessible metadata.
-                    text: providerText
-                    icon.source: root.iconResolver(providerData ? providerData.provider : null)
-                    icon.color: Kirigami.Theme.textColor
-                    focusPolicy: Qt.StrongFocus
-                    Accessible.name: sourceText.length > 0
-                        ? Translation.translate("%1 provider, source %2", [providerText, sourceText],
-                            typeof i18n === "function" ? i18n : null)
-                        : Translation.translate("%1 provider", [providerText], typeof i18n === "function" ? i18n : null)
-                    Accessible.description: sourceText.length > 0
-                        ? Translation.translate("Source: %1", [sourceText], typeof i18n === "function" ? i18n : null)
-                        : Translation.translate("No source provided", [], typeof i18n === "function" ? i18n : null)
-                }
+                Accessible.name: sourceText.length > 0
+                    ? Translation.translate("%1 provider, source %2", [providerText, sourceText],
+                        typeof i18n === "function" ? i18n : null)
+                    : Translation.translate("%1 provider", [providerText], typeof i18n === "function" ? i18n : null)
+                Accessible.description: sourceText.length > 0
+                    ? Translation.translate("Source: %1", [sourceText], typeof i18n === "function" ? i18n : null)
+                    : Translation.translate("No source provided", [], typeof i18n === "function" ? i18n : null)
             }
         }
     }

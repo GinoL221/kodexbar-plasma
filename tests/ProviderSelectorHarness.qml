@@ -92,6 +92,58 @@ Item {
         var allTab = s.tabBar.contentChildren[0]
         assert(allTab.text.indexOf("·") === -1 && allTab.icon.name.length > 0, "All tab must remain a compact icon-plus-label control")
 
+        // Narrow-width scroll reachability regression: 6 real providers (the
+        // maintainer's exact set) + "All" = 7 tabs, at a width far narrower
+        // than their combined natural size, so the tab bar must scroll.
+        s.popupOpen = false
+        s.width = 200
+        s.providers = [
+            p("codex", "src-codex", [w("Weekly", 10, null, null)]),
+            p("claude", "src-claude", [w("Weekly", 20, null, null)]),
+            p("opencodego", "src-ocg", [w("Weekly", 30, null, null)]),
+            p("gemini", "src-gemini", [w("Weekly", 40, null, null)]),
+            p("copilot", "src-copilot", [w("Weekly", 50, null, null)]),
+            p("grok", "src-grok", [w("Weekly", 60, null, null)])
+        ]
+        s.popupOpen = true
+        assert(s.usableProviders.length === 6, "narrow-width fixture carries all six real providers")
+        assert(s.tabBar.width < s.tabBar.implicitWidth,
+            "seven tabs must not fit naturally at this narrow width -- the fixture must actually exercise scrolling")
+
+        s.tabBar.currentIndex = 6 // last real tab: grok
+        var grokDelegate = s.tabBar.contentChildren[6]
+        assert(grokDelegate !== null, "grok delegate must be instantiated once selected")
+        var grokRect = grokDelegate.mapToItem(s, 0, 0)
+        assert(grokRect.x >= 0 && grokRect.x + grokDelegate.width <= s.width,
+            "selecting a not-fully-visible tab must scroll it fully into the tab bar's visible viewport")
+
+        var settledGrokX = grokRect.x
+        s.providers = [
+            p("codex", "src-codex", [w("Weekly", 11, null, null)]),
+            p("claude", "src-claude", [w("Weekly", 21, null, null)]),
+            p("opencodego", "src-ocg", [w("Weekly", 31, null, null)]),
+            p("gemini", "src-gemini", [w("Weekly", 41, null, null)]),
+            p("copilot", "src-copilot", [w("Weekly", 51, null, null)]),
+            p("grok", "src-grok", [w("Weekly", 61, null, null)])
+        ]
+        assert(s.selectedProvider && s.selectedProvider.provider === "grok", "selection survives a same-set data refresh")
+        var grokDelegateAfterRefresh = s.tabBar.contentChildren[6]
+        assert(grokDelegateAfterRefresh !== null, "grok delegate must still be instantiated after refresh")
+        var grokRectAfterRefresh = grokDelegateAfterRefresh.mapToItem(s, 0, 0)
+        assert(Math.abs(grokRectAfterRefresh.x - settledGrokX) < 0.01,
+            "a same-provider-set data refresh must not shift the already-visible selected tab's scrolled position")
+
+        // Triangulate: scrolling back to the first real tab (now off the
+        // left edge, since the viewport followed grok to the right) must be
+        // just as reachable as scrolling forward was.
+        s.tabBar.currentIndex = 1 // first real tab: codex
+        assert(s.selectedProvider && s.selectedProvider.provider === "codex", "codex becomes selected")
+        var codexDelegate = s.tabBar.contentChildren[1]
+        assert(codexDelegate !== null, "codex delegate must be instantiated once selected")
+        var codexRect = codexDelegate.mapToItem(s, 0, 0)
+        assert(codexRect.x >= 0 && codexRect.x + codexDelegate.width <= s.width,
+            "scrolling back to an earlier not-fully-visible tab must also bring it fully into view")
+
         finish()
     }
 }
