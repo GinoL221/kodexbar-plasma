@@ -4,3 +4,6 @@
 
 # Python
 __pycache__/
+
+# Generated visual capture outputs
+tests/visual/artifacts/
