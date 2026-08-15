@@ -115,6 +115,64 @@ usage --provider all --format json --json-only
 - With expanded details that exceed the popup height, verify vertical scrolling keeps every row reachable and no horizontal scrollbar appears.
 - Repeat the header/details checks in Breeze Light and Breeze Dark; verify text, focus, and the expanded section remain readable.
 
+## Selected-provider enrichment and optional cost (final-popup-parity)
+
+This is the literal execution checklist for task 4.3 of the `final-popup-parity` change. Use fixture-backed or real CLI data for a selected provider whose payload carries valid pace, `credits.remaining`, a positive `codexResetCredits.availableCount`, `accountEmail`, and a human-readable `accountOrganization`.
+
+### Identity, pace, and credits
+
+- Select that provider; verify its header shows the supplied email and organization as muted lines below the provider name, version, and login method.
+- Select a provider whose organization value is UUID-shaped, long hex-like, or otherwise opaque; verify the organization line is entirely absent (not shown as a raw ID, not shown as a placeholder).
+- Select `All`; verify no tab, summary row, or `All` header shows email, organization, pace, credits, resets, or cost — every tab shows only an icon and a short provider name, with the full source available only through accessible metadata.
+- With valid `pace.primary`/`secondary`/`tertiary` summaries present, verify each summary text is attached to its matching Session/Weekly/Monthly row only, and that a window without a matching pace entry shows no pace text.
+- With a finite, non-negative `credits.remaining` value present, verify a "Credits remaining: N" line is shown; select a provider where it is absent, non-finite, or negative and verify the line does not appear at all.
+
+### Reset-credit disclosure (keyboard)
+
+- Select the provider with `codexResetCredits.availableCount > 0`; verify the availability count line and a collapsed disclosure toggle are both visible, with no expiry entries shown yet.
+- Press `Tab` until the disclosure toggle receives focus; verify a visible focus indicator.
+- Press `Return` on the focused toggle; verify it expands, reveals each `{amount, expiresAt}` entry, its icon/text switch (e.g. "Show" to "Hide"), and that its accessible name/description announces the expanded state (check with an accessibility inspector or screen reader if available).
+- Press `Space` on the same toggle; verify it collapses again and its accessible name/description announces the collapsed state.
+- Click the toggle with a pointer as an additional activation path; verify it also toggles correctly.
+- Select a provider with `codexResetCredits.availableCount === 0`, or with missing/malformed reset data; verify the entire reset-credit section (count line and toggle) is absent, with no zero placeholder.
+- Verify there is no redeem, claim, or other mutating control anywhere in the reset-credit section.
+
+### Narrow popup scrolling
+
+- Resize the popup, or the panel/screen it renders on, to the narrowest supported width; keep the provider with long email, organization, and pace text selected, with the reset disclosure expanded.
+- Verify the popup scrolls vertically and every enrichment line (header email/organization, pace, credits, reset disclosure and its expiry entries, cost) wraps within the popup width.
+- Verify no horizontal scrollbar appears anywhere in the popup and no enrichment text is clipped at the right edge.
+- Widen the popup back to its normal width; verify the same content reflows without leftover clipping or stale wrapping.
+
+### Cost isolation
+
+- Select a provider `cost` supports (`codex` or `claude`) with a valid, matching cost payload available; verify a "Local token-cost estimate" section appears with Session and Last 30 days cost/token lines, labeled as a local estimate, while Usage (windows, pace, credits, resets) is already visible and unaffected by when the cost request finishes.
+- Reconfigure or point the CLI path at a fixture that returns a failing, malformed, or non-matching-provider result for `cost` while `usage` still succeeds; verify Usage remains fully visible and correct, the Cost section is simply absent, and no error or diagnostic text about cost appears anywhere in the popup.
+- Select `All`; verify no cost request is ever triggered for any provider (no cost-related section or process activity) and that returning to a previously selected supported provider shows its already-loaded cost snapshot without issuing a redundant request.
+- Select a provider `cost` does not support; verify no Cost section appears and no cost request is attempted.
+- Confirm the refresh command used for cost, when observable, is exactly `cost --provider {provider} --format json --json-only` and the all-provider usage command remains exactly `usage --provider all --format json --json-only`, unaffected by cost requests.
+
+### Breeze Light/Dark readability
+
+- With a provider showing full enrichment (identity, pace, credits, an expanded reset disclosure, and cost) and the popup open, run `plasma-apply-colorscheme BreezeLight` while the window stays open; verify all enrichment text, the disclosure toggle and its focus indicator, and the Cost section remain readable with sufficient contrast.
+- Run `plasma-apply-colorscheme BreezeDark`; repeat the same readability verification.
+
+### PR 4 partial live evidence (2026-08-15)
+
+| Field | Value |
+|---|---|
+| Evidence class | `verifier-run` (partial — pointer/keyboard automation unavailable, see limitation below) |
+| Observer / source | Orchestrating agent, real `plasmawindowed` session, real `codexbar` CLI at `~/.local/bin/codexbar` |
+| Command path | `~/.local/bin/codexbar` (real, not fixture-backed) |
+| Plasma / runtime context | `plasmawindowed org.kde.plasma.kodexbar.plasma`, live X11/Wayland session, default (BreezeDark-derived) color scheme, package freshly reinstalled via `kpackagetool6 -t Plasma/Applet -u .` from this branch |
+| Ready outcome | Yes — widget left Loading and reached Ready with real provider data |
+| Visible provider rows | `codex` 92%, `claude` 56%, `opencodego` 0%, `gemini` 0%, `copilot` 1.8%, `grok` 28%, plus a collapsed "Show 61 provider failures" disclosure |
+| Compact summary | `92%` badge in the compact representation |
+| Date / reference | 2026-08-15; screenshots retained in orchestrator scratchpad (`plasma-smoke-{1,2,3,4}.png`) |
+| Automation limitations | This session has no working pointer/keyboard input-simulation tool (`xdotool`/`wtype` absent, `ydotoold` not running and not startable without sudo), so provider-tab selection, keyboard disclosure toggling, narrow-width resize, and Breeze theme switching from the "Identity, pace, and credits" / "Reset-credit disclosure" / "Narrow popup scrolling" / "Cost isolation" / "Breeze Light/Dark readability" subsections above were **not** executed automatically and remain open for a human pass before merge |
+
+**Bug found and fixed during this live check**: the first launch attempt (pre-fix package) failed to load at all — `plasmawindowed` showed a fatal error dialog, and the user journal recorded `main.qml:25:38: Invalid alias reference. Unable to find id "providerSelector"`. Root cause: `property alias providerSelector: providerSelector` was declared on the `PlasmoidItem` root, but the `providerSelector` id lived inside `fullRepresentation`'s implicitly-created `Component` — a separate QML id scope the root cannot alias into. This is a real QML scoping defect that `qmllint` and every offscreen `qml6`/`qmltestrunner` harness in this repo did not catch, because none of them load `main.qml` as an actual Plasmoid representation. Fixed by removing the invalid alias and passing `providerSelector.allSelected`/`providerSelector.selectedProvider` as explicit arguments into `maybeRequestCost(isAllSelected, selected)` from both call sites that are in-scope (the `ProviderSelector.onSelectedProviderChanged` handler, and a `Connections` block relocated from root level to inside `fullRepresentation` alongside `providerSelector`). Re-verified: full suite (`./scripts/run-qml-tests.sh`) and `./scripts/lint-qml.sh` both still exit 0 after the fix, and the live widget now reaches Ready with real provider tabs (icon + short name only) and a cost-free `All` view, matching the requirements above.
+
 ## Settings
 
 - With no CLI path configured, verify the configuration-first guidance explains how to save an executable absolute path.

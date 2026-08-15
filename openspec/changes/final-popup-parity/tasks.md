@@ -61,6 +61,6 @@ Both slices verified together as one working tree before the split: `./scripts/r
 
 ## Phase 4: Release Verification
 
-- [ ] 4.1 Update `README.md` and `docs/live-plasma-smoke.md` with optional local-cost, exclusions, reset disclosure, and privacy expectations.
-- [ ] 4.2 Run `./scripts/run-qml-tests.sh`, `./scripts/lint-qml.sh`, `./scripts/validate-package.sh`, and `git diff --check`; record results.
-- [ ] 4.3 Manually smoke `plasmawindowed` in Breeze Light/Dark: keyboard disclosure, selected identity, narrow popup scrolling, cost isolation, and unchanged `All`.
+- [x] 4.1 Update `README.md` and `docs/live-plasma-smoke.md` with optional local-cost, exclusions, reset disclosure, and privacy expectations.
+- [x] 4.2 Run `./scripts/run-qml-tests.sh`, `./scripts/lint-qml.sh`, `./scripts/validate-package.sh`, and `git diff --check`; record results.
+- [~] 4.3 Manually smoke `plasmawindowed` in Breeze Light/Dark: keyboard disclosure, selected identity, narrow popup scrolling, cost isolation, and unchanged `All`. Partially done — see "PR 4 partial live evidence" in `docs/live-plasma-smoke.md`. Live `plasmawindowed` load-tested against real `codexbar` CLI data: found and fixed a fatal QML id-scoping bug (`main.qml` alias into `fullRepresentation`'s implicit `Component` — invisible to any offscreen test), confirmed Ready state, tabs (icon + short name), and cost-free `All`. Remaining: provider-tab selection, keyboard disclosure toggle, narrow-width resize, and Breeze Light/Dark switch — no pointer/keyboard input-simulation tool available in this session (`xdotool`/`wtype` absent, `ydotoold` not running, no passwordless sudo to start it). Needs a human pass before merge.
