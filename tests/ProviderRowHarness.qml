@@ -72,6 +72,11 @@ Item {
         return null
     }
 
+    function isWithinRow(row, item) {
+        var position = item.mapToItem(row, 0, 0)
+        return position.x >= 0 && position.x + item.width <= row.width
+    }
+
     function assertResponsiveGeometry(row, widerWidth, message) {
         var barWidth = row.progressBar.width
         assert(row.percentageLabel.visible,
@@ -264,7 +269,7 @@ Item {
 
     UsageUi.ProviderRow {
         id: enrichedDetailRow
-        width: 160
+        width: 450
         providerData: ({
             provider: "enriched-provider",
             source: "Enriched CLI source",
@@ -283,7 +288,7 @@ Item {
 
     UsageUi.ProviderRow {
         id: largeCostRow
-        width: 160
+        width: 450
         providerData: ({
             provider: "large-cost-provider",
             source: "Large Cost CLI source",
@@ -298,7 +303,7 @@ Item {
 
     UsageUi.ProviderRow {
         id: costFailureRow
-        width: 160
+        width: 450
         providerData: ({
             provider: "cost-failure-provider",
             source: "Cost Failure CLI source",
@@ -456,7 +461,28 @@ Item {
                "reset-credit availability label must wrap safely at narrow widths")
         var narrowCost = findObject(enrichedDetailRow, "costSessionLabel")
         assert(narrowCost.wrapMode === Text.WordWrap && narrowCost.Layout.minimumWidth === 0,
-               "cost label must wrap safely at narrow widths")
+                "cost label must wrap safely at narrow widths")
+
+        // Cost-present and Cost-absent selected-provider states must retain
+        // bounded visible content and semantic names before visual capture.
+        var presentProviderLabel = findObject(enrichedDetailRow, "providerLabel")
+        var absentProviderLabel = findObject(costFailureRow, "providerLabel")
+        var presentCostLabel = findObject(enrichedDetailRow, "costLabel")
+        var absentCostLabel = findObject(costFailureRow, "costLabel")
+        assert(presentCostLabel !== null && presentCostLabel.visible,
+                "cost-present selected provider must expose its visible cost label")
+        assert(absentCostLabel === null || !absentCostLabel.visible,
+                "cost-absent selected provider must not expose a cost label")
+        assert(enrichedDetailRow.Accessible.name.indexOf("enriched-provider") !== -1
+                && costFailureRow.Accessible.name.indexOf("cost-failure-provider") !== -1,
+                "both selected-provider states must expose accessible provider names")
+        assert(presentProviderLabel.Accessible.name.length > 0 && absentProviderLabel.Accessible.name.length > 0,
+                "provider headers must expose accessible labels")
+        assert(isWithinRow(enrichedDetailRow, presentProviderLabel)
+                && isWithinRow(enrichedDetailRow, presentCostLabel),
+                "cost-present selected provider labels must remain within row bounds")
+        assert(isWithinRow(costFailureRow, absentProviderLabel),
+                "cost-absent selected provider header must remain within row bounds")
 
         // Large cost/token values must render as plain grouped numbers, never
         // scientific notation or a locale-dependent decimal separator.

@@ -1,0 +1,35 @@
+{
+  "fixture": {
+    "width": 450,
+    "height": 400,
+    "font": "Noto Sans"
+  },
+  "baselines": [
+    "breeze-light-cost-present.png",
+    "breeze-light-cost-absent.png",
+    "breeze-dark-cost-present.png",
+    "breeze-dark-cost-absent.png"
+  ],
+  "scenarios": [
+    {
+      "name": "breeze-light-cost-present",
+      "theme": "light",
+      "cost": true
+    },
+    {
+      "name": "breeze-light-cost-absent",
+      "theme": "light",
+      "cost": false
+    },
+    {
+      "name": "breeze-dark-cost-present",
+      "theme": "dark",
+      "cost": true
+    },
+    {
+      "name": "breeze-dark-cost-absent",
+      "theme": "dark",
+      "cost": false
+    }
+  ]
+}
