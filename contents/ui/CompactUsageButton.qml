@@ -26,7 +26,7 @@ QQC2.ToolButton {
         spacing: Kirigami.Units.smallSpacing
 
         Kirigami.Icon {
-            source: "utilities-system-monitor"
+            source: Qt.resolvedUrl("../icons/kodexbar-monochrome.svg")
             isMask: true
             color: Kirigami.Theme.textColor
             implicitWidth: Kirigami.Units.iconSizes.small

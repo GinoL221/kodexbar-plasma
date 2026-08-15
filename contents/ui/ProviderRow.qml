@@ -65,6 +65,8 @@ ColumnLayout {
 
         Kirigami.Icon {
             source: root.iconSource(root.providerValue)
+            isMask: true
+            color: Kirigami.Theme.textColor
             implicitWidth: Kirigami.Units.iconSizes.smallMedium
             implicitHeight: Kirigami.Units.iconSizes.smallMedium
             Layout.alignment: Qt.AlignTop

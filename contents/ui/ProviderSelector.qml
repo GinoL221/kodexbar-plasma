@@ -228,6 +228,7 @@ ColumnLayout {
                     activeFocusOnTab: visible
                     text: sourceText.length > 0 ? providerText + " · " + sourceText : providerText
                     icon.source: root.iconResolver(providerData ? providerData.provider : null)
+                    icon.color: Kirigami.Theme.textColor
                     focusPolicy: Qt.StrongFocus
                     Accessible.name: sourceText.length > 0
                         ? Translation.translate("%1 provider, source %2", [providerText, sourceText],
