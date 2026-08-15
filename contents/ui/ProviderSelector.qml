@@ -204,6 +204,31 @@ ColumnLayout {
         activeFocusOnTab: true
         currentIndex: 0
 
+        // Removing the outer ScrollView (see the note above) also removed
+        // its scrollbar, leaving no visual affordance that tabs exist past
+        // the visible window. Qt Quick Controls' ScrollBar attached
+        // property only binds to a Flickable -- attaching it directly on
+        // TabBar itself (a Container, not a Flickable) would be silently
+        // inert. TabBar's contentItem IS that Flickable (a ListView), so
+        // attach the ScrollBar there: same single source of truth for
+        // scroll position established above, just with a visible
+        // thumb/track drawn on top of it.
+        Component.onCompleted: {
+            if (tabBar.contentItem) {
+                (tabBar.contentItem as ListView).QQC2.ScrollBar.horizontal = tabBarScrollBar
+            }
+        }
+
+        QQC2.ScrollBar {
+            id: tabBarScrollBar
+            parent: tabBar
+            orientation: Qt.Horizontal
+            policy: QQC2.ScrollBar.AsNeeded
+            anchors.left: tabBar.left
+            anchors.right: tabBar.right
+            anchors.bottom: tabBar.bottom
+        }
+
         onCurrentIndexChanged: {
             if (root._requestedIndex === currentIndex) {
                 root._requestedIndex = -1

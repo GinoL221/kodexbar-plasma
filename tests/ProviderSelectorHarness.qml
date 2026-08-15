@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as QQC2
 import "../contents/ui" as UsageUi
 
 Item {
@@ -144,6 +145,48 @@ Item {
         assert(codexRect.x >= 0 && codexRect.x + codexDelegate.width <= s.width,
             "scrolling back to an earlier not-fully-visible tab must also bring it fully into view")
 
-        finish()
+        // Discoverability regression: removing the outer ScrollView also
+        // removed its scrollbar, leaving no visual affordance that hidden
+        // tabs (e.g. grok) exist beyond the visible window. A horizontal
+        // ScrollBar must be attached directly to the tab bar's own internal
+        // Flickable (its contentItem), so there is still exactly one
+        // Flickable driving scroll position -- just with a visible
+        // thumb/track on top of it. The attachment happens in the
+        // production component's own Component.onCompleted, which fires on
+        // a later event-loop pass than this harness's synchronous script
+        // (a real, reproducible ordering difference introduced by `pragma
+        // ComponentBehavior: Bound` in ProviderSelector.qml -- verified with
+        // standalone repro cases before writing this deferral). It always
+        // settles before the popup is ever painted for a real user, so
+        // deferring this assertion with Qt.callLater matches real-world
+        // timing without weakening what is proven.
+        Qt.callLater(function () {
+            var scrollBar = (s.tabBar.contentItem as ListView).QQC2.ScrollBar.horizontal
+            assert(scrollBar !== null && scrollBar !== undefined,
+                "the tab bar's internal Flickable must have a horizontal ScrollBar attached for discoverability")
+            assert(scrollBar.size < 1.0,
+                "at this narrow overflowing width the scrollbar must report a visible fraction below 1.0")
+            assert(scrollBar.policy === QQC2.ScrollBar.AsNeeded,
+                "the scrollbar must use AsNeeded policy so it only appears when the tab bar actually overflows")
+
+            // Triangulate: once the popup is wide enough for all seven tabs
+            // to fit without scrolling, the scrollbar must report full
+            // visibility (AsNeeded semantics -- no affordance shown when
+            // nothing is hidden). Widening the fixture requires one more
+            // event-loop pass for the ColumnLayout/Flickable geometry to
+            // resettle before re-reading width and size (a >= 0.999
+            // tolerance absorbs float rounding in the settled ratio, same
+            // as the existing < 0.01 tolerance used above for position).
+            var naturalWidth = s.tabBar.implicitWidth
+            s.width = naturalWidth + 200
+            Qt.callLater(function () {
+                assert(s.tabBar.width >= s.tabBar.implicitWidth,
+                    "the fixture must actually exercise the non-overflowing case")
+                assert(scrollBar.size >= 0.999,
+                    "once every tab fits the visible fraction must settle back to 1.0 (nothing hidden)")
+
+                finish()
+            })
+        })
     }
 }
