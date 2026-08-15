@@ -63,7 +63,7 @@ The delta spec has been successfully merged into the main specification at `open
    - Renamed scenario: "Raw preservation does not authorize display" → "Raw preservation authorizes only approved display fields" with updated assertion text
    - Retained all other scenarios ("Missing commercial or reset data", "Verbatim passthrough", "Real capture fixture")
 
-**Main spec update**: 
+**Main spec update**:
 - Before: 454 lines, 19 requirements
 - After: 493 lines, 20 requirements
 - All existing requirements preserved; no removals, no destructive changes

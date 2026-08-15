@@ -53,7 +53,7 @@
    - Cons: More layout complexity (expandable sections in a popup). Requires careful accessible labeling. Risk of scope creep into "interpret details" if not disciplined.
    - Effort: Medium.
 
-3. **Full raw passthrough UI** — expose all `raw` fields (pace, credits, identity, version, details, provider-specific extras) with defensive rendering. Each field gets its own row/section. Pace is shown as raw values (not interpreted as projections). Credits shown as raw numbers (not labeled as "remaining balance"). 
+3. **Full raw passthrough UI** — expose all `raw` fields (pace, credits, identity, version, details, provider-specific extras) with defensive rendering. Each field gets its own row/section. Pace is shown as raw values (not interpreted as projections). Credits shown as raw numbers (not labeled as "remaining balance").
    - Pros: Maximum information density. Demonstrates the full value of Phase 1's `raw` passthrough.
    - Cons: High risk of crossing into Phase 3/4 territory (pace projection interpretation, credits meaning). Layout complexity explodes. Review budget likely exceeded. Difficult to test exhaustively. Risk of web-generic dashboard patterns creeping in.
    - Effort: High.
