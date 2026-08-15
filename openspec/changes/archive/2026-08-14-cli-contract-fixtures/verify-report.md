@@ -16,9 +16,9 @@ build_output_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca49599
 
 ## Verification Report
 
-**Change**: cli-contract-fixtures  
-**Version**: N/A  
-**Mode**: Strict TDD  
+**Change**: cli-contract-fixtures
+**Version**: N/A
+**Mode**: Strict TDD
 **Artifact store**: Hybrid (OpenSpec + Engram)
 
 ### Completeness
@@ -45,8 +45,8 @@ Native status reported `applyState: all_done`, `verify: ready`, and `taskProgres
 | Fixture value-equality gate | Printed `OK` | 0 | `sha256:a12b7cb43c9d9134b5bb1b35e9096b66775d9e92e7611d1cc92b02edd6782a87` |
 | `git diff --check` | Empty output | 0 | `sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 
-**Coverage**: Analysis skipped — `openspec/config.yaml` configures no coverage tool.  
-**Build**: ✅ Passed.  
+**Coverage**: Analysis skipped — `openspec/config.yaml` configures no coverage tool.
+**Build**: ✅ Passed.
 **Tests**: ✅ All executed suites and harnesses passed.
 
 ### Spec Compliance Matrix
@@ -134,8 +134,8 @@ Coverage analysis skipped — no coverage tool is configured.
 
 ### Quality Metrics
 
-**Linter**: ✅ No errors; exact 56-warning translation baseline accepted.  
-**Type Checker**: ➖ Not available.  
+**Linter**: ✅ No errors; exact 56-warning translation baseline accepted.
+**Type Checker**: ➖ Not available.
 **Package validator**: ✅ Passed.
 
 ### Canonical Verification Evidence
