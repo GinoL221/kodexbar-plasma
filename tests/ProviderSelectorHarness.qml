@@ -169,6 +169,25 @@ Item {
             assert(scrollBar.policy === QQC2.ScrollBar.AsNeeded,
                 "the scrollbar must use AsNeeded policy so it only appears when the tab bar actually overflows")
 
+            // Layout-position regression: a scrollbar merely attached for
+            // scroll-position tracking is not enough -- it must also be
+            // rendered as a dedicated strip below the tab row, never
+            // overlapping it. Map both items into the selector's own
+            // coordinate space (mapToItem) so this holds regardless of the
+            // scrollbar's actual parent in the tree.
+            var tabBarBottom = s.tabBar.mapToItem(s, 0, s.tabBar.height).y
+            var scrollBarTop = scrollBar.mapToItem(s, 0, 0).y
+            assert(scrollBarTop >= tabBarBottom - 0.01,
+                "the scrollbar's top edge must be at or below the tab bar's bottom edge, never overlapping the tab row")
+
+            // ProviderSelector.qml's ColumnLayout currently contains only
+            // the tab bar and this scrollbar, so the ColumnLayout's own
+            // reserved height must genuinely grow to include the
+            // scrollbar's height -- proving space was reserved by layout,
+            // not just visually non-overlapping by coincidence.
+            assert(s.implicitHeight >= s.tabBar.height + scrollBar.height - 0.01,
+                "the ColumnLayout must reserve dedicated height for the scrollbar as a real layout sibling")
+
             // Triangulate: once the popup is wide enough for all seven tabs
             // to fit without scrolling, the scrollbar must report full
             // visibility (AsNeeded semantics -- no affordance shown when
@@ -184,6 +203,14 @@ Item {
                     "the fixture must actually exercise the non-overflowing case")
                 assert(scrollBar.size >= 0.999,
                     "once every tab fits the visible fraction must settle back to 1.0 (nothing hidden)")
+
+                // Same overlap check after widening: still must never sit
+                // above the tab bar's bottom edge, even when less visually
+                // prominent (size settled near 1.0).
+                var widenedTabBarBottom = s.tabBar.mapToItem(s, 0, s.tabBar.height).y
+                var widenedScrollBarTop = scrollBar.mapToItem(s, 0, 0).y
+                assert(widenedScrollBarTop >= widenedTabBarBottom - 0.01,
+                    "after widening, the scrollbar must still be positioned at or below the tab bar's bottom edge")
 
                 finish()
             })

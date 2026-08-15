@@ -211,22 +211,13 @@ ColumnLayout {
         // TabBar itself (a Container, not a Flickable) would be silently
         // inert. TabBar's contentItem IS that Flickable (a ListView), so
         // attach the ScrollBar there: same single source of truth for
-        // scroll position established above, just with a visible
-        // thumb/track drawn on top of it.
+        // scroll position, independent of where the ScrollBar instance
+        // itself is parented/rendered (see the standard "non-attached"
+        // ScrollBar usage pattern in the Qt Quick Controls docs).
         Component.onCompleted: {
             if (tabBar.contentItem) {
                 (tabBar.contentItem as ListView).QQC2.ScrollBar.horizontal = tabBarScrollBar
             }
-        }
-
-        QQC2.ScrollBar {
-            id: tabBarScrollBar
-            parent: tabBar
-            orientation: Qt.Horizontal
-            policy: QQC2.ScrollBar.AsNeeded
-            anchors.left: tabBar.left
-            anchors.right: tabBar.right
-            anchors.bottom: tabBar.bottom
         }
 
         onCurrentIndexChanged: {
@@ -279,5 +270,21 @@ ColumnLayout {
                     : Translation.translate("No source provided", [], typeof i18n === "function" ? i18n : null)
             }
         }
+    }
+
+    // An ordinary ColumnLayout sibling declared right after TabBar, not an
+    // anchored overlay child of it: TabBar's own implicitHeight/
+    // Layout.preferredHeight does not grow just because an overlay child is
+    // anchored to its edges, so an anchored ScrollBar renders on top of
+    // whatever comes next in the layout instead of in its own reserved
+    // space. Placing it as a real layout item makes the ColumnLayout
+    // reserve genuine height for it, so it always renders as a distinct
+    // strip below the tab row. The functional binding to tabBar.contentItem
+    // above is unaffected -- only this instance's own placement changes.
+    QQC2.ScrollBar {
+        id: tabBarScrollBar
+        Layout.fillWidth: true
+        orientation: Qt.Horizontal
+        policy: QQC2.ScrollBar.AsNeeded
     }
 }
