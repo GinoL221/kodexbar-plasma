@@ -282,6 +282,21 @@ Item {
     }
 
     UsageUi.ProviderRow {
+        id: largeCostRow
+        width: 160
+        providerData: ({
+            provider: "large-cost-provider",
+            source: "Large Cost CLI source",
+            windows: [{ label: "Session", usedPercent: 40 }]
+        })
+        costSnapshot: ({
+            provider: "large-cost-provider", source: "local",
+            sessionCostUSD: 10.4552, sessionTokens: 139811000,
+            last30DaysCostUSD: 245.6, last30DaysTokens: 987654321
+        })
+    }
+
+    UsageUi.ProviderRow {
         id: costFailureRow
         width: 160
         providerData: ({
@@ -442,6 +457,17 @@ Item {
         var narrowCost = findObject(enrichedDetailRow, "costSessionLabel")
         assert(narrowCost.wrapMode === Text.WordWrap && narrowCost.Layout.minimumWidth === 0,
                "cost label must wrap safely at narrow widths")
+
+        // Large cost/token values must render as plain grouped numbers, never
+        // scientific notation or a locale-dependent decimal separator.
+        var largeCostSession = findObject(largeCostRow, "costSessionLabel")
+        var largeCostLast30 = findObject(largeCostRow, "costLast30DaysLabel")
+        assert(largeCostSession.text.indexOf("e+") === -1 && largeCostLast30.text.indexOf("e+") === -1,
+               "large cost/token values must never render in scientific notation")
+        assert(largeCostSession.text.indexOf("10.46") !== -1, "session cost must round to two decimals")
+        assert(largeCostSession.text.indexOf("139,811,000") !== -1, "session tokens must render as a comma-grouped integer")
+        assert(largeCostLast30.text.indexOf("245.60") !== -1, "last-30-days cost must round to two decimals")
+        assert(largeCostLast30.text.indexOf("987,654,321") !== -1, "last-30-days tokens must render as a comma-grouped integer")
 
         var providerLabel = findObject(row, "providerLabel")
         var sourceLabel = findObject(row, "sourceLabel")
