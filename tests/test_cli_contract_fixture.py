@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "codexbar-usage-capture.json"
+COST_FIXTURE = ROOT / "tests" / "fixtures" / "codexbar-cost-capture.json"
 DOCS = ROOT / "docs" / "cli-contract-capture.md"
 
 
@@ -126,6 +127,82 @@ class CliContractFixtureTest(unittest.TestCase):
         self.assertEqual(codex.get("version"), "0.147.0")
         usage = codex.get("usage", {})
         self.assertEqual(usage.get("loginMethod"), "plus")
+
+
+class CostCliContractFixtureTest(unittest.TestCase):
+    def fixture_bytes(self):
+        return COST_FIXTURE.read_bytes()
+
+    def fixture_text(self):
+        return COST_FIXTURE.read_text(encoding="utf-8")
+
+    def fixture_json(self):
+        return json.loads(self.fixture_text())
+
+    def test_cost_fixture_path_and_bytes_pinned(self):
+        self.assertTrue(COST_FIXTURE.exists(), "cost fixture file must exist")
+        data = self.fixture_bytes()
+        self.assertGreater(len(data), 0, "cost fixture must not be empty")
+        digest = hashlib.sha256(data).hexdigest()
+        self.assertEqual(
+            digest,
+            "dba074976c315e023004bcdbc81ede72916a397b7417d85ffde54779aa2e9825",
+            "cost fixture bytes must match the pinned Phase 1 capture",
+        )
+
+    def test_cost_fixture_is_valid_json_array(self):
+        payload = self.fixture_json()
+        self.assertIsInstance(payload, list)
+        self.assertGreater(len(payload), 0, "cost fixture must contain at least one entry")
+
+    def test_cost_docs_reference_fixture_path_and_capture_date(self):
+        text = DOCS.read_text(encoding="utf-8")
+        self.assertIn("tests/fixtures/codexbar-cost-capture.json", text)
+        self.assertIn("2026-08-15", text)
+
+    def test_cost_docs_record_exact_argv_evidence(self):
+        text = DOCS.read_text(encoding="utf-8")
+        self.assertIn("cost --provider {provider} --format json --json-only", text)
+
+    def test_cost_docs_record_binary_pin(self):
+        text = DOCS.read_text(encoding="utf-8")
+        self.assertIn(
+            "sha256 `2a914798540109cabba2f600a3ae4f19d8c95096ff686b346eaf4851f3078b4d`",
+            text,
+        )
+
+    def test_cost_fixture_preserves_key_type_fidelity(self):
+        payload = self.fixture_json()
+        seen_providers = set()
+        for entry in payload:
+            self.assertIsInstance(entry, dict)
+            self.assertIn("provider", entry)
+            self.assertIsInstance(entry["provider"], str)
+            seen_providers.add(entry["provider"])
+            self.assertEqual(entry.get("source"), "local", "cost entries must be labeled a local estimate")
+            for key in ("sessionCostUSD", "sessionTokens", "last30DaysCostUSD", "last30DaysTokens"):
+                self.assertIn(key, entry)
+                self.assertIsInstance(entry[key], (int, float))
+                self.assertGreaterEqual(entry[key], 0)
+        self.assertIn("codex", seen_providers)
+        self.assertIn("claude", seen_providers)
+
+    def test_no_unredacted_home_path_or_project_name_in_cost_fixture(self):
+        text = self.fixture_text()
+        home_paths = re.findall(r"/home/[^/\s`\"']+", text)
+        self.assertTrue(all(path == "/home/redacted-user" for path in home_paths))
+        self.assertNotIn("hoteleria", text)
+
+    def test_no_token_secret_key_session_url_patterns_remain_in_cost_fixture(self):
+        text = self.fixture_text()
+        sensitive = re.compile(r"\b(sk-[a-zA-Z0-9]+|api[_-]?key|token|secret|bearer)\b", re.IGNORECASE)
+        matches = sensitive.findall(text)
+        for match in matches:
+            self.assertIn(
+                match.lower(),
+                {"token", "tokens", "api key", "api_key"},
+                "no structured credential value should survive redaction",
+            )
 
 
 if __name__ == "__main__":
