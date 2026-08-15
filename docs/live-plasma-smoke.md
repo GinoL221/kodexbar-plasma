@@ -4,6 +4,8 @@ This is a **manual** checklist for a real Plasma desktop. The offscreen `Timeout
 
 For popup craft and CodexBar→Plasma structural parity (tabs, header identity, pace, resets, cost, anti-patterns), also complete [ui-parity-checklist.md](ui-parity-checklist.md). Load `skills/plasma-kirigami-ui/SKILL.md` before UI implementation work.
 
+Offscreen selected-provider pixel coverage lives in [visual-regression.md](visual-regression.md). It does not exercise `PlasmoidItem`, live Plasma, or assistive-technology traversal — this checklist remains the live-Plasma authority.
+
 ## Start
 
 The legacy `org.kde.plasma.kodexbar` and current `org.kde.plasma.kodexbar.plasma` packages may coexist. Install or update only the current package, then launch it without offscreen rendering:
