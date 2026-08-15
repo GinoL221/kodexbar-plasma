@@ -114,14 +114,18 @@ Provider selection is presentation-only and resets when the popup is reopened. T
 The popup renders supported CLI fields:
 
 - Session, Weekly, and Monthly usage windows when present
+- provider `version` and `loginMethod` when the CLI supplies them
+- valid, non-excluded `usage.details[]` titles and label/value rows in a collapsed-by-default, keyboard-expandable section
 - raw source and reset values when present
 - bounded per-provider CLI/runtime errors
+
+It does **not** render email, organization, pace, credits, cost, or token values, even when they appear inside detail titles, labels, or values. Malformed or missing details are omitted safely.
 
 ## MVP exclusions
 
 KodexBar Plasma deliberately does not implement provider implementations, authentication or cookie automation, fallback probing, reset or account actions, provider or source switching, calculated reset durations, or charts. Use CodexBar and provider tools for those responsibilities.
 
-Cost, credit, token, pace, and other richer per-provider values are never computed, estimated, or requested by this widget. When the CodexBar CLI itself returns such fields, the data layer preserves them verbatim under a per-provider `raw` key so later phases can build on real data — **the popup does not display them today**. Surfacing them in the UI is planned roadmap work, not current behavior.
+Cost, credit, token, and pace values are never computed, estimated, requested, or displayed by this widget. The popup may display only CLI-supplied provider `version`, `usage.loginMethod`, and valid non-excluded `usage.details[]` content; all other richer per-provider fields remain preserved verbatim under a per-provider `raw` key without a display path. Surfacing excluded fields in the UI is planned roadmap work, not current behavior.
 
 ## Settings
 

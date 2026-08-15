@@ -7,6 +7,7 @@ import org.kde.plasma.components as PlasmaComponents
 
 import "../code/UsageModel.js" as UsageModel
 import "../code/ProviderIcons.js" as ProviderIcons
+import "../code/ProviderDetails.js" as ProviderDetailsLogic
 import "../code/Translation.js" as Translation
 
 ColumnLayout {
@@ -17,6 +18,7 @@ ColumnLayout {
     property bool summary: false
     property string preferredWindowKey: "automatic"
     property var iconResolver: function(value) { return root.defaultIconSource(value) }
+    readonly property alias providerDetails: providerDetails
 
     readonly property var windows: providerData && providerData.windows instanceof Array
         ? providerData.windows : []
@@ -34,6 +36,11 @@ ColumnLayout {
         ? Translation.plural("%1 available usage window", "%1 available usage windows", root.displayedWindows.length,
             typeof i18np === "function" ? i18np : null)
         : Translation.translate("No usage windows available", [], typeof i18n === "function" ? i18n : null)
+    readonly property bool showHeaderDetails: !root.compact && !root.summary
+    readonly property string headerVersion: root.showHeaderDetails
+        ? ProviderDetailsLogic.validVersion(root.providerData) : ""
+    readonly property string headerLogin: root.showHeaderDetails
+        ? ProviderDetailsLogic.validLoginMethod(root.providerData) : ""
 
     function iconSource(value) {
         return root.iconResolver(value)
@@ -87,6 +94,26 @@ ColumnLayout {
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }
+
+            PlasmaComponents.Label {
+                id: versionLabel
+                objectName: "versionLabel"
+                visible: root.headerVersion.length > 0
+                text: root.headerVersion
+                color: Kirigami.Theme.disabledTextColor
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+
+            PlasmaComponents.Label {
+                id: loginLabel
+                objectName: "loginLabel"
+                visible: root.headerLogin.length > 0
+                text: root.headerLogin
+                color: Kirigami.Theme.disabledTextColor
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
         }
     }
 
@@ -101,6 +128,13 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.minimumWidth: 0
         }
+    }
+
+    ProviderDetails {
+        id: providerDetails
+        visible: root.showHeaderDetails && acceptedDetails.length > 0
+        providerData: root.providerData
+        Layout.fillWidth: true
     }
 
     Kirigami.Separator {

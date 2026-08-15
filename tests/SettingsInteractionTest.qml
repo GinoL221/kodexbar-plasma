@@ -102,8 +102,8 @@ TestCase {
     }
 
     function test_cliPathAllowsEmptyAndRejectsRelativePaths() {
-        verify(cliControl.placeholderText !== "/home/ginopc/.local/bin/codexbar",
-               "the CLI field must not expose an author-specific placeholder")
+        verify(cliControl.placeholderText !== "/home/redacted-user/.local/bin/codexbar",
+               "the CLI field must not expose a user-specific placeholder")
         cliControl.text = ""
         cliControl.forceActiveFocus()
         tryVerify(function() { return cliControl.activeFocus }, 1000, "the CLI path field must accept focus")

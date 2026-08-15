@@ -24,7 +24,7 @@ Item {
         errors: {
             var failures = []
             failures.push({ provider: "provider-auth", source: "raw-source-auth", error: { kind: "auth", message: "Authentication failed: API key missing. Set OPENAI_API_KEY or run codexbar auth login." } })
-            failures.push({ provider: "provider-path", source: "raw-source-path", error: "Command failed: /home/ginopc/.config/codexbar/bin/provider --api-key SECRET: No such file or directory" })
+            failures.push({ provider: "provider-path", source: "raw-source-path", error: "Command failed: /home/redacted-user/.config/codexbar/bin/provider --api-key SECRET: No such file or directory" })
             failures.push({ provider: "provider-platform", source: "raw-source-platform", error: "Unsupported platform: spawn /opt/codexbar/provider ENOEXEC; run provider --verbose" })
             for (var index = 3; index < 23; index++) {
                 failures.push({ provider: "provider-" + index, source: "raw-source-" + index, error: "failure-" + index })
@@ -45,7 +45,7 @@ Item {
                "authentication guidance must not be rendered")
         assert(summary.failureText(summary.renderedErrors[1]) === "Provider is unavailable",
                "CLI failures must use a safe availability message")
-        assert(summary.failureText(summary.renderedErrors[1]).indexOf("/home/ginopc") === -1,
+        assert(summary.failureText(summary.renderedErrors[1]).indexOf("/home/redacted-user") === -1,
                "local filesystem paths must not be rendered")
         assert(summary.failureText(summary.renderedErrors[1]).indexOf("--api-key") === -1,
                "commands and API-key arguments must not be rendered")

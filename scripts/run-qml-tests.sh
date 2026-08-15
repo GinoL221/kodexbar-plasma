@@ -26,6 +26,16 @@ for test_file in "$repo_root/tests/UsageModelTest.qml" "$repo_root/tests/UsageCo
         "$runner" -input "$test_file" -import "$repo_root"
 done
 
+for color_scheme in BreezeLight.colors BreezeDark.colors; do
+    printf 'Running tests/ProviderDetailsIntegrationTest.qml with %s\n' "$color_scheme"
+    KDE_COLOR_SCHEME="/usr/share/color-schemes/$color_scheme" \
+        QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
+        "$runner" -input "$repo_root/tests/ProviderDetailsIntegrationTest.qml" -import "$repo_root"
+done
+
+printf 'Running tests/test_cli_contract_fixture.py\n'
+python3 "$repo_root/tests/test_cli_contract_fixture.py"
+
 for harness in \
     RequestTimeoutHarness \
     PreferredWindowHarness \
@@ -43,6 +53,7 @@ for harness in \
     MainCompactHarness \
     CompactUsageButtonHarness \
     ProviderRowHarness \
+    ProviderDetailsHarness \
     ProviderSelectorHarness \
     ErrorSummaryHarness; do
     printf 'Running tests/%s.qml\n' "$harness"

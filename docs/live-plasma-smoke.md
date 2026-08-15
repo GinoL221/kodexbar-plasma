@@ -102,6 +102,19 @@ usage --provider all --format json --json-only
 - Refresh with a selected provider after reordering providers; verify it remains selected by identity. Then remove that provider or its windows and verify selection falls back to the first usable provider, or `All` when none remain.
 - With usable providers plus failures, verify provider content precedes one global collapsed error summary, its count is correct, and its bounded expansion preserves error order.
 
+## Provider header and dynamic details
+
+- Select a provider whose CLI payload includes `version` and/or `usage.loginMethod`; verify both appear as muted header metadata without placeholders.
+- Select a provider whose payload lacks `version` or `usage.loginMethod` but carries `identity.loginMethod`; verify `identity.loginMethod` is **not** shown and no placeholder appears.
+- With valid `usage.details[]` entries present, verify the `Show details` control begins collapsed and is reachable with `Tab`.
+- Press `Enter` or `Space` on the collapsed control; verify it expands and reveals accepted detail titles and label/value rows verbatim.
+- Press `Enter` or `Space` again; verify it collapses.
+- Verify detail titles and values wrap at narrow popup widths and do not produce horizontal overflow.
+- Verify `Email`, `Organization`, `Pace`, `Credits`, `Cost`, and `Tokens` details (including camelCase or hyphenated variants, and `email signature`) are never displayed, even when nested in titles, labels, or values.
+- Verify malformed, missing, or non-array `usage.details` and malformed rows are omitted without error.
+- With expanded details that exceed the popup height, verify vertical scrolling keeps every row reachable and no horizontal scrollbar appears.
+- Repeat the header/details checks in Breeze Light and Breeze Dark; verify text, focus, and the expanded section remain readable.
+
 ## Settings
 
 - With no CLI path configured, verify the configuration-first guidance explains how to save an executable absolute path.

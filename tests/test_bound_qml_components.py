@@ -16,6 +16,7 @@ class BoundQmlComponentsTest(unittest.TestCase):
             "ProviderRow.qml",
             "UsageWindowRow.qml",
             "ErrorSummary.qml",
+            "ProviderDetails.qml",
         ):
             with self.subTest(name=name):
                 self.assertIn("pragma ComponentBehavior: Bound", self.source(name))
@@ -26,6 +27,7 @@ class BoundQmlComponentsTest(unittest.TestCase):
             "ProviderSelector.qml": "required property int index",
             "ProviderRow.qml": "required property var modelData",
             "ErrorSummary.qml": "required property var modelData",
+            "ProviderDetails.qml": "required property var modelData",
         }
         for name, declaration in expected_declarations.items():
             with self.subTest(name=name):
@@ -38,12 +40,20 @@ class BoundQmlComponentsTest(unittest.TestCase):
             "ProviderRow.qml": ("root.compact", "root.summary"),
             "UsageWindowRow.qml": ("root.windowData", "root.hasFinitePercent"),
             "ErrorSummary.qml": ("root.valueText", "root.failureText"),
+            "ProviderDetails.qml": ("root.acceptedDetails", "root.expanded"),
         }
         for name, accessors in expected_access.items():
             source = self.source(name)
             for accessor in accessors:
                 with self.subTest(name=name, accessor=accessor):
                     self.assertIn(accessor, source)
+
+    def test_popup_scroll_view_disables_horizontal_uses_vertical_as_needed(self):
+        source = self.source("main.qml")
+        self.assertIn("ScrollBar.horizontal.policy", source)
+        self.assertIn("ScrollBar.AlwaysOff", source)
+        self.assertIn("ScrollBar.vertical.policy", source)
+        self.assertIn("ScrollBar.AsNeeded", source)
 
 
 if __name__ == "__main__":
