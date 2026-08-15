@@ -26,6 +26,10 @@ Chain strategy: feature-branch-chain
 | 3 | Safe selected-detail UI | PR 3 | `./scripts/run-qml-tests.sh` | ProviderRow/Selector narrow-width harness | extractors, popup components, UI tests |
 | 4 | Release evidence | PR 4 | `./scripts/lint-qml.sh` | `plasmawindowed` Breeze/keyboard smoke | docs, package/lint/smoke evidence |
 
+### PR 2 Size Exception (accepted)
+
+PR 2 landed at ~569 authored changed lines, above the ~400-line per-unit target. Maintainer accepted `size:exception` on 2026-08-15: the overage is real-subprocess race/coalescing/60s-termination coverage for `CostController.qml` (the exact runtime boundary this work unit exists to prove), not padding. No further split was requested. `./scripts/run-qml-tests.sh` exit 0, all pre-existing `UsageController*` regressions and the 17/17 `UsageControllerFixture` suite (including the new `committedGeneration` case) remain green.
+
 ## Phase 1: Contract Foundation
 
 - [x] 1.1 RED: Extend `tests/test_cli_contract_fixture.py` for `tests/fixtures/codexbar-cost-capture.json`: redaction, key/type fidelity, version/date, source, and exact cost argv evidence.
@@ -34,10 +38,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2: Independent Cost Lifecycle
 
-- [ ] 2.1 RED: Extend `tests/UsageControllerFixture.qml` plus a focused cost DataSource harness to preserve exact `usage --provider all --format json --json-only` argv and all existing usage lifecycle/coalescing/timeout/stale regressions.
-- [ ] 2.2 GREEN: Expose only successful `committedGeneration` in `contents/ui/UsageController.qml`; do not change its command or lifecycle branches.
-- [ ] 2.3 RED/GREEN: Create `contents/ui/CostController.qml` and tests for allowlisted shell-quoted `cost --provider {provider} --format json --json-only`, validated path, provider/generation/serial races, coalescing, replacement, and 60s termination.
-- [ ] 2.4 REFACTOR: Prove failed, timed-out, or stale cost never mutates usage and publishes no diagnostics.
+- [x] 2.1 RED: Extend `tests/UsageControllerFixture.qml` plus a focused cost DataSource harness to preserve exact `usage --provider all --format json --json-only` argv and all existing usage lifecycle/coalescing/timeout/stale regressions.
+- [x] 2.2 GREEN: Expose only successful `committedGeneration` in `contents/ui/UsageController.qml`; do not change its command or lifecycle branches.
+- [x] 2.3 RED/GREEN: Create `contents/ui/CostController.qml` and tests for allowlisted shell-quoted `cost --provider {provider} --format json --json-only`, validated path, provider/generation/serial races, coalescing, replacement, and 60s termination.
+- [x] 2.4 REFACTOR: Prove failed, timed-out, or stale cost never mutates usage and publishes no diagnostics.
 
 ## Phase 3: Selected-Provider Presentation
 
