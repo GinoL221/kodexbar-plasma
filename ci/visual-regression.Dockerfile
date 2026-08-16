@@ -1,15 +1,21 @@
-FROM registry.opensuse.org/opensuse/tumbleweed@sha256:486ca7bf37bf87be5f4401ad1965e908c405b7b17a0298665c5765f2d81df078
+FROM registry.opensuse.org/opensuse/tumbleweed:latest
 
 LABEL org.opencontainers.image.source="https://github.com/GinoL221/kodexbar-plasma" \
       org.opencontainers.image.description="Qt 6, Kirigami, Plasma, Pillow, Noto Sans, and Breeze color schemes for KodexBar QML visual regression"
 
+# Floating :latest, not a pinned digest: Tumbleweed is a rolling release and
+# registry.opensuse.org garbage-collects old digests (the pinned sha256 this
+# Dockerfile started from, copied from ci/qml-lint.Dockerfile, stopped
+# resolving after a few months). This job is already continue-on-error and
+# tolerates day-to-day package drift, so a floating tag trades
+# reproducibility for a base image that keeps resolving.
+#
 # Base Qt6/Kirigami/Plasma set mirrors ci/qml-lint.Dockerfile so org.kde.kirigami
 # resolves the same way it does for qmllint6 in that already-working image.
-# `breeze6` is a best-effort guess for the package that ships
-# /usr/share/color-schemes/BreezeLight.colors and BreezeDark.colors on Tumbleweed;
-# it was not verified against a live zypper repo and may need correction after
-# the first real run of this workflow (the job is continue-on-error, so a wrong
-# name here fails visibly without blocking merges).
+# plasma6-integration-plugin provides the "kde" QPA platform theme
+# (KDEPlasmaPlatformTheme6.so) that QT_QPA_PLATFORMTHEME=kde loads for the
+# Dark-scenario palette probe; it pulls in plasma6-workspace as a hard
+# dependency, which is the bulk of this image's size.
 RUN zypper --non-interactive install --no-recommends \
         breeze6 \
         fontconfig \
@@ -19,6 +25,7 @@ RUN zypper --non-interactive install --no-recommends \
         libplasma6-components \
         noto-sans-fonts \
         plasma5support6 \
+        plasma6-integration-plugin \
         python3-Pillow \
         python3-base \
         qt6-declarative-imports \
