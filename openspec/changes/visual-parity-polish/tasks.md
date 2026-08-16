@@ -34,9 +34,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: ProviderHeader Two-Column (PR 2)
 
-- [ ] 2.1 RED: Update `tests/ProviderDetailsIntegrationTest.qml` — assert right-column badge visible/right-aligned when `validLoginMethod` passes, absent (no placeholder) when invalid/absent, left column unaffected; run tests, confirm failure.
-- [ ] 2.2 GREEN: Restructure `contents/ui/ProviderHeader.qml` into left `ColumnLayout` (identity/source/version/email/org/updated) + right badge `ColumnLayout` (`Qt.AlignTop | Qt.AlignRight`) per D4-D5; preserve all seven `objectName`s.
-- [ ] 2.3 Verify `./scripts/run-qml-tests.sh` passes.
+- [x] 2.1 RED: Update `tests/ProviderDetailsIntegrationTest.qml` — assert right-column badge visible/right-aligned when `validLoginMethod` passes, absent (no placeholder) when invalid/absent, left column unaffected; run tests, confirm failure.
+- [x] 2.2 GREEN: Restructure `contents/ui/ProviderHeader.qml` into left `ColumnLayout` (identity/source/version/email/org/updated) + right badge `ColumnLayout` (`Qt.AlignTop | Qt.AlignRight`) per D4-D5; preserve all seven `objectName`s.
+- [x] 2.3 Verify `./scripts/run-qml-tests.sh` passes.
 
 ## Phase 3: ProviderSelector Tab-Percent (PR 3)
 

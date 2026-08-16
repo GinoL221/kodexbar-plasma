@@ -79,16 +79,6 @@ RowLayout {
         }
 
         PlasmaComponents.Label {
-            id: loginLabel
-            objectName: "loginLabel"
-            visible: root.headerLogin.length > 0
-            text: root.headerLogin
-            color: Kirigami.Theme.disabledTextColor
-            elide: Text.ElideRight
-            Layout.fillWidth: true
-        }
-
-        PlasmaComponents.Label {
             id: emailLabel
             objectName: "emailLabel"
             visible: root.headerEmail.length > 0
@@ -116,6 +106,22 @@ RowLayout {
             color: Kirigami.Theme.disabledTextColor
             elide: Text.ElideRight
             Layout.fillWidth: true
+        }
+    }
+
+    ColumnLayout {
+        Layout.alignment: Qt.AlignTop | Qt.AlignRight
+        visible: root.headerLogin.length > 0
+        spacing: 0
+
+        PlasmaComponents.Label {
+            id: loginLabel
+            objectName: "loginLabel"
+            visible: root.headerLogin.length > 0
+            text: root.headerLogin
+            color: Kirigami.Theme.disabledTextColor
+            elide: Text.ElideRight
+            horizontalAlignment: Text.AlignRight
         }
     }
 }

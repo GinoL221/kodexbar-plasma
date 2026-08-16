@@ -395,6 +395,36 @@ TestCase {
         verify(costPresent.x >= 0 && costPresent.x + costPresent.width <= validRow.width)
     }
 
+    function test_headerBadgeOccupiesRightColumnWhenLoginMethodValid() {
+        var login = findByObjectName(validRow, "loginLabel")
+        var provider = findByObjectName(validRow, "providerLabel")
+        verify(login.visible)
+        compare(login.text, "synthetic-login")
+
+        // The badge lives in a right-aligned column: its right edge must reach
+        // the row's right edge, and it must start to the right of the left
+        // column's identity label instead of stacking directly beneath it.
+        var loginRight = login.mapToItem(validRow, login.width, 0).x
+        var providerLeft = provider.mapToItem(validRow, 0, 0).x
+        var loginLeft = login.mapToItem(validRow, 0, 0).x
+        verify(loginRight > validRow.width - Kirigami.Units.smallSpacing * 2,
+               "badge right edge (" + loginRight + ") must reach row right edge (" + validRow.width + ")")
+        verify(loginLeft > providerLeft,
+               "badge (x=" + loginLeft + ") must sit right of the left identity column (x=" + providerLeft + "), not beneath it")
+    }
+
+    function test_headerBadgeOmittedWithoutPlaceholderLeavesLeftColumnUnaffected() {
+        var login = findByObjectName(emptyMetadataRow, "loginLabel")
+        var provider = findByObjectName(emptyMetadataRow, "providerLabel")
+        var source = findByObjectName(emptyMetadataRow, "sourceLabel")
+        verify(!login.visible)
+        compare(login.text, "")
+        verify(provider.visible)
+        compare(provider.text, "empty-metadata")
+        verify(source.visible)
+        verify(findText(emptyMetadataRow, "Unknown") === null)
+    }
+
     function test_expandedOverHeightDetailsAreVerticallyReachableWithoutHorizontalOverflow() {
         var details = overHeightRow.providerDetails
         details.expanded = true
