@@ -1,6 +1,6 @@
 # Roadmap
 
-Short post-parity backlog. Product behavior for usage, selected-provider enrichment, and local cost is shipped; this list is hygiene, craft, and test infrastructure.
+Short post-parity backlog. Product behavior for usage, selected-provider enrichment, and local cost is shipped; remaining work is ops and deferred product decisions.
 
 ## Done (recent)
 
@@ -13,14 +13,17 @@ Short post-parity backlog. Product behavior for usage, selected-provider enrichm
 - P0b UI craft skill + `docs/ui-parity-checklist.md`
 - P1 offscreen visual regression + deterministic Breeze Light/Dark inject
 - P1b `run-qml-tests.sh` auto-discovers plain `*Harness.qml`
+- P2 process notes → [CONTRIBUTING.md](CONTRIBUTING.md)
+- P3 release checklist → [docs/release-checklist.md](docs/release-checklist.md)
 
-## Next
+## Next / deferred
 
-| Priority | Item | Notes |
-|---|---|---|
-| P2 | Process notes | SDD vs chore rules already in ROADMAP/PR template; expand only if needed |
-| P3 | Deferred product | Legacy package ID sunset date; release checklist; optional self-hosted QML CI |
-| Later | Split oversized harnesses | e.g. `ProviderRowHarness.qml` when next touched |
+| Item | Notes |
+|---|---|
+| Legacy package sunset | `org.kde.plasma.kodexbar` may coexist indefinitely. **Do not auto-remove.** When ready: announce date, document manual migrate (install current ID, copy settings, remove old widget), then stop shipping legacy. No target date yet. |
+| Self-hosted QML CI | Only if local `./scripts/run-qml-tests.sh` is skipped often enough to hurt |
+| Split oversized harnesses | e.g. `ProviderRowHarness.qml` when next touched |
+| Harden visual CI | Goldens are Docker-authoritative; optional blocking later if flakes stay near zero |
 
 ## Explicit non-goals
 
@@ -30,6 +33,8 @@ Short post-parity backlog. Product behavior for usage, selected-provider enrichm
 - Full `plasmawindowed` screenshot CI on GitHub-hosted runners
 
 ## How to work items
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor rules. Summary:
 
 - **SDD** for CLI contract, lifecycle, PII display rules, or substantial behavior
 - **Direct PR** for docs, skills, chore, and small runner changes

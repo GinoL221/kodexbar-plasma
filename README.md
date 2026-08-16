@@ -90,7 +90,7 @@ kpackagetool6 -t Plasma/Applet -u .
 plasmashell --replace
 ```
 
-Both package IDs can coexist. Do not remove either package, mutate panel containments, or attempt an automatic cross-ID migration.
+Both package IDs can coexist. Do not remove either package, mutate panel containments, or attempt an automatic cross-ID migration. Legacy sunset, if ever, will be an **announced** manual migrate — see [ROADMAP.md](ROADMAP.md).
 
 ### Optional manual settings copy
 
@@ -232,9 +232,11 @@ For the manual real-desktop checklist, including keyboard traversal and Breeze t
 
 For popup craft and structural parity after UI changes, see [docs/ui-parity-checklist.md](docs/ui-parity-checklist.md) and load `skills/plasma-kirigami-ui/SKILL.md` before editing QML.
 
-## Development backlog
+## Development
 
-Near-term hygiene, UI craft, and test-infra items live in [ROADMAP.md](ROADMAP.md).
+- Contributing rules: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Backlog and deferred product notes: [ROADMAP.md](ROADMAP.md)
+- Release gate: [docs/release-checklist.md](docs/release-checklist.md)
 
 ## How it works
 
