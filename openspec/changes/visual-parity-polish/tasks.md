@@ -60,11 +60,12 @@ Chain strategy: stacked-to-main
 
 ## Phase 5: CostSection + StatusFooter (PR 5)
 
-- [ ] 5.1 RED: Extend `tests/ProviderDetailsIntegrationTest.qml` with footer scenarios — status/last-updated shown, `Overview` omits updated-at, no count/Settings/About/Quit/Add-Account control; confirm failure (footer absent).
-- [ ] 5.2 GREEN: Apply typography/density polish to `contents/ui/CostSection.qml`; `objectName`s unchanged.
-- [ ] 5.3 GREEN: Create `contents/ui/StatusFooter.qml` — read-only phase/status + `validUpdatedAt` (omitted for `Overview`, D9); no threshold color (D7 out of scope).
-- [ ] 5.4 GREEN: Mount `StatusFooter` as last item of outer `ColumnLayout` in `contents/ui/main.qml`, below `ScrollView`.
-- [ ] 5.5 Verify `./scripts/run-qml-tests.sh` passes; confirm footer isn't duplicate noise against the existing phase label (Open Question).
+- [x] 5.1 RED: Extend `tests/ProviderDetailsIntegrationTest.qml` with footer scenarios — status shown, no count/Settings/About/Quit/Add-Account control; confirm failure (footer absent). (Originally included updated-at scenarios; those were removed post-apply per D9's correction below.)
+- [x] 5.2 GREEN: Apply typography/density polish to `contents/ui/CostSection.qml`; `objectName`s unchanged.
+- [x] 5.3 GREEN: Create `contents/ui/StatusFooter.qml` — read-only phase/status only (D9); no threshold color (D7 out of scope). (Originally also showed `validUpdatedAt`; removed post-apply, see 5.6.)
+- [x] 5.4 GREEN: Mount `StatusFooter` as last item of outer `ColumnLayout` in `contents/ui/main.qml`, below `ScrollView`.
+- [x] 5.5 Verify `./scripts/run-qml-tests.sh` passes; confirm footer isn't duplicate noise against the existing phase label (Open Question — resolved: footer status line kept, see PR5 apply summary for rationale).
+- [x] 5.6 RED→GREEN correction (post-apply, same PR): remove `StatusFooter.updatedAtValue`/`footerUpdatedAtLabel`/`selectedProvider` and the `main.qml` binding — the updated-at line duplicated `ProviderHeader.updatedAtLabel` whenever a provider was selected and added nothing for `Overview` (each card already shows its own timestamp, D9). Tests updated first to assert no timestamp text anywhere in the footer (confirmed failing against the unfixed component), then the component/wiring fixed.
 
 ## Phase 6: Golden Regeneration and Smoke (PR 6)
 

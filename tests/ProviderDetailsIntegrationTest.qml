@@ -134,6 +134,34 @@ TestCase {
                     }
                 })
             }
+
+            UsageUi.StatusFooter {
+                id: statusFooterWithProvider
+                y: codexFixtureRow.y + codexFixtureRow.height
+                width: 200
+                phase: "ready"
+            }
+
+            UsageUi.StatusFooter {
+                id: statusFooterOverview
+                y: statusFooterWithProvider.y + statusFooterWithProvider.height
+                width: 200
+                phase: "ready"
+            }
+
+            UsageUi.StatusFooter {
+                id: statusFooterLoading
+                y: statusFooterOverview.y + statusFooterOverview.height
+                width: 200
+                phase: "loading"
+            }
+
+            UsageUi.StatusFooter {
+                id: statusFooterError
+                y: statusFooterLoading.y + statusFooterLoading.height
+                width: 200
+                phase: "error"
+            }
         }
 
         QQC2.ScrollView {
@@ -438,5 +466,43 @@ TestCase {
         var lastValue = findText(overHeightRow, "value 8")
         verify(lastValue !== null)
         verify(verticalBar.position > 0)
+    }
+
+    function test_footerShowsStatus() {
+        var status = findByObjectName(statusFooterWithProvider, "footerStatusLabel")
+        verify(status.visible)
+        compare(status.text, "Ready")
+
+        // Status is shown the same way regardless of provider selection --
+        // the footer no longer carries a selectedProvider concept at all.
+        var overviewStatus = findByObjectName(statusFooterOverview, "footerStatusLabel")
+        verify(overviewStatus.visible)
+        compare(overviewStatus.text, "Ready")
+    }
+
+    function test_footerReflectsLoadingAndErrorPhases() {
+        var loadingStatus = findByObjectName(statusFooterLoading, "footerStatusLabel")
+        compare(loadingStatus.text, "Loading")
+        var errorStatus = findByObjectName(statusFooterError, "footerStatusLabel")
+        compare(errorStatus.text, "Error")
+    }
+
+    function test_footerExcludesCountsControlsAndTimestamp() {
+        var footers = [statusFooterWithProvider, statusFooterOverview, statusFooterLoading, statusFooterError]
+        for (var i = 0; i < footers.length; i++) {
+            var footer = footers[i]
+            verify(findByObjectName(footer, "footerUpdatedAtLabel") === null)
+            verify(findByObjectName(footer, "providerCountLabel") === null)
+            verify(findByObjectName(footer, "errorCountLabel") === null)
+            verify(findByObjectName(footer, "settingsButton") === null)
+            verify(findByObjectName(footer, "aboutButton") === null)
+            verify(findByObjectName(footer, "quitButton") === null)
+            verify(findByObjectName(footer, "addAccountButton") === null)
+            verify(findText(footer, "Settings") === null)
+            verify(findText(footer, "About") === null)
+            verify(findText(footer, "Quit") === null)
+            verify(findText(footer, "Add Account") === null)
+            verify(findText(footer, "Updated") === null)
+        }
     }
 }

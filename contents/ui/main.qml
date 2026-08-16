@@ -169,6 +169,11 @@ PlasmoidItem {
                     }
                 }
             }
+
+            StatusFooter {
+                phase: root.controller.phase
+                Layout.fillWidth: true
+            }
         }
 
         Connections {

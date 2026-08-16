@@ -19,7 +19,7 @@ ColumnLayout {
 
     visible: root.hasSnapshot
     Layout.fillWidth: true
-    spacing: Kirigami.Units.smallSpacing / 2
+    spacing: Kirigami.Units.smallSpacing
 
     // Plain, deterministic display formatting -- never a price calculation.
     // i18n()'s locale-aware substitution renders large raw numbers in
