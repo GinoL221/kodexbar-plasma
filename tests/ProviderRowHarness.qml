@@ -87,14 +87,19 @@ Item {
                && row.progressBar.x >= 0 && row.progressBar.x + row.progressBar.width <= row.width
                && row.percentageLabel.x >= 0 && row.percentageLabel.x + row.percentageLabel.width <= row.width,
                 message + ": visible content must stay within row bounds")
-        assert(row.progressBar.width > 0, message + ": progress bar must retain available width")
+        assert(row.progressBar.width === row.width,
+               message + ": progress bar must span the full row width")
+        assert(row.windowLabel.width <= row.windowLabel.implicitWidth,
+               message + ": title label must not exceed its preferred width")
+        assert(row.resetsAtLabel.visible === false && row.resetDescriptionLabel.visible === false,
+               message + ": band must show percent only with no reset placeholder when neither reset field is present (D3)")
         row.width = widerWidth
         assert(row.percentageLabel.paintedWidth <= row.percentageLabel.width,
                message + ": wider percentage must remain fully visible")
         assert(row.windowLabel.width <= row.windowLabel.implicitWidth,
                message + ": label must not consume progress-bar width beyond its preferred size")
-        assert(row.progressBar.width > row.windowLabel.width,
-               message + ": progress bar must consume the width remaining after the label")
+        assert(row.progressBar.width === row.width,
+               message + ": progress bar must still span the full row width when wider")
         assert(row.progressBar.width > barWidth,
                 message + ": progress bar must grow with additional width")
     }
@@ -120,9 +125,11 @@ Item {
                 message + ": provider-composed percentage must remain fully visible")
         assert(windowRow.windowLabel.width <= windowRow.windowLabel.implicitWidth,
                 message + ": label must not consume progress-bar width beyond its preferred size")
-        assert(windowRow.progressBar.width > windowRow.windowLabel.width,
-                message + ": progress bar must consume the width remaining after the label"
-                + " (bar=" + windowRow.progressBar.width + ", label=" + windowRow.windowLabel.width + ")")
+        assert(windowRow.progressBar.width === windowRow.width,
+                message + ": progress bar must span the full composed-row width"
+                + " (bar=" + windowRow.progressBar.width + ", row=" + windowRow.width + ")")
+        assert(windowRow.resetsAtLabel.visible === false && windowRow.resetDescriptionLabel.visible === false,
+                message + ": band must show percent only with no reset placeholder when neither reset field is present (D3)")
     }
 
     UsageUi.ProviderRow {
@@ -502,6 +509,11 @@ Item {
         assert(row.Accessible.description.indexOf("CLI raw source") !== -1, "accessible description must expose full source")
 
         assert(windowRow.progressBar.visible === true && windowRow.percentageLabel.text.indexOf("72") !== -1, "finite percentage")
+        // D2: resetDescription is verbatim and takes precedence over the resetsAt fallback.
+        assert(windowRow.resetDescriptionLabel.visible === true && windowRow.resetDescriptionLabel.text === "Exact reset note",
+               "band must show verbatim resetDescription when present (D2)")
+        assert(windowRow.resetsAtLabel.visible === false,
+               "resetsAt fallback must be hidden when resetDescription is present (D2 precedence)")
         assert(summaryWindowRow.progressBar.visible === true && summaryWindowRow.percentageLabel.text.indexOf("72") !== -1, "summary window row must show percentage and bar")
         assert(summaryWindowRow.resetsAtLabel.visible === false && summaryWindowRow.resetDescriptionLabel.visible === false, "summary window row must hide reset fields")
 
@@ -511,10 +523,27 @@ Item {
         assert(windowRow.progressBar.visible === false, "string percentage")
         windowRow.windowData = { label: "Weekly", usedPercent: Infinity, resetsAt: null, resetDescription: null }
         assert(windowRow.progressBar.visible === false, "infinite percentage")
+
+        // D3: neither resetDescription nor resetsAt present -> percent only, no placeholder.
+        windowRow.windowData = { label: "Daily", usedPercent: 15, resetsAt: null, resetDescription: null }
+        assert(windowRow.percentageLabel.visible === true && windowRow.percentageLabel.text.indexOf("15") !== -1,
+               "percent must remain visible with neither reset field present (D3)")
+        assert(windowRow.resetsAtLabel.visible === false && windowRow.resetDescriptionLabel.visible === false,
+               "band must show percent only with no reset placeholder when neither field is present (D3)")
+
+        // D2 fallback: resetsAt renders verbatim "Reset: {resetsAt}" only when resetDescription is absent.
+        windowRow.windowData = { label: "Weekly", usedPercent: 42, resetsAt: "2026-08-09T15:00:00Z", resetDescription: null }
+        assert(windowRow.resetsAtLabel.visible === true && windowRow.resetsAtLabel.text === "Reset: 2026-08-09T15:00:00Z",
+               "resetsAt fallback must render verbatim 'Reset: {resetsAt}' when resetDescription is absent (D2 fallback)")
+        assert(windowRow.resetDescriptionLabel.visible === false,
+               "resetDescriptionLabel must stay hidden when resetDescription is absent")
+
         windowRow.windowData = { label: "Hourly", usedPercent: NaN, resetsAt: "2026-08-09T13:00:00Z", resetDescription: "NaN reset" }
         assert(windowRow.progressBar.visible === false, "NaN percentage")
-        assert(windowRow.resetsAtLabel.text.indexOf("2026-08-09T13:00:00Z") !== -1, "resetsAt must stay exact")
-        assert(windowRow.resetDescriptionLabel.text.indexOf("NaN reset") !== -1, "resetDescription must stay exact")
+        assert(windowRow.resetDescriptionLabel.visible === true && windowRow.resetDescriptionLabel.text === "NaN reset",
+               "resetDescription must stay exact and be shown verbatim when present (D2)")
+        assert(windowRow.resetsAtLabel.visible === false,
+               "resetsAt fallback must be hidden when resetDescription is present, even mid-sequence (D2 precedence)")
 
         windowRow.windowData = { label: "Session", usedPercent: 72, resetsAt: "2026-08-09T12:00:00Z", resetDescription: "Exact reset note" }
         windowRow.compact = true

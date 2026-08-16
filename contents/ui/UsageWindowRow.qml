@@ -56,30 +56,26 @@ ColumnLayout {
         return details.join(", ")
     }
 
+    PlasmaComponents.Label {
+        id: windowLabel
+        text: root.valueText(root.windowData.label)
+        font.weight: Font.Medium
+        elide: Text.ElideRight
+        Layout.fillWidth: true
+        Layout.minimumWidth: 0
+        Layout.maximumWidth: implicitWidth
+    }
+
+    Loader {
+        id: progressLoader
+        sourceComponent: root.hasFinitePercent && !root.compact ? progressComponent : inactiveProgressComponent
+        active: true
+        Layout.fillWidth: true
+    }
+
     RowLayout {
         Layout.fillWidth: true
         spacing: Kirigami.Units.smallSpacing
-
-        PlasmaComponents.Label {
-            id: windowLabel
-            text: root.valueText(root.windowData.label)
-            font.weight: Font.Medium
-            elide: Text.ElideRight
-            Layout.minimumWidth: 0
-            Layout.preferredWidth: Math.min(implicitWidth, Kirigami.Units.gridUnit * 4)
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 4
-            Layout.fillWidth: true
-            Layout.horizontalStretchFactor: 0
-        }
-
-        Loader {
-            id: progressLoader
-            sourceComponent: root.hasFinitePercent && !root.compact ? progressComponent : inactiveProgressComponent
-            active: true
-            Layout.fillWidth: true
-            Layout.minimumWidth: Kirigami.Units.gridUnit * 2
-            Layout.horizontalStretchFactor: 1
-        }
 
         PlasmaComponents.Label {
             id: percentageLabel
@@ -88,6 +84,34 @@ ColumnLayout {
                 typeof i18n === "function" ? i18n : null) : ""
             color: Kirigami.Theme.textColor
             Layout.minimumWidth: implicitWidth
+            Layout.maximumWidth: implicitWidth
+        }
+
+        Item {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            Layout.preferredHeight: 1
+        }
+
+        PlasmaComponents.Label {
+            id: resetsAtLabel
+            visible: root.resetText.length > 0 && root.resetDescriptionText.length === 0 && !root.summary
+            text: visible ? Translation.translate("Reset: %1", [root.resetText], typeof i18n === "function" ? i18n : null) : ""
+            color: Kirigami.Theme.disabledTextColor
+            elide: root.compact ? Text.ElideRight : Text.ElideNone
+            wrapMode: root.compact ? Text.NoWrap : Text.Wrap
+            Layout.minimumWidth: 0
+            Layout.maximumWidth: implicitWidth
+        }
+
+        PlasmaComponents.Label {
+            id: resetDescriptionLabel
+            visible: root.resetDescriptionText.length > 0 && !root.summary
+            text: visible ? root.resetDescriptionText : ""
+            color: Kirigami.Theme.disabledTextColor
+            elide: root.compact ? Text.ElideRight : Text.ElideNone
+            wrapMode: root.compact ? Text.NoWrap : Text.Wrap
+            Layout.minimumWidth: 0
             Layout.maximumWidth: implicitWidth
         }
     }
@@ -110,26 +134,6 @@ ColumnLayout {
         Item {
             visible: false
         }
-    }
-
-    PlasmaComponents.Label {
-        id: resetsAtLabel
-        visible: root.resetText.length > 0 && !root.summary
-        text: visible ? Translation.translate("Reset: %1", [root.resetText], typeof i18n === "function" ? i18n : null) : ""
-        color: Kirigami.Theme.disabledTextColor
-        elide: root.compact ? Text.ElideRight : Text.ElideNone
-        wrapMode: root.compact ? Text.NoWrap : Text.Wrap
-        Layout.fillWidth: true
-    }
-
-    PlasmaComponents.Label {
-        id: resetDescriptionLabel
-        visible: root.resetDescriptionText.length > 0 && !root.summary
-        text: visible ? root.resetDescriptionText : ""
-        color: Kirigami.Theme.disabledTextColor
-        elide: root.compact ? Text.ElideRight : Text.ElideNone
-        wrapMode: root.compact ? Text.NoWrap : Text.Wrap
-        Layout.fillWidth: true
     }
 
     PlasmaComponents.Label {
