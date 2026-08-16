@@ -40,3 +40,5 @@ Run from the repository root:
 ## Notes for reviewers
 
 <!-- Risks, screenshots, fixture updates, golden updates, etc. -->
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for gates and process. Releases use [docs/release-checklist.md](../docs/release-checklist.md).
