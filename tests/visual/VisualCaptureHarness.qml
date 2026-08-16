@@ -13,9 +13,11 @@ QQC2.ApplicationWindow {
     title: "KodexBar visual fixture"
     font.family: "Noto Sans"
     font.pixelSize: 14
+    color: themedRoot.paletteBackground
 
     property string scenarioName: scenarioArgument()
     property string outputPath: argumentValue("--output")
+    property string paletteJson: argumentValue("--palette-json")
     property int captureTimeoutMs: Number(argumentValue("--capture-timeout-ms") || 5000)
     property string expectedTheme: scenarioName.indexOf("breeze-light-") === 0 ? "light"
         : scenarioName.indexOf("breeze-dark-") === 0 ? "dark" : ""
@@ -26,6 +28,7 @@ QQC2.ApplicationWindow {
     property bool simulateAbsentCallback: hasArgument("--simulate-absent-callback")
     property bool simulateSaveFailure: hasArgument("--simulate-save-failure")
     property bool simulateWrongSize: hasArgument("--simulate-wrong-size")
+    property bool paletteReady: false
 
     function scenarioArgument() {
         return argumentValue("--scenario")
@@ -72,6 +75,51 @@ QQC2.ApplicationWindow {
         Qt.exit(1)
     }
 
+    function cssColor(value) {
+        if (value === undefined || value === null || String(value).length === 0)
+            return "#000000"
+        var token = String(value)
+        return token.charAt(0) === "#" ? token : ("#" + token)
+    }
+
+    function applyPalette(palette) {
+        // Payload hex channels omit '#' so argv/URL parsing cannot treat them as fragments.
+        themedRoot.paletteBackground = cssColor(palette.backgroundColor)
+        themedRoot.paletteAlternateBackground = cssColor(palette.alternateBackgroundColor)
+        themedRoot.paletteText = cssColor(palette.textColor)
+        themedRoot.paletteDisabledText = cssColor(palette.disabledTextColor)
+        themedRoot.paletteActiveText = cssColor(palette.activeTextColor)
+        themedRoot.paletteLink = cssColor(palette.linkColor)
+        themedRoot.paletteVisitedLink = cssColor(palette.visitedLinkColor)
+        themedRoot.paletteNegative = cssColor(palette.negativeTextColor)
+        themedRoot.paletteNeutral = cssColor(palette.neutralTextColor)
+        themedRoot.palettePositive = cssColor(palette.positiveTextColor)
+        themedRoot.paletteHighlight = cssColor(palette.highlightColor)
+        themedRoot.paletteHighlightedText = cssColor(palette.highlightedTextColor)
+        themedRoot.paletteFocus = cssColor(palette.focusColor)
+        themedRoot.paletteHover = cssColor(palette.hoverColor)
+        root.paletteReady = true
+    }
+
+    function loadPalette() {
+        if (paletteJson.length === 0) {
+            failCapture("missing required --palette-json for deterministic Breeze inject")
+            return
+        }
+        var palette
+        try {
+            palette = JSON.parse(paletteJson)
+        } catch (parseError) {
+            failCapture("invalid --palette-json payload")
+            return
+        }
+        if (!palette || !palette.backgroundColor || !palette.textColor) {
+            failCapture("palette json must include backgroundColor and textColor")
+            return
+        }
+        applyPalette(palette)
+    }
+
     function saveCapture(result) {
         if (simulateAbsentCallback)
             return
@@ -105,51 +153,92 @@ QQC2.ApplicationWindow {
             failCapture("grabToImage request failed")
     }
 
-    QQC2.ScrollView {
-        id: fixtureViewport
+    Component.onCompleted: loadPalette()
+
+    // Theme inject lives on an Item, not ApplicationWindow: KF6 offscreen window
+    // chrome does not reliably honor Kirigami.Theme overrides for luminance probes.
+    Item {
+        id: themedRoot
         anchors.fill: parent
-        contentWidth: availableWidth
-        QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
-        QQC2.ScrollBar.vertical.policy: QQC2.ScrollBar.AsNeeded
 
-        ColumnLayout {
-            id: fixtureColumn
-            width: fixtureViewport.availableWidth
-            spacing: Kirigami.Units.smallSpacing
+        property color paletteBackground: "#eff0f1"
+        property color paletteAlternateBackground: "#e3e5e7"
+        property color paletteText: "#232629"
+        property color paletteDisabledText: "#707d8a"
+        property color paletteActiveText: "#3daee9"
+        property color paletteLink: "#2980b9"
+        property color paletteVisitedLink: "#9b59b6"
+        property color paletteNegative: "#da4453"
+        property color paletteNeutral: "#f67400"
+        property color palettePositive: "#27ae60"
+        property color paletteHighlight: "#3daee9"
+        property color paletteHighlightedText: "#ffffff"
+        property color paletteFocus: "#3daee9"
+        property color paletteHover: "#3daee9"
 
-            UsageUi.ProviderRow {
-                id: providerRow
-                Layout.fillWidth: true
-                Layout.minimumWidth: 0
-                providerData: ({
-                    provider: "fixture-provider",
-                    source: "fixture-source",
-                    windows: [
-                        { label: "Session", usedPercent: 42, resetDescription: "Resets tomorrow" },
-                        { label: "Weekly", usedPercent: 13 }
-                    ],
-                    raw: {
-                        version: "fixture-version",
-                        pace: { primary: { summary: "On pace" } },
-                        credits: { remaining: 12 },
-                        usage: {
-                            loginMethod: "fixture-login",
-                            updatedAt: "2026-08-15T12:00:00Z",
-                            identity: {
-                                accountEmail: "fixture@example.invalid",
-                                accountOrganization: "Fixture Labs"
+        Kirigami.Theme.inherit: false
+        Kirigami.Theme.colorSet: Kirigami.Theme.Window
+        Kirigami.Theme.backgroundColor: paletteBackground
+        Kirigami.Theme.alternateBackgroundColor: paletteAlternateBackground
+        Kirigami.Theme.textColor: paletteText
+        Kirigami.Theme.disabledTextColor: paletteDisabledText
+        Kirigami.Theme.activeTextColor: paletteActiveText
+        Kirigami.Theme.linkColor: paletteLink
+        Kirigami.Theme.visitedLinkColor: paletteVisitedLink
+        Kirigami.Theme.negativeTextColor: paletteNegative
+        Kirigami.Theme.neutralTextColor: paletteNeutral
+        Kirigami.Theme.positiveTextColor: palettePositive
+        Kirigami.Theme.highlightColor: paletteHighlight
+        Kirigami.Theme.highlightedTextColor: paletteHighlightedText
+        Kirigami.Theme.focusColor: paletteFocus
+        Kirigami.Theme.hoverColor: paletteHover
+
+        QQC2.ScrollView {
+            id: fixtureViewport
+            anchors.fill: parent
+            contentWidth: availableWidth
+            QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
+            QQC2.ScrollBar.vertical.policy: QQC2.ScrollBar.AsNeeded
+
+            ColumnLayout {
+                id: fixtureColumn
+                width: fixtureViewport.availableWidth
+                spacing: Kirigami.Units.smallSpacing
+
+                UsageUi.ProviderRow {
+                    id: providerRow
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    providerData: ({
+                        provider: "fixture-provider",
+                        source: "fixture-source",
+                        windows: [
+                            { label: "Session", usedPercent: 42, resetDescription: "Resets tomorrow" },
+                            { label: "Weekly", usedPercent: 13 }
+                        ],
+                        raw: {
+                            version: "fixture-version",
+                            pace: { primary: { summary: "On pace" } },
+                            credits: { remaining: 12 },
+                            usage: {
+                                loginMethod: "fixture-login",
+                                updatedAt: "2026-08-15T12:00:00Z",
+                                identity: {
+                                    accountEmail: "fixture@example.invalid",
+                                    accountOrganization: "Fixture Labs"
+                                }
                             }
                         }
-                    }
-                })
-                costSnapshot: root.costPresent ? ({
-                    provider: "fixture-provider",
-                    source: "local",
-                    sessionCostUSD: 1.5,
-                    sessionTokens: 1000,
-                    last30DaysCostUSD: 12,
-                    last30DaysTokens: 50000
-                }) : null
+                    })
+                    costSnapshot: root.costPresent ? ({
+                        provider: "fixture-provider",
+                        source: "local",
+                        sessionCostUSD: 1.5,
+                        sessionTokens: 1000,
+                        last30DaysCostUSD: 12,
+                        last30DaysTokens: 50000
+                    }) : null
+                }
             }
         }
     }
@@ -166,8 +255,12 @@ QQC2.ApplicationWindow {
         running: true
         repeat: false
         onTriggered: {
-            var backgroundIsDark = root.luminance(Kirigami.Theme.backgroundColor)
-                < root.luminance(Kirigami.Theme.textColor)
+            if (!root.paletteReady) {
+                root.failCapture("palette was not applied before capture preconditions")
+                return
+            }
+            var backgroundIsDark = root.luminance(themedRoot.paletteBackground)
+                < root.luminance(themedRoot.paletteText)
             var providerLabel = root.findObject(providerRow, "providerLabel")
             var sourceLabel = root.findObject(providerRow, "sourceLabel")
             var costLabel = root.findObject(providerRow, "costLabel")
@@ -175,7 +268,8 @@ QQC2.ApplicationWindow {
             root.assert(root.expectedTheme.length > 0,
                 "unknown scenario must name a Breeze Light or Dark scenario")
             root.assert(root.expectedTheme === "dark" ? backgroundIsDark : !backgroundIsDark,
-                "theme mismatch for " + root.expectedTheme + " scenario; capture skipped")
+                "theme mismatch for " + root.expectedTheme
+                + " bg=" + themedRoot.paletteBackground + " text=" + themedRoot.paletteText)
             root.assert(root.width === 450 && root.height === 400,
                 "fixture dimensions must remain 450x400")
             root.assert(root.font.family === "Noto Sans", "fixture font must remain Noto Sans")

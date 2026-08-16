@@ -9,7 +9,7 @@ Add a test-only `450x400` `QQC2.ApplicationWindow` hosting the existing `Provide
 | Option | Tradeoff | Decision and rationale |
 |---|---|---|
 | Direct row vs applet shell | Omits containment but avoids unavailable Plasma context | Direct fixture; production QML stays unchanged and scope stays honest. |
-| Fresh process vs theme switching | More startup cost, no stale theme cache | Use `KDE_COLOR_SCHEME` per scenario; fail if its palette probe disagrees. |
+| Fresh process vs theme switching | More startup cost, no stale theme cache | **Revised after merge:** `KDE_COLOR_SCHEME` is a no-op on KF6. Inject Breeze `.colors` via `--palette-json` + `Kirigami.Theme.inherit: false` under isolated `HOME`; fail if the luminance probe disagrees. |
 | PNG hash vs decoded pixels | More comparator code, tolerates harmless encoding differences | Pillow decodes RGBA; stdlib iteration computes deltas and reports actionable metrics. |
 | Implicit updates vs explicit replacement | Slower review, prevents accidental mutation | Only exact `UPDATE_GOLDENS=1` enables atomic replacement of validated canonical files. |
 

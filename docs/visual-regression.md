@@ -30,7 +30,16 @@ The runner is independent of `./scripts/run-qml-tests.sh` and fails before captu
 
 Missing Pillow or another visual dependency never affects `./scripts/run-qml-tests.sh` — the behavioral suite stays fully independent.
 
-Each scenario runs in its own `qml6` process with `QT_QPA_PLATFORM=offscreen`, `QT_QUICK_BACKEND=software`, `QSG_RENDER_LOOP=basic`, `QT_SCALE_FACTOR=1`, `QT_FONT_DPI=96`, `LC_ALL=C.UTF-8`, and `TZ=UTC`. Dark scenarios additionally set `QT_QPA_PLATFORMTHEME=kde` so the harness's palette probe can confirm the requested Breeze appearance; Light scenarios omit it. If the requested theme cannot be established, the scenario fails before capture.
+Each scenario runs in its own `qml6` process with `QT_QPA_PLATFORM=offscreen`, `QT_QUICK_BACKEND=software`, `QSG_RENDER_LOOP=basic`, `QT_SCALE_FACTOR=1`, `QT_FONT_DPI=96`, `LC_ALL=C.UTF-8`, and `TZ=UTC`, under an **isolated** `HOME` / `XDG_*` tree so the live Plasma desktop theme cannot leak in.
+
+**Theme determinism:** the suite does **not** use `KDE_COLOR_SCHEME` (that variable does nothing for KF6/Kirigami). It also does not rely on `QT_QPA_PLATFORMTHEME=kde` to force Light/Dark offscreen — on headless hosts that path produced a broken black-on-black palette. Instead:
+
+1. `tests/visual/breeze_palette.py` parses `/usr/share/color-schemes/BreezeLight.colors` or `BreezeDark.colors`.
+2. The runner builds a compact JSON palette and passes it inline as `--palette-json '{...}'`. Hex channels are stored **without** a leading `#` so `qml6` argv/URL handling cannot treat them as fragments.
+3. The harness restores the `#` prefix, sets `Kirigami.Theme.inherit: false`, and injects Window/Selection colors from that payload.
+4. A luminance probe still fails the scenario if the effective theme does not match light/dark.
+
+If the scheme files are missing, the palette cannot be classified, or injection fails, the scenario fails **before** capture.
 
 ## Comparison and threshold
 
@@ -42,13 +51,22 @@ Normal runs never write into `tests/visual/goldens/`. They write only to `tests/
 
 ## Updating goldens
 
-Goldens only change through an explicit, reviewed update:
+Goldens only change through an explicit, reviewed update. **CI is the pixel authority:** regenerate baselines inside the same Docker image the workflow uses, so host font/Qt AA drift does not fight GHA.
 
 ```sh
+# Preferred (matches CI image rendering)
+docker build -f ci/visual-regression.Dockerfile -t kodexbar-visual-local:test .
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e UPDATE_GOLDENS=1 \
+  --volume "$PWD:/workspace" --workdir /workspace \
+  kodexbar-visual-local:test ./scripts/run-visual-tests.sh
+
+# Host-only update (may diverge from CI; avoid unless you intentionally change the authority)
 UPDATE_GOLDENS=1 ./scripts/run-visual-tests.sh
 ```
 
 Update mode still validates the manifest and requires a successful canonical capture first; it replaces only that scenario's golden, atomically, and reports the replacement. There is no implicit or automatic baseline mutation.
+
+Local host runs of `./scripts/run-visual-tests.sh` can still **capture and classify Light/Dark** correctly (theme inject is deterministic). Pixel compare against repo goldens may fail on a non-CI host even when theme force is healthy — use the Docker command above to match CI.
 
 ## Limits
 
