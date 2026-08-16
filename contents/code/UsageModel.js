@@ -143,6 +143,25 @@ function selectRepresentative(windows, preferredKey) {
     return firstFiniteWindow(windows)
 }
 
+function selectOverviewWindows(windows) {
+    var session = preferredFiniteWindow(windows, windowDefinitions[0])
+    var weekly = preferredFiniteWindow(windows, windowDefinitions[1])
+
+    if (session !== null || weekly !== null) {
+        var result = []
+        if (session !== null) {
+            result.push(session)
+        }
+        if (weekly !== null) {
+            result.push(weekly)
+        }
+        return result
+    }
+
+    var monthly = preferredFiniteWindow(windows, windowDefinitions[2])
+    return monthly !== null ? [monthly] : []
+}
+
 function selectCompact(providers) {
     var best = null
     var rows = providers instanceof Array ? providers : []

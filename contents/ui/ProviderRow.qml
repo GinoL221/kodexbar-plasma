@@ -16,7 +16,6 @@ ColumnLayout {
     property var providerData: ({})
     property bool compact: false
     property bool summary: false
-    property string preferredWindowKey: "automatic"
     property var iconResolver: function(value) { return root.defaultIconSource(value) }
     // Validated CostModel snapshot for the selected provider, or null. Only
     // ever bound for the single selected-detail row; summary/All rows never
@@ -27,10 +26,8 @@ ColumnLayout {
 
     readonly property var windows: providerData && providerData.windows instanceof Array
         ? providerData.windows : []
-    readonly property var representativeWindow: root.summary
-        ? UsageModel.selectRepresentative(root.windows, root.preferredWindowKey) : null
-    readonly property var displayedWindows: root.summary && root.representativeWindow !== null
-        ? [root.representativeWindow] : root.summary ? [] : root.windows
+    readonly property var displayedWindows: root.summary
+        ? UsageModel.selectOverviewWindows(root.windows) : root.windows
     readonly property string providerValue: providerData && providerData.provider !== null
         && providerData.provider !== undefined ? String(providerData.provider) : ""
     readonly property string sourceValue: providerData && providerData.source !== null

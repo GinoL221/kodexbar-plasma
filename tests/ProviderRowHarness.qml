@@ -185,51 +185,52 @@ Item {
             windows: [
                 { label: "Session", usedPercent: 55, resetsAt: "2026-08-09T14:00:00Z", resetDescription: "Summary reset" },
                 { label: "Weekly", usedPercent: 75, resetsAt: null, resetDescription: null }
-            ]
+            ],
+            raw: {
+                version: "9.9.9",
+                usage: { loginMethod: "google" }
+            }
         })
     }
 
     UsageUi.ProviderRow {
-        id: preferredWeeklyRow
+        id: reversedPayloadOrderSummaryRow
         width: root.width
         summary: true
-        preferredWindowKey: "weekly"
         providerData: ({
-            provider: "preferred-weekly-provider",
-            source: "Preferred Weekly CLI source",
+            provider: "reversed-payload-order-provider",
+            source: "Reversed Payload Order CLI source",
             windows: [
-                { label: "Session", usedPercent: 55, resetsAt: "2026-08-09T14:00:00Z", resetDescription: "Summary reset" },
-                { label: "Weekly", usedPercent: 75, resetsAt: null, resetDescription: null }
+                { key: "secondary", label: "Weekly", usedPercent: 75, resetsAt: null, resetDescription: null },
+                { key: "primary", label: "Session", usedPercent: 55, resetsAt: "2026-08-09T14:00:00Z", resetDescription: "Summary reset" }
             ]
         })
     }
 
     UsageUi.ProviderRow {
-        id: preferredFallbackRow
+        id: singleFiniteSummaryRow
         width: root.width
         summary: true
-        preferredWindowKey: "monthly"
         providerData: ({
-            provider: "preferred-fallback-provider",
-            source: "Preferred Fallback CLI source",
+            provider: "single-finite-provider",
+            source: "Single Finite CLI source",
             windows: [
-                { label: "Session", usedPercent: 65, resetsAt: "2026-08-09T14:00:00Z", resetDescription: "Summary reset" },
-                { label: "Monthly", usedPercent: NaN, resetsAt: null, resetDescription: null }
+                { label: "Session", usedPercent: 65, resetsAt: "2026-08-09T14:00:00Z", resetDescription: "Summary reset" }
             ]
         })
     }
 
     UsageUi.ProviderRow {
-        id: preferredIdentityOnlyRow
+        id: monthlyOnlySummaryRow
         width: root.width
         summary: true
-        preferredWindowKey: "weekly"
         providerData: ({
-            provider: "preferred-identity-only-provider",
-            source: "Preferred Identity CLI source",
+            provider: "monthly-only-provider",
+            source: "Monthly Only CLI source",
             windows: [
                 { label: "Session", usedPercent: null, resetsAt: null, resetDescription: null },
-                { label: "Weekly", usedPercent: NaN, resetsAt: null, resetDescription: null }
+                { label: "Weekly", usedPercent: NaN, resetsAt: null, resetDescription: null },
+                { label: "Monthly", usedPercent: 85, resetsAt: null, resetDescription: null }
             ]
         })
     }
@@ -367,7 +368,7 @@ Item {
                         provider: "responsive-provider",
                         source: "Responsive CLI source",
                         windows: [
-                            { label: "Long Provider Window", usedPercent: 100, resetsAt: null, resetDescription: null }
+                            { label: "Session", usedPercent: 100, resetsAt: null, resetDescription: null }
                         ]
                     })
                 }
@@ -389,8 +390,25 @@ Item {
         assert(countProgressBars(compactRow) === 0, "compact row must omit progress bars")
 
         assert(summaryRow.summary === true, "summary property must be exposed")
-        assert(countProgressBars(summaryRow) === 1, "summary row must render exactly one progress bar for the representative window")
+        assert(countProgressBars(summaryRow) === 2, "summary row must render two progress bars when Session and Weekly are both finite (Overview D10)")
+        assert(countUsageWindowRows(summaryRow) === 2, "summary row must render two usage window rows when Session and Weekly are both finite (Overview D10)")
+        assert(summaryRow.displayedWindows[0].label === "Session" && summaryRow.displayedWindows[1].label === "Weekly",
+               "summary row must order Session before Weekly (Overview D10)")
         assert(summaryRow.providerValue === "summary-provider" && summaryRow.sourceValue === "Summary CLI source", "summary row must preserve provider identity")
+
+        assert(reversedPayloadOrderSummaryRow.displayedWindows.length === 2, "summary row must still render two bars when the payload orders Weekly before Session")
+        assert(reversedPayloadOrderSummaryRow.displayedWindows[0].label === "Session" && reversedPayloadOrderSummaryRow.displayedWindows[1].label === "Weekly",
+               "summary row must render Session before Weekly regardless of payload order (Overview D10)")
+        assert(countProgressBars(reversedPayloadOrderSummaryRow) === 2, "reversed-payload summary row must render two progress bars")
+
+        assert(singleFiniteSummaryRow.displayedWindows.length === 1 && singleFiniteSummaryRow.displayedWindows[0].label === "Session",
+               "summary row with only a finite Session window must render exactly that one window")
+        assert(countProgressBars(singleFiniteSummaryRow) === 1, "single-finite summary row must render exactly one progress bar")
+
+        assert(monthlyOnlySummaryRow.displayedWindows.length === 1 && monthlyOnlySummaryRow.displayedWindows[0].label === "Monthly",
+               "summary row with only a finite Monthly window must fall back to that one window")
+        assert(countProgressBars(monthlyOnlySummaryRow) === 1, "Monthly-only summary row must render exactly one progress bar")
+
         assert(identityOnlyRow.displayedWindows.length === 0, "identity-only summary row must render no displayed windows")
         assert(countUsageWindowRows(identityOnlyRow) === 0, "identity-only summary row must render no usage window rows")
         assert(countProgressBars(identityOnlyRow) === 0, "identity-only summary row must render no progress bar")
@@ -399,8 +417,8 @@ Item {
 
         var barsBefore = countProgressBars(activeSummaryRow)
         var rowsBefore = countUsageWindowRows(activeSummaryRow)
-        assert(barsBefore === 1, "active summary row must render exactly one progress bar before activation")
-        assert(rowsBefore === 1, "active summary row must render exactly one window row before activation")
+        assert(barsBefore === 2, "active summary row must render two progress bars before activation (Session+Weekly both finite)")
+        assert(rowsBefore === 2, "active summary row must render two window rows before activation (Session+Weekly both finite)")
         assert(allResetLabelsHidden(activeSummaryRow), "active summary row must hide reset labels before activation")
 
         activeSummaryRow.forceActiveFocus()
@@ -408,26 +426,14 @@ Item {
         assert(countUsageWindowRows(activeSummaryRow) === rowsBefore, "activating summary row must not expand into additional window rows")
         assert(allResetLabelsHidden(activeSummaryRow), "activating summary row must not reveal reset labels")
 
-        assert(summaryRow.preferredWindowKey === "automatic", "default preferredWindowKey must be automatic")
-        assert(countProgressBars(summaryRow) === 1, "unchanged summaryRow rendering must still show exactly one progress bar")
-        assert(summaryRow.representativeWindow.label === "Session", "unchanged summaryRow must keep automatic Session selection")
-
-        assert(preferredWeeklyRow.representativeWindow.label === "Weekly", "explicit weekly preference with a finite value must select Weekly")
-        assert(countProgressBars(preferredWeeklyRow) === 1, "preferred weekly row must render exactly one progress bar")
-
-        assert(preferredFallbackRow.representativeWindow.label === "Session", "monthly preference with a non-finite Monthly value must fall back to Session")
-        assert(countProgressBars(preferredFallbackRow) === 1, "preferred fallback row must still render exactly one progress bar")
-
-        assert(preferredIdentityOnlyRow.displayedWindows.length === 0, "preferred row with no finite window must render no displayed windows")
-        assert(countUsageWindowRows(preferredIdentityOnlyRow) === 0, "preferred row with no finite window must render no usage window rows")
-        assert(countProgressBars(preferredIdentityOnlyRow) === 0, "preferred row with no finite window must render no progress bar")
-
-        assert(countVisibleUsageDetails(preferredFallbackRow) === countVisibleUsageDetails(preferredWeeklyRow), "fallback and explicit preference bars must expose the same visible-detail count")
-
-        preferredWeeklyRow.preferredWindowKey = "session"
-        assert(preferredWeeklyRow.representativeWindow.label === "Session", "changing preferredWindowKey at runtime must update the rendered representative window")
-        assert(countProgressBars(preferredWeeklyRow) === 1, "reactivity change must still render exactly one progress bar")
-        preferredWeeklyRow.preferredWindowKey = "weekly"
+        // D12: an Overview card's header never exposes the selected-detail-only
+        // login badge or version string, even when the raw payload supplies them.
+        var summaryLoginLabel = findObject(summaryRow, "loginLabel")
+        assert(summaryLoginLabel === null || !summaryLoginLabel.visible,
+               "summary row must never show loginLabel, even with a valid raw login method (D12)")
+        var summaryVersionLabel = findObject(summaryRow, "versionLabel")
+        assert(summaryVersionLabel === null || !summaryVersionLabel.visible,
+               "summary row must never show versionLabel, even with a valid raw version (D12)")
 
         assert(resolverRow.iconSource("openai") === "custom-openai", "iconResolver must be used")
         assert(row.iconSource("openai") !== "custom-openai", "default lookup must remain without iconResolver")

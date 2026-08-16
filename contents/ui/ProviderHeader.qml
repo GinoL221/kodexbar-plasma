@@ -71,7 +71,7 @@ RowLayout {
         PlasmaComponents.Label {
             id: versionLabel
             objectName: "versionLabel"
-            visible: root.headerVersion.length > 0
+            visible: root.detailed && root.headerVersion.length > 0
             text: root.headerVersion
             color: Kirigami.Theme.disabledTextColor
             elide: Text.ElideRight
@@ -111,13 +111,13 @@ RowLayout {
 
     ColumnLayout {
         Layout.alignment: Qt.AlignTop | Qt.AlignRight
-        visible: root.headerLogin.length > 0
+        visible: root.detailed && root.headerLogin.length > 0
         spacing: 0
 
         PlasmaComponents.Label {
             id: loginLabel
             objectName: "loginLabel"
-            visible: root.headerLogin.length > 0
+            visible: root.detailed && root.headerLogin.length > 0
             text: root.headerLogin
             color: Kirigami.Theme.disabledTextColor
             elide: Text.ElideRight

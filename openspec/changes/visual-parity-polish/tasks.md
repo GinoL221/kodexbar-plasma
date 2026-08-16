@@ -41,15 +41,15 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Overview Mode (PR 3)
 
-- [ ] 3.1 RED: Add `selectOverviewWindows` cases to `tests/UsageModelTest.qml` — Session+Weekly both finite → 2 in Session-then-Weekly order regardless of payload order, Session-only → 1, Weekly-only → 1, Monthly-only → 1, none finite → `[]`; run tests, confirm failure.
-- [ ] 3.2 GREEN: Implement `UsageModel.selectOverviewWindows(windows)` in `contents/code/UsageModel.js` (D10), additive only; confirm existing `test_selectRepresentative*` cases stay green.
-- [ ] 3.3 RED: Rewrite `tests/ProviderRowHarness.qml` summary-mode assertions — replace `:392`/`:412` `countProgressBars(summaryRow) === 1` and `:411`/`:413` `preferredWindowKey`/`representativeWindow.label` with 2-bar (Session+Weekly), 1-bar (single-finite/Monthly-only), 0-bar (identity-only) assertions, plus a new "summary row never shows `loginLabel`" assertion (D12); confirm failure.
-- [ ] 3.4 GREEN: Update `contents/ui/ProviderRow.qml` — `displayedWindows` uses `selectOverviewWindows` in summary mode (D11); remove `representativeWindow`/`preferredWindowKey` entirely.
-- [ ] 3.5 GREEN: Gate `contents/ui/ProviderHeader.qml`'s badge column AND `versionLabel` on `detailed` (D12).
-- [ ] 3.6 GREEN: Drop the summary `Repeater`'s `preferredWindowKey` binding in `contents/ui/main.qml` (D11).
-- [ ] 3.7 RED: Extend `tests/ProviderSelectorHarness.qml:93-94` — assert tab 0 has `text === "Overview"`, `icon.name === "view-grid"`, and an `Accessible.name` naming Overview; confirm failure.
-- [ ] 3.8 GREEN: Rename tab 0 in `contents/ui/ProviderSelector.qml` — label/icon/`Accessible.name` to Overview/`view-grid` (D13); internal identifiers (`allSelected` etc.) stay unchanged.
-- [ ] 3.9 Verify `./scripts/run-qml-tests.sh` passes.
+- [x] 3.1 RED: Add `selectOverviewWindows` cases to `tests/UsageModelTest.qml` — Session+Weekly both finite → 2 in Session-then-Weekly order regardless of payload order, Session-only → 1, Weekly-only → 1, Monthly-only → 1, none finite → `[]`; run tests, confirm failure.
+- [x] 3.2 GREEN: Implement `UsageModel.selectOverviewWindows(windows)` in `contents/code/UsageModel.js` (D10), additive only; confirm existing `test_selectRepresentative*` cases stay green.
+- [x] 3.3 RED: Rewrite `tests/ProviderRowHarness.qml` summary-mode assertions — replace `:392`/`:412` `countProgressBars(summaryRow) === 1` and `:411`/`:413` `preferredWindowKey`/`representativeWindow.label` with 2-bar (Session+Weekly), 1-bar (single-finite/Monthly-only), 0-bar (identity-only) assertions, plus a new "summary row never shows `loginLabel`" assertion (D12); confirm failure.
+- [x] 3.4 GREEN: Update `contents/ui/ProviderRow.qml` — `displayedWindows` uses `selectOverviewWindows` in summary mode (D11); remove `representativeWindow`/`preferredWindowKey` entirely.
+- [x] 3.5 GREEN: Gate `contents/ui/ProviderHeader.qml`'s badge column AND `versionLabel` on `detailed` (D12).
+- [x] 3.6 GREEN: Drop the summary `Repeater`'s `preferredWindowKey` binding in `contents/ui/main.qml` (D11).
+- [x] 3.7 RED: Extend `tests/ProviderSelectorHarness.qml:93-94` — assert tab 0 has `text === "Overview"`, `icon.name === "view-grid"`, and an `Accessible.name` naming Overview; confirm failure.
+- [x] 3.8 GREEN: Rename tab 0 in `contents/ui/ProviderSelector.qml` — label/icon/`Accessible.name` to Overview/`view-grid` (D13); internal identifiers (`allSelected` etc.) stay unchanged.
+- [x] 3.9 Verify `./scripts/run-qml-tests.sh` passes.
 
 ## Phase 4: ProviderSelector Tab-Percent (PR 4)
 

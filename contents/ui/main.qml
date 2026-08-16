@@ -144,7 +144,6 @@ PlasmoidItem {
 
                             providerData: modelData
                             summary: true
-                            preferredWindowKey: root.preferredWindowKey
                             iconResolver: providerSelector.iconResolver
                             Layout.fillWidth: true
                         }

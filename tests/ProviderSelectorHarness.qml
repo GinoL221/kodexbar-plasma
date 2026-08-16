@@ -93,6 +93,12 @@ Item {
         var allTab = s.tabBar.contentChildren[0]
         assert(allTab.text.indexOf("·") === -1 && allTab.icon.name.length > 0, "All tab must remain a compact icon-plus-label control")
 
+        // D13: tab 0 is renamed from "All" to "Overview" with a matching
+        // Breeze view-grid icon and accessible name.
+        assert(allTab.text === "Overview", "tab 0 label must be renamed to Overview (D13)")
+        assert(allTab.icon.name === "view-grid", "tab 0 icon must be the Breeze view-grid icon (D13)")
+        assert(allTab.Accessible.name.indexOf("Overview") !== -1, "tab 0 accessible name must reference Overview (D13)")
+
         // Narrow-width scroll reachability regression: 6 real providers (the
         // maintainer's exact set) + "All" = 7 tabs, at a width far narrower
         // than their combined natural size, so the tab bar must scroll.

@@ -234,11 +234,11 @@ ColumnLayout {
         }
 
         QQC2.TabButton {
-            text: Translation.translate("All", [], typeof i18n === "function" ? i18n : null)
-            icon.name: "view-list-details"
+            text: Translation.translate("Overview", [], typeof i18n === "function" ? i18n : null)
+            icon.name: "view-grid"
             focusPolicy: Qt.StrongFocus
             activeFocusOnTab: true
-            Accessible.name: Translation.translate("All providers", [], typeof i18n === "function" ? i18n : null)
+            Accessible.name: Translation.translate("Overview of all providers", [], typeof i18n === "function" ? i18n : null)
             Accessible.description: Translation.translate("Show compact summary for all providers", [],
                 typeof i18n === "function" ? i18n : null)
         }

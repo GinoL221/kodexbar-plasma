@@ -58,8 +58,8 @@ Item {
             providerData: controller.committedProviders[1],
             summary: true
         })
-        assert(countProgressBars(firstSummary) === 1, "first summary row renders exactly one bar")
-        assert(countProgressBars(secondSummary) === 1, "second summary row renders exactly one bar")
+        assert(countProgressBars(firstSummary) === 2, "first summary row renders two bars when Session and Weekly are both finite (Overview D10)")
+        assert(countProgressBars(secondSummary) === 2, "second summary row renders two bars when Session and Weekly are both finite (Overview D10)")
 
         controller.requestRefresh()
         controller.timeoutForTest(controller.generation)
