@@ -7,6 +7,7 @@ import org.kde.kirigami as Kirigami
 
 import "../code/ProviderIcons.js" as ProviderIcons
 import "../code/Translation.js" as Translation
+import "../code/UsageModel.js" as UsageModel
 
 ColumnLayout {
     id: root
@@ -14,6 +15,11 @@ ColumnLayout {
     property var providers: []
     property string phase: "idle"
     property bool popupOpen: false
+    // D6: governs which window the tab percent prefers (Session/Weekly/
+    // Monthly/Automatic), mirroring the persisted compact-panel preference.
+    // Never governs Overview's own body -- see Requirement: Provider
+    // presentation.
+    property string preferredWindowKey: "automatic"
 
     readonly property var usableProviders: root._usable(root.providers)
     readonly property bool allSelected: root._isAllSelected(root.usableProviders)
@@ -112,6 +118,19 @@ ColumnLayout {
     function _sourceText(provider) {
         return provider && provider.source !== null && provider.source !== undefined
             ? String(provider.source) : ""
+    }
+
+    // D6: tab percent reuses the same model logic as the compact-panel
+    // preference (UsageModel.selectRepresentative), never the Overview
+    // body's selectOverviewWindows.
+    function _representativeWindow(provider) {
+        return provider ? UsageModel.selectRepresentative(provider.windows, root.preferredWindowKey) : null
+    }
+
+    function _percentText(provider) {
+        var representative = root._representativeWindow(provider)
+        return representative && typeof representative.usedPercent === "number" && isFinite(representative.usedPercent)
+            ? Math.round(representative.usedPercent) + "%" : ""
     }
 
     function _setIndex(index) {
@@ -252,19 +271,31 @@ ColumnLayout {
                     ? root.usableProviders[index] : null
                 property string providerText: root._providerText(providerData)
                 property string sourceText: root._sourceText(providerData)
+                // D6: finite representative usage percent for this provider,
+                // or "" when none is finite -- never invented.
+                property string percentText: root._percentText(providerData)
                 visible: providerData !== null
                 enabled: visible
                 activeFocusOnTab: visible
-                // Tabs stay compact: icon plus short provider name only.
-                // The full source remains available in Accessible metadata.
-                text: providerText
+                // Tabs stay compact: icon, short provider name, and a
+                // representative usage percent when one exists (D6). The
+                // full source remains available only in Accessible metadata.
+                text: percentText.length > 0
+                    ? Translation.translate("%1 %2", [providerText, percentText], typeof i18n === "function" ? i18n : null)
+                    : providerText
                 icon.source: root.iconResolver(providerData ? providerData.provider : null)
                 icon.color: Kirigami.Theme.textColor
                 focusPolicy: Qt.StrongFocus
-                Accessible.name: sourceText.length > 0
-                    ? Translation.translate("%1 provider, source %2", [providerText, sourceText],
-                        typeof i18n === "function" ? i18n : null)
-                    : Translation.translate("%1 provider", [providerText], typeof i18n === "function" ? i18n : null)
+                Accessible.name: {
+                    var parts = [Translation.translate("%1 provider", [providerText], typeof i18n === "function" ? i18n : null)]
+                    if (percentText.length > 0) {
+                        parts.push(Translation.translate("%1 used", [percentText], typeof i18n === "function" ? i18n : null))
+                    }
+                    if (sourceText.length > 0) {
+                        parts.push(Translation.translate("source %1", [sourceText], typeof i18n === "function" ? i18n : null))
+                    }
+                    return parts.join(", ")
+                }
                 Accessible.description: sourceText.length > 0
                     ? Translation.translate("Source: %1", [sourceText], typeof i18n === "function" ? i18n : null)
                     : Translation.translate("No source provided", [], typeof i18n === "function" ? i18n : null)

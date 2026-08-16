@@ -53,10 +53,10 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: ProviderSelector Tab-Percent (PR 4)
 
-- [ ] 4.1 RED: Update `tests/ProviderSelectorHarness.qml` — tab text/`Accessible.name` contains representative percent when finite, omits it otherwise; run tests, confirm failure.
-- [ ] 4.2 GREEN: Add `preferredWindowKey` property (default `"automatic"`), import `UsageModel.js`, compute tab percent via `selectRepresentative` in `contents/ui/ProviderSelector.qml`.
-- [ ] 4.3 GREEN: Bind `preferredWindowKey` from `contents/ui/main.qml` into `ProviderSelector`.
-- [ ] 4.4 Verify `./scripts/run-qml-tests.sh` passes.
+- [x] 4.1 RED: Update `tests/ProviderSelectorHarness.qml` — tab text/`Accessible.name` contains representative percent when finite, omits it otherwise; run tests, confirm failure.
+- [x] 4.2 GREEN: Add `preferredWindowKey` property (default `"automatic"`), import `UsageModel.js`, compute tab percent via `selectRepresentative` in `contents/ui/ProviderSelector.qml`.
+- [x] 4.3 GREEN: Bind `preferredWindowKey` from `contents/ui/main.qml` into `ProviderSelector`.
+- [x] 4.4 Verify `./scripts/run-qml-tests.sh` passes.
 
 ## Phase 5: CostSection + StatusFooter (PR 5)
 

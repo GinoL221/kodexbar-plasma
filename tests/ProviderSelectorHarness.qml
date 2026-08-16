@@ -88,8 +88,29 @@ Item {
         assert(t.Accessible.name.indexOf("src-dup-a") !== -1 || t.Accessible.description.indexOf("src-dup-a") !== -1, "tab full source")
         assert(t.checked === (s.tabBar.currentIndex === 1), "checked state")
 
-        assert(t.text === "dup", "tab text must contain only the short provider name, no source suffix")
+        assert(t.text === "dup 5%",
+            "tab text must contain the short provider name plus a finite representative usage percent (D6)")
         assert(t.text.indexOf("·") === -1, "tab text must never combine provider and source")
+        assert(t.text.indexOf("src-dup-a") === -1, "tab text must never contain the source, even with a percent added")
+        assert(t.Accessible.name.indexOf("5%") !== -1,
+            "tab accessible name must also mention the finite representative usage percent (D6)")
+
+        // D6: when no window has a finite usedPercent, the tab must omit the
+        // percent entirely -- no invented value, per spec "Tab omits percent
+        // when none is finite".
+        s.popupOpen = false
+        s.providers = [p("nopercent", "src-nopercent", [w("Session", null, null, null)])]
+        s.popupOpen = true
+        assert(s.selectedProvider && s.selectedProvider.provider === "nopercent",
+            "a provider with a window but no finite usedPercent must still be usable/selectable")
+        var noPercentTab = s.tabBar.contentChildren[1]
+        assert(noPercentTab.text === "nopercent",
+            "tab text must omit the percent entirely when no finite representative usedPercent exists (D6)")
+        assert(noPercentTab.text.indexOf("%") === -1,
+            "tab text must never contain a percent sign when no finite percent exists")
+        assert(noPercentTab.Accessible.name.indexOf("%") === -1,
+            "tab accessible name must never mention a percent when no finite percent exists")
+
         var allTab = s.tabBar.contentChildren[0]
         assert(allTab.text.indexOf("·") === -1 && allTab.icon.name.length > 0, "All tab must remain a compact icon-plus-label control")
 

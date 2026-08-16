@@ -132,6 +132,7 @@ PlasmoidItem {
                         providers: root.controller.committedProviders
                         phase: root.controller.phase
                         popupOpen: root.expanded
+                        preferredWindowKey: root.preferredWindowKey
                         Layout.fillWidth: true
                         onSelectedProviderChanged: root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
                     }
