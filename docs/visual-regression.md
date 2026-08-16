@@ -51,13 +51,22 @@ Normal runs never write into `tests/visual/goldens/`. They write only to `tests/
 
 ## Updating goldens
 
-Goldens only change through an explicit, reviewed update:
+Goldens only change through an explicit, reviewed update. **CI is the pixel authority:** regenerate baselines inside the same Docker image the workflow uses, so host font/Qt AA drift does not fight GHA.
 
 ```sh
+# Preferred (matches CI image rendering)
+docker build -f ci/visual-regression.Dockerfile -t kodexbar-visual-local:test .
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e UPDATE_GOLDENS=1 \
+  --volume "$PWD:/workspace" --workdir /workspace \
+  kodexbar-visual-local:test ./scripts/run-visual-tests.sh
+
+# Host-only update (may diverge from CI; avoid unless you intentionally change the authority)
 UPDATE_GOLDENS=1 ./scripts/run-visual-tests.sh
 ```
 
 Update mode still validates the manifest and requires a successful canonical capture first; it replaces only that scenario's golden, atomically, and reports the replacement. There is no implicit or automatic baseline mutation.
+
+Local host runs of `./scripts/run-visual-tests.sh` can still **capture and classify Light/Dark** correctly (theme inject is deterministic). Pixel compare against repo goldens may fail on a non-CI host even when theme force is healthy — use the Docker command above to match CI.
 
 ## Limits
 
