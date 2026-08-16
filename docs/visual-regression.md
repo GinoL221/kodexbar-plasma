@@ -30,7 +30,16 @@ The runner is independent of `./scripts/run-qml-tests.sh` and fails before captu
 
 Missing Pillow or another visual dependency never affects `./scripts/run-qml-tests.sh` — the behavioral suite stays fully independent.
 
-Each scenario runs in its own `qml6` process with `QT_QPA_PLATFORM=offscreen`, `QT_QUICK_BACKEND=software`, `QSG_RENDER_LOOP=basic`, `QT_SCALE_FACTOR=1`, `QT_FONT_DPI=96`, `LC_ALL=C.UTF-8`, and `TZ=UTC`. Dark scenarios additionally set `QT_QPA_PLATFORMTHEME=kde` so the harness's palette probe can confirm the requested Breeze appearance; Light scenarios omit it. If the requested theme cannot be established, the scenario fails before capture.
+Each scenario runs in its own `qml6` process with `QT_QPA_PLATFORM=offscreen`, `QT_QUICK_BACKEND=software`, `QSG_RENDER_LOOP=basic`, `QT_SCALE_FACTOR=1`, `QT_FONT_DPI=96`, `LC_ALL=C.UTF-8`, and `TZ=UTC`, under an **isolated** `HOME` / `XDG_*` tree so the live Plasma desktop theme cannot leak in.
+
+**Theme determinism:** the suite does **not** use `KDE_COLOR_SCHEME` (that variable does nothing for KF6/Kirigami). It also does not rely on `QT_QPA_PLATFORMTHEME=kde` to force Light/Dark offscreen — on headless hosts that path produced a broken black-on-black palette. Instead:
+
+1. `tests/visual/breeze_palette.py` parses `/usr/share/color-schemes/BreezeLight.colors` or `BreezeDark.colors`.
+2. The runner builds a compact JSON palette and passes it inline as `--palette-json '{...}'`. Hex channels are stored **without** a leading `#` so `qml6` argv/URL handling cannot treat them as fragments.
+3. The harness restores the `#` prefix, sets `Kirigami.Theme.inherit: false`, and injects Window/Selection colors from that payload.
+4. A luminance probe still fails the scenario if the effective theme does not match light/dark.
+
+If the scheme files are missing, the palette cannot be classified, or injection fails, the scenario fails **before** capture.
 
 ## Comparison and threshold
 
