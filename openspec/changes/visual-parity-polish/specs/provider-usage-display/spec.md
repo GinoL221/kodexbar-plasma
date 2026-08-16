@@ -37,17 +37,18 @@ The selected-provider header MUST use two columns: the left column MUST show ide
 
 ### Requirement: Informational popup footer
 
-The popup MUST show a read-only footer with only the controller's current phase/status and the last-updated timestamp. The footer MUST NOT show a provider count, an error count, or any Settings, About, Quit, or Add Account control.
+The popup MUST show a read-only footer with only the controller's current phase/status. The footer MUST NOT show a provider count, an error count, a last-updated timestamp, or any Settings, About, Quit, or Add Account control.
+(Previously: the footer also showed the selected provider's last-updated timestamp; removed because it duplicated the timestamp already shown in `ProviderHeader`'s `Updated:` line whenever a provider was selected, and added nothing when `Overview` was selected since each Overview card already shows its own timestamp.)
 
-#### Scenario: Footer shows status and last-updated
-- GIVEN the controller has a current phase/status and a last-updated timestamp
+#### Scenario: Footer shows status
+- GIVEN the controller has a current phase/status
 - WHEN the popup is open
-- THEN the footer shows exactly those two pieces of information
+- THEN the footer shows exactly that one piece of information
 
-#### Scenario: Footer excludes counts and controls
+#### Scenario: Footer excludes counts, timestamp, and controls
 - GIVEN the popup is open in any provider/error state
 - WHEN the footer renders
-- THEN it shows no provider count, no error count, and no Settings, About, Quit, or Add Account control
+- THEN it shows no provider count, no error count, no last-updated timestamp, and no Settings, About, Quit, or Add Account control
 
 ## MODIFIED Requirements
 
