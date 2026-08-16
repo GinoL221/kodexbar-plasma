@@ -9,17 +9,18 @@ Short post-parity backlog. Product behavior for usage, selected-provider enrichm
 - Selected-provider enrichment (pace, credits, reset inventory, identity header)
 - Isolated `codexbar cost` lifecycle and Cost section
 - SDD archive for `final-popup-parity`
+- P0 hygiene (zombie SDD archive, PR template, ROADMAP links)
+- P0b UI craft skill + `docs/ui-parity-checklist.md`
+- P1 offscreen visual regression + deterministic Breeze Light/Dark inject
+- P1b `run-qml-tests.sh` auto-discovers plain `*Harness.qml`
 
 ## Next
 
 | Priority | Item | Notes |
 |---|---|---|
-| P0 | Repo hygiene | Zombie SDD cleanup, PR template, doc links |
-| P0b | UI craft skill + checklist | `skills/plasma-kirigami-ui`, `docs/ui-parity-checklist.md` |
-| P1 | Offscreen visual regression | Done (geometry + goldens + docs/CI); dark theme force fixed via Breeze `.colors` inject |
-| P1b | Test runner maintainability | Auto-discover harnesses; split oversized harnesses when touched |
-| P2 | Process notes | SDD vs chore rules (see skill/checklist and PR template) |
+| P2 | Process notes | SDD vs chore rules already in ROADMAP/PR template; expand only if needed |
 | P3 | Deferred product | Legacy package ID sunset date; release checklist; optional self-hosted QML CI |
+| Later | Split oversized harnesses | e.g. `ProviderRowHarness.qml` when next touched |
 
 ## Explicit non-goals
 
