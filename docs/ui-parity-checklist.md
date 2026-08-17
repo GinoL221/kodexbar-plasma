@@ -86,8 +86,8 @@ Load `skills/plasma-kirigami-ui/SKILL.md` before implementing UI changes.
 
 | Field | Value |
 |---|---|
-| PR / change | |
-| Date | |
-| Breeze Light | pass / fail |
-| Breeze Dark | pass / fail |
-| Notes | |
+| PR / change | visual-parity-polish (PR6 D1-D30, PR7 goldens) |
+| Date | 2026-08-16/17 |
+| Breeze Light | pass |
+| Breeze Dark | pass |
+| Notes | Live `plasmawindowed` smoke (task 8.11) on both themes: Overview single-line bars, custom tab chip strip (icons/underline/arrows, no doubled paint), full-length titles, codex/commandcode/mimo icons legible, detail header shows name+Updated+badge only, CLI-verbatim resets, Cost section correct. Offscreen visual-regression goldens (Phase 7) regenerated and converge 0/180000 in all 4 scenarios; `breeze-light-*` goldens inherit a pre-existing (pre-dates this change) black-background/purple-text rendering defect in the Docker/offscreen theme-injection pipeline — confirmed via the prior committed golden, tracked separately (Engram `backlog/visual-regression-light-theme-injection-bug`), not blocking, does not reflect live Plasma Light rendering (which is correct per the live smoke above). |

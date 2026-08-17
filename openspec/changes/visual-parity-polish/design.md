@@ -4,7 +4,7 @@
 
 View-layer restructure of six QML files plus one new presentational component, and one additive pure selector in `UsageModel.js` (D10). No `UsageController`, `CostController`, `ProviderDetails.js`, normalization path, or CLI surface is touched: every value rendered already exists on `providerData` / `snapshot` / `controller.phase`. Layout uses `Kirigami.Units` and `Kirigami.Theme` exclusively.
 
-Delivered as six chained work units (see Migration / Rollout), goldens regenerated once in the final unit.
+Delivered as stacked work units (see Migration / Rollout). Units 1–5 are committed on the PR6 branch tip. Unit 6+ is **uncommitted live polish** (D21–D30): Overview cards, custom tab strip, detail chrome cleanup, thin bars, display names, popup chrome — all view-layer / pure selectors only. Goldens remain the final unit. See `SDD-HANDOFF-CLAUDE.md` for closeout.
 
 ## Architecture Decisions
 
@@ -19,24 +19,62 @@ Delivered as six chained work units (see Migration / Rollout), goldens regenerat
 | D7 | Threshold color is **not** implemented (bar keeps default theme paint) | Semantic `Kirigami.Theme` color ramp | Explicitly out of scope; deferred to a future change |
 | D8 | New `contents/ui/StatusFooter.qml`, read-only, placed as the last item of the **outer** `ColumnLayout` in `main.qml` (below the `ScrollView`) | Inside the scroll column; extending `ErrorSummary` | Footer must stay pinned and visibly non-scrolling chrome; a new file keeps `main.qml` from growing |
 | D9 | Footer shows phase/status ONLY, no timestamp | Selected provider's CLI `validUpdatedAt`, absent for `Overview`; add `lastUpdatedAt` to `UsageController` | Implemented, then removed after PR 5 apply: it duplicated `ProviderHeader.updatedAtLabel` whenever a provider was selected and added nothing for `Overview` (each card already shows its own timestamp). User confirmed dropping it (2026-08-17). Controller changes remain out of scope regardless |
-| D10 | New pure `UsageModel.selectOverviewWindows(windows)`: returns finite Session (`key "primary"`) then finite Weekly (`"secondary"`) — always in that order, not payload order — else finite Monthly (`"tertiary"`) alone, else `[]`. Reuses the existing `windowDefinitions`, `isUsableWindow`, `matchesDefinition` helpers exactly like `preferredFiniteWindow` | Filter windows inline in `ProviderRow`; add a "max count" argument to `selectRepresentative` | Window-selection policy already lives in one JS module covered by `UsageModelTest.qml`; matching on definitions (not array index) keeps the four-key contract untouched and makes the Monthly fallback provably exclusive |
+| D10 | ~~Session+Weekly together, else Monthly alone~~ — **superseded by D21** | — | Live product need (e.g. opencodego) requires all three finite windows visible in Overview |
 | D11 | `ProviderRow.displayedWindows` becomes `summary ? UsageModel.selectOverviewWindows(windows) : windows`; `representativeWindow` and `preferredWindowKey` are **removed** from `ProviderRow`, and `main.qml`'s binding at the summary `Repeater` is dropped | Keep `preferredWindowKey` as an inert property | Spec forbids `preferredRepresentativeWindow` governing Overview; a live-but-ignored input invites silent re-coupling. `main.qml`'s own `preferredWindowKey` (config-backed) stays declared and is re-consumed by `ProviderSelector` in PR 4 (D6) |
 | D12 | An Overview "card" is the existing `ProviderHeader` (`detailed: false`) plus 0–2 existing `UsageWindowRow`s (`summary: true`) in the existing `Repeater` — no new component; the header's right badge column AND `versionLabel` additionally gate on `detailed`, so both the plan/login badge and the CLI version string are selected-detail-only | New `ProviderOverviewCard.qml`; a `GridLayout` of cards; leave `versionLabel` ungated | The `Repeater` already renders N rows and `summary: true` already hides reset text, so D1's bar restructure lands in Overview for free. Gating the badge and version extends D5 for summary rows only (selected-detail behavior is unchanged) and matches the existing compact exclusion set (email/org/pace/credits/resets/cost) — a raw CLI version string is extra detail, not identity, and the Overview reference shows only icon+name+bars. A grid breaks the response-ordered single column and Plasma popup width |
 | D13 | Tab label `All` → `Overview` with `icon.name: "view-grid"` (verified present in `breeze/actions/{16,22,24}`), plus updated `Accessible.name`/`description`; internal identifiers (`allSelected`, `_allSelected`, `_selectAll`) stay unchanged | Rename internals too; `view-grid-symbolic` | User-facing rename is a string + icon change; renaming internals inflates the diff and risks `main.qml` / `CostRequestPolicy` regressions. `view-grid-symbolic` is not a Breeze `actions` name here |
+| D14 | The Overview/detail split lives **inside** `UsageWindowRow.qml` as one component with two `root.summary`-gated arrangements, not a second delegate. `windowLabel` moves into a new title `RowLayout` (`windowLabel` \| spacer `Item` \| a second, summary-only percent Label), the existing bar `Loader` stays second, and the existing band `RowLayout` gains `visible: !root.summary`. Detail rows (D1–D3) render byte-identically to today | New `OverviewWindowBar.qml` / `SummaryWindowRow.qml` selected by the `ProviderRow` Repeater via `Loader`/`sourceComponent`; a `StackLayout`/`Loader` of two arrangements inside `UsageWindowRow` | A separate delegate would duplicate `hasFinitePercent`, `resetText`, `valueText`, and the whole `Accessible.name`/`description` assembly, and it breaks D12's reuse plus every `instanceof UsageUi.UsageWindowRow` harness helper (`countUsageWindowRows`, `allResetLabelsHidden`, `countVisibleUsageDetails` at `tests/ProviderRowHarness.qml:29–64`). A `Loader`/`StackLayout` of two arrangements is worse still: `property alias` cannot point into a `Loader`'s component, so all five exported handles would break. One component with two gated arrangements is the only option that keeps the delegate, the reuse, and the exported handles |
+| D15 | The summary percent is a **second Label instance** (`summaryPercentageLabel`, `visible: root.summary && root.hasFinitePercent`) inside the title row; the band's `percentageLabel` gains `&& !root.summary`. The exported handle changes from `property alias percentageLabel` to `property var percentageLabel: root.summary ? summaryPercentageLabel : bandPercentageLabel`. Right alignment comes from a `Layout.fillWidth` spacer `Item`, exactly like the band's existing spacer (`UsageWindowRow.qml:90–94`) | Reparent the single existing Label imperatively; `Layout.row`/`GridLayout` reordering; drop the `percentageLabel` handle | A `var` handle resolved by a ternary is already this file's own convention for a non-static child (`property var progressBar: progressLoader.item`), so `row.percentageLabel.{visible,text,x,width,paintedWidth}` keeps working unchanged in every existing harness assertion. Imperative reparenting inside a `ColumnLayout` fights the layout engine and is untestable; a `GridLayout` rewrite would touch the confirmed-correct detail layout. Both labels share one text binding, so no percent value can diverge. `resetsAtLabel`/`resetDescriptionLabel` stay plain aliases: their instances survive, and QML effective `visible` already reports `false` through the hidden band parent, so `tests/ProviderRowHarness.qml:524` and `:131` stay green and become structurally guaranteed rather than binding-guaranteed |
+| D16 | Provider tab icons switch from `QQC2.TabButton`'s native `icon.source`/`icon.color` to an explicit `contentItem: RowLayout { Kirigami.Icon { isMask: true; color: Kirigami.Theme.textColor } ; PlasmaComponents.Label }`, mirroring `CompactUsageButton.qml:25–43` verbatim. `icon.source` stays bound on the delegate as the data handle the `Kirigami.Icon` reads (`providerTab.icon.source`); `text` stays on the `TabButton`. Tab 0 (`Overview`) is **not** touched — it keeps native `icon.name: "view-grid"` | Keep `icon.color` and hope a style update fixes it; recolor via a `MultiEffect`/`ShaderEffect` overlay; give up on `currentColor` and ship per-theme icon variants; apply the spec's literal-color escape hatch now | Evidence, not guesswork. (a) `tests/test_provider_icons.py` already machine-enforces the `currentColor`/no-literal-color SVG contract and is green, so the SVG source is not the defect. (b) Bundled SVGs carry `stroke="currentColor"` with no CSS `color` in the document (`contents/icons/providers/codex.svg`), so Qt's SVG rasterizer resolves `currentColor` to its default — black — and something downstream must re-tint it. (c) Every call site in this repo that renders a bundled SVG legibly does that re-tint through `Kirigami.Icon { isMask: true; color: Kirigami.Theme.textColor }` — `ProviderHeader.qml:37–46` and `CompactUsageButton.qml:28–34`. (d) `ProviderSelector.qml:286–287` is the **only** call site using the QQC2 `icon.*` grouped property, and it is the only reported failure. (e) Tab 0 renders fine with `icon.name: "view-grid"` because a Breeze *theme* icon is resolved through `QIcon` and is already theme-adaptive — it never depends on `icon.color` tinting an arbitrary file URL. The QQC2 `icon.color` path does not reliably tint a non-theme file-URL SVG under the Plasma/desktop style; `Kirigami.Icon`'s mask path does, unconditionally. Fixing it by adopting the pattern the repo already proved twice is smaller and lower-risk than any recolor-effect or per-theme-asset alternative |
+| D17 | ~~The spec's documented literal-color fallback is not used~~ — **superseded by D18/D19 below.** Live Breeze Dark smoke (orchestrator, 2026-08-16) falsified D16(c): tab text rendered doubled/overlapping, not just un-recolored | — | See D18 for the actual root cause found by reading the installed style |
+| D18 | **D16 reverted.** `contentItem` override removed from the provider-tab delegate; back to plain `icon.source` + `icon.color: Kirigami.Theme.textColor` (pre-D16 code) | Keep `contentItem` and try to suppress the native background's own icon/text paint | Read the installed style directly: `/usr/lib/qt6/qml/org/kde/desktop/TabButton.qml` sets `contentItem: null` and paints icon **and** text natively inside `background: StylePrivate.StyleItem { properties: { "icon": ..., "iconColor": ... } ; text: controlRoot.Kirigami.MnemonicData.mnemonicLabel } }`. For this style, `background` — not `contentItem` — is the only render surface; overriding `contentItem` adds a second icon+text layer on top instead of replacing anything, producing the observed doubled text. The same `StyleItem.iconColor` already resolves to `Kirigami.Theme.textColor` whenever `icon.color` isn't `"transparent"` — meaning the original pre-D16 code was already passing the right color to the native paint layer; the property binding was never the defect |
+| D19 | For the 3 stroke-only icons (`codex.svg`, `commandcode.svg`, `mimo.svg` under `contents/icons/providers/`), replace `stroke="currentColor"` with a literal `stroke="#9a9a9a"` (mid-grey, ~equal contrast against Breeze Light's near-white and Breeze Dark's near-black panel backgrounds) — the spec's own documented literal-color fallback, now legitimately triggered per D17/D18's finding. The other ~47 `fill="currentColor"` icons are untouched and stay theme-adaptive; they already render correctly through the same native `StyleItem` path | Vectorize the 3 strokes into equivalent `fill="currentColor"` closed paths; wrap each in an SVG `<mask>` to force a fill-based top-level paint operation | Native `StyleItem`'s icon recoloring only visibly worked for `fill="currentColor"` icons in the live smoke (confirmed: exactly these 3 files are the only ones with zero `fill="currentColor"` anywhere, per D16(e)'s grep). A hand-vectorized fill conversion risks subtly altering each brand mark's geometry (the "Codex...show their own brand mark" scenario requires visual distinctness, not just any silhouette), and an SVG `<mask>` depends on QtSvg mask support that hasn't been verified in this Qt version. A literal, static color is unconditional and needs no further Qt-behavior assumptions — it is the spec's own designed contingency for exactly this situation |
+| D20 | Fixed non-`implicitWidth` `Layout.maximumWidth` on summary window labels (anti-elide loop) | `maximumWidth: implicitWidth` | Live truncation of "Weekly"; see original D20 root-cause writeup |
+| D21 | **`selectOverviewWindows`:** return every finite Session, Weekly, Monthly window in definition order (0–3 bars). Empty iff none finite | Keep D10 exclusive Monthly fallback | opencodego (and any provider with three finite windows) must show Monthly together with Session/Weekly; hiding tertiary when primary/secondary exist was a real data-visibility bug |
+| D22 | Overview card = `Loader` summary body: `RowLayout { Kirigami.Icon summaryProviderIcon \| Column { name; UsageWindowRow×N } }`. Detail body is a separate `Loader` so trees do not double-instantiate bars | Shared always-on Repeater for both modes | Invisible Repeaters still created progress bars and broke counts; 2-col matches psimaker Overview IA |
+| D23 | Detail primary chrome = name + Updated + login badge only. `versionLabel` / `emailLabel` / `organizationLabel` stay in tree with `visible: false`. Credits line only when finite `credits.remaining > 0` | Keep email/version in header | User-confirmed density/PII choice vs macOS reference hierarchy |
+| D24 | Overview bars = single line `label \| thin bar \| % used`. Detail = title → thin full-width bar → band. Thin bars are theme `Rectangle`s (`summaryUsageProgressBar` / `detailUsageProgressBar`), not QQC2.ProgressBar chrome. **Never** `width: root.width` on a ColumnLayout child (zero-size cycle) | D14 2-line summary; fat ProgressBar | Live reference density; layout cycle caused missing detail bars |
+| D25 | Replace provider `QQC2.TabBar`/`TabButton` with custom chip strip: `ItemDelegate` column (icon medium, name, underline bar), side arrow scroll, no horizontal scrollbar. Percent not in tab text (a11y + underline only). D6 `selectRepresentative` still supplies the value | D16 contentItem on TabButton; D18 native icon.color only | Breeze paints tabs in `background` (`contentItem: null`); custom strip is the only reliable theme + layout path |
+| D26 | `ProviderIcons.displayName(id)`: brand map (`opencodego`→`OpenCode Go`, etc.) else first-letter capitalize. Used by tabs, Overview, detail header | Always raw CLI id | User-facing labels |
+| D27 | Popup chrome: `bodyInset`; content-driven height (min/max); overlay vertical ScrollBar; Refresh below scroll; loading only in `StatusFooter` (`Loading usage…`); body phase label = noData/error only | Fixed preferredHeight = max; loading label in scroll body | Empty slab + layout jump on refresh |
+| D28 | Do not mount `ErrorSummary` in `main.qml` popup. Controller still commits errors; component + harness remain | Show "Show N provider failures" | Linux CLI returns dozens of unsupported providers — pure noise |
+| D29 | Tab underline: `sideInset` + `nameGap` margins under name and from chip sides | Flush underline | User density feedback |
+| D30 | Tests: `ProviderIconsHarness.qml`; extended `ProviderRowHarness` / `ProviderSelectorHarness` / integration tests for D21–D29 | Spec-only | Lock live polish before SDD archive |
+
+## Post-PR5 live polish (D21–D30)
+
+Authoritative narrative for closeout agents: `SDD-HANDOFF-CLAUDE.md`.
+
+Implemented **uncommitted** on `visual-parity-polish/pr6-overview-and-icon-fix` after PR1–PR5 commits. Driven by iterative live `plasmawindowed` screenshots (Breeze Dark), not by the original D14/D16 plan alone.
+
+**Do not reintroduce:** percent-in-tab-text, QQC2 TabBar for providers, ErrorSummary in popup, email/version/org in detail header, credits when 0, Overview title/percent-above-bar layout, fixed popup height always at max.
 
 ## Data Flow
 
     codexbar usage --json-only ──→ UsageController.committedProviders
          │
-         ├─→ ProviderSelector ──(selectRepresentative + preferredWindowKey)──→ tab "name 42%"
-         │                     └─ tab 0 = "Overview" (view-grid)
-         ├─→ ProviderRow (summary) ──(selectOverviewWindows, NO preferredWindowKey)
-         │        └─→ ProviderHeader (detailed:false → no badge) + 0–2 UsageWindowRow
-         ├─→ ProviderRow (selected) ──→ ProviderHeader (identity | login badge)
-         │                            └─→ UsageWindowRow (title / bar / percent | reset)
-         └─→ StatusFooter (controller.phase + validUpdatedAt) — read only
+         ├─→ ProviderSelector (custom chip strip D25)
+         │        ├─ Overview chip + provider chips (displayName D26)
+         │        ├─ underline bar value ← selectRepresentative + preferredWindowKey (D6 data)
+         │        └─ arrows for overflow (no h-scrollbar)
+         ├─→ ProviderRow summary (D21–D22)
+         │        └─ icon | name + 0–3 thin single-line bars (no ErrorSummary)
+         ├─→ ProviderRow selected (D23–D24)
+         │        └─ name+Updated+badge → windows → credits>0 → cost → details
+         └─→ Refresh + StatusFooter (phase; Loading usage…)
+
+    UsageWindowRow (D24):
+
+      summary: true                      summary: false (detail)
+      ┌───────────────────────────┐      ┌───────────────────────────┐
+      │ title  ████████  42% used │      │ title                     │
+      └───────────────────────────┘      │ ████████████░░░░░░░░░░░░░ │
+                                         │ 42% used ····· reset text │
+                                         └───────────────────────────┘
 
 ## File Changes
+
+> The rows below describe the original PR1–PR6(D1–D20) plan, kept as historical record of already-committed PR1–PR5. For the **final, D21–D30 file list** (the actual uncommitted state), see `SDD-HANDOFF-CLAUDE.md` §5 — several rows below (e.g. the D16 `contentItem` override on `ProviderSelector.qml`) describe an approach D18/D25 later replaced and are superseded, not current.
 
 | File | Action | Description |
 |------|--------|-------------|
@@ -55,7 +93,11 @@ Delivered as six chained work units (see Migration / Rollout), goldens regenerat
 | `tests/ProviderRowHarness.qml` | Modify | RED-first geometry updates (see Testing) |
 | `tests/ProviderSelectorHarness.qml` | Modify | RED-first tab-percent assertions |
 | `tests/ProviderDetailsIntegrationTest.qml` | Modify | RED-first badge placement assertions |
-| `tests/visual/goldens/*.png` | Modify | Regenerated once, unit 5 |
+| `contents/ui/UsageWindowRow.qml` | Modify | PR 6: summary title/percent arrangement (D14–D15). `windowLabel` moves into a new title `RowLayout`; adds `summaryPercentageLabel` + spacer; band `RowLayout` gains `visible: !root.summary`; `percentageLabel` becomes a `var` handle. All five exported handles and `objectName: "paceSummaryLabel"` **preserved** |
+| `contents/ui/ProviderSelector.qml` | Modify | PR 6: provider-tab `contentItem` override with `Kirigami.Icon { isMask: true }` (D16). Adds `id: providerTab` on the Repeater delegate (required: the file is `pragma ComponentBehavior: Bound`, so the inline `contentItem` must reference the delegate through an explicit id, never an unqualified name — `tests/test_qml_unqualified_baseline.py` and `tests/test_bound_qml_components.py` enforce this). Adds the missing `import org.kde.plasma.components as PlasmaComponents` for the label (`QtQuick.Layouts` is already imported). `icon.source` binding, `text`, `Accessible.*`, and tab 0 all unchanged |
+| `tests/ProviderRowHarness.qml` | Modify | PR 6: RED-first summary vs detail vertical-order assertions |
+| `tests/ProviderSelectorHarness.qml` | Modify | PR 6: RED-first provider-tab `Kirigami.Icon` structure assertions |
+| `tests/visual/goldens/*.png` | Modify | Regenerated once, unit 7 (after PR 6's visual correction) |
 | `docs/ui-parity-checklist.md` | Modify | Verification record |
 
 `ProviderDetailsIntegrationTest` and `VisualCaptureHarness` locate nodes by recursive `objectName` search, so re-parenting alone is assertion-safe; only value/visibility assertions change.
@@ -68,13 +110,26 @@ Delivered as six chained work units (see Migration / Rollout), goldens regenerat
 property string preferredWindowKey: "automatic"
 ```
 
-`UsageModel.js` gains one pure function (D10), returning a 0-, 1-, or 2-element array of the *same* window objects (never copies, never synthesized):
+`UsageModel.js` gains one pure function, returning a 0- to 3-element array of the *same* window objects (never copies, never synthesized) — every finite Session/Weekly/Monthly window, in that order (D21 supersedes D10's exclusive Session+Weekly-or-Monthly-alone behavior):
 
 ```js
-function selectOverviewWindows(windows) // [session?, weekly?] | [monthly] | []
+function selectOverviewWindows(windows) // [session?, weekly?, monthly?] filtered to finite entries, 0..3 length
+```
+
+`UsageWindowRow`'s exported handles after D15 — same five names, one changes kind (no consumer signature changes):
+
+```qml
+property var   progressBar: progressLoader.item                 // unchanged
+property alias windowLabel: windowLabel                         // unchanged (reparented)
+property var   percentageLabel: root.summary                    // was: alias
+    ? summaryPercentageLabel : bandPercentageLabel
+property alias resetsAtLabel: resetsAtLabel                     // unchanged (reparented)
+property alias resetDescriptionLabel: resetDescriptionLabel     // unchanged (reparented)
 ```
 
 ## Testing Strategy
+
+> The rows below describe the original PR1–PR6(D1–D20) plan and its RED anchors, kept as historical record. D21–D30's actual final test coverage (`tests/ProviderIconsHarness.qml` new, plus extended `ProviderRowHarness`/`ProviderSelectorHarness`/`ProviderDetailsIntegrationTest`/`UsageModelTest`/`MainCompactHarness`/`test_provider_icons.py`) is D30 — see `SDD-HANDOFF-CLAUDE.md` §5 for the file list. `./scripts/run-qml-tests.sh` and `python3 -m unittest tests.test_provider_icons` are green against the current working tree (orchestrator-verified 2026-08-17).
 
 | Layer | What to test | Approach |
 |-------|--------------|----------|
@@ -84,12 +139,19 @@ function selectOverviewWindows(windows) // [session?, weekly?] | [monthly] | []
 | Unit (QML) | **PR 3 RED anchor**: `ProviderSelectorHarness.qml:93–94` asserts tab 0 is a compact icon+label control. Extend RED-first to assert `text === "Overview"`, `icon.name === "view-grid"`, and an `Accessible.name` naming Overview (D13) | `./scripts/run-qml-tests.sh` |
 | Unit (QML) | `ProviderSelectorHarness.qml`: tab text contains the representative percent; no percent when no finite window | `./scripts/run-qml-tests.sh` |
 | Integration | `ProviderDetailsIntegrationTest.qml`: `loginLabel` visible and right-aligned when valid, absent when invalid/malicious; `updatedAtLabel` unchanged | `./scripts/run-qml-tests.sh` |
-| Visual | 4 scenarios (`breeze-{light,dark}-cost-{present,absent}`) | Unit 5 only: `docker build -f ci/visual-regression.Dockerfile -t kodexbar-visual-local:test .` then `docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e UPDATE_GOLDENS=1 --volume "$PWD:/workspace" --workdir /workspace kodexbar-visual-local:test ./scripts/run-visual-tests.sh`, then re-run without `UPDATE_GOLDENS` to prove convergence |
+| Unit (QML) | **PR 6 RED anchors (correction 1)** in `ProviderRowHarness.qml`. Honest finding: **nothing currently breaks by construction** — every existing summary assertion (`:393–397` bar/row counts, `:523–524` percent visible + reset hidden, `:580` `assertResponsiveGeometry(constrainedSummaryWindowRow, …)`) is width- or visibility-based and stays green under D14. The RED must therefore be *new vertical-order* assertions, added before the edit: on `constrainedSummaryWindowRow` (already `width: 120`, `summary: true`) assert `percentageLabel.mapToItem(row,0,0).y ≈ windowLabel.mapToItem(row,0,0).y` (same line), `percentageLabel.mapToItem(row,0,0).x > windowLabel.x + windowLabel.width` (percent right of title), `percentageLabel` right edge within `row.width - 0.01` and `> row.width / 2` (right-aligned, not packed after the title), `progressBar.y > windowLabel.mapToItem(row,0,0).y` (bar below the line), and `progressBar.width === row.width`. Add the mirrored **detail** guard on `constrainedWindowRow`: `percentageLabel.mapToItem(row,0,0).y > progressBar.y` — this is the anti-regression lock on D1–D3 that the user confirmed against the macOS reference. Add on `summaryWindowRow` (fixture already carries both `resetsAt` **and** `resetDescription`) `resetsAtLabel.visible === false && resetDescriptionLabel.visible === false` — already at `:524`, extend it to also assert the band parent itself is hidden, which is the new structural guarantee | `./scripts/run-qml-tests.sh` |
+| Unit (QML) | **PR 6 handle-contract guard**: `percentageLabel` changes alias → `var` (D15). `constrainedSummaryWindowRow`/`summaryWindowRow` must resolve `percentageLabel` to the title-row instance and `constrainedWindowRow`/`windowRow` to the band instance; assert `percentageLabel.text` still contains the expected percent in both (`:517`, `:523`, `:535` stay green) and that both instances never render simultaneously (`summaryPercentageLabel.visible !== bandPercentageLabel.visible` for a finite percent) | `./scripts/run-qml-tests.sh` |
+| Unit (QML) | ~~**PR 6 RED anchor (correction 2)**: `Kirigami.Icon` structure assertion~~ — **superseded (D18 reverts `contentItem`)**. Remove this assertion; there is no `contentItem` override to test anymore, and `:138`'s scroll-width assertion needs no watch-item re-verification since the delegate's implicit sizing reverts to its pre-D16 shape | `./scripts/run-qml-tests.sh` |
+| Static (file content) | **D19 anchor**: `tests/test_provider_icons.py` must still assert every icon uses only `currentColor`/`none` EXCEPT `codex.svg`, `commandcode.svg`, `mimo.svg`, which now use the literal `#9a9a9a`. If the existing test enforces a blanket no-literal-color rule, it needs a documented, named exception list for these 3 files (per the spec's own escape-hatch scenario) rather than a blanket loosening | `python3 -m unittest tests.test_provider_icons` (or `pytest` if installed) |
+| Unit (QML) | **D20 anchor**: on `constrainedSummaryWindowRow`, assert `windowLabel.text` is NOT elided for a label whose implicit width is well under the row's available space (e.g. `"Weekly"` at `width: 120` must render in full, not as `"Wee…"`) — this is the regression the live screenshot caught; the existing D14/D15 vertical-order assertions didn't check text content, only position | `./scripts/run-qml-tests.sh` |
+| Static (Python) | `tests/test_provider_icons.py` stays untouched and green — it is the standing proof that the SVG `currentColor`/no-literal-color contract is not the defect (D16(a)) and that D17's escape hatch was not silently taken | `pytest tests/test_provider_icons.py` |
+| Manual (gating) | **PR 6 acceptance gate, re-run after D18–D20**, per the spec's "Manual Breeze Light and Dark smoke check gates acceptance" scenario: run `plasmawindowed` once in Breeze Light and once in Breeze Dark and confirm (a) tab text/icon render as ONE clean layer, no doubling, (b) codex/commandcode/mimo tabs are legible in both themes via the literal `#9a9a9a`, (c) `ProviderHeader`'s and `CompactUsageButton`'s icons are unaffected (D18 touches only the provider-tab delegate), (d) `Weekly`/`Session`/`Monthly` titles render in full in Overview summary rows, not truncated | `docs/live-plasma-smoke.md` |
+| Visual | 4 scenarios (`breeze-{light,dark}-cost-{present,absent}`) | Unit 7 only: `docker build -f ci/visual-regression.Dockerfile -t kodexbar-visual-local:test .` then `docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e UPDATE_GOLDENS=1 --volume "$PWD:/workspace" --workdir /workspace kodexbar-visual-local:test ./scripts/run-visual-tests.sh`, then re-run without `UPDATE_GOLDENS` to prove convergence |
 | Manual | Breeze Light/Dark smoke, `docs/ui-parity-checklist.md` | `docs/live-plasma-smoke.md` |
 
 ## Threat Matrix
 
-N/A — no routing, shell, subprocess, VCS/PR automation, executable-file classification, or process-integration boundary. Still N/A after the Overview unit: `selectOverviewWindows` is a pure array filter over already-normalized, already-validated windows, and every other unit is a QML view file.
+N/A — no routing, shell, subprocess, VCS/PR automation, executable-file classification, or process-integration boundary. Still N/A after the Overview unit: `selectOverviewWindows` is a pure array filter over already-normalized, already-validated windows, and every other unit is a QML view file. Still N/A after PR 6 (D14–D17): both corrections are pure view-layer arrangement and icon-rendering changes over already-validated data, no new file is loaded from outside `contents/icons/providers/` (the icon URL is still produced by the unchanged `ProviderIcons.key` allowlist), and no SVG bytes change.
 
 ## Migration / Rollout
 
@@ -99,18 +161,17 @@ No migration required. Each unit is one revertible PR; goldens restore from the 
 
 | PR | Unit | State |
 |----|------|-------|
-| 1 | `UsageWindowRow` restructure (D1–D3) | Done, committed |
-| 2 | `ProviderHeader` two columns (D4–D5) | Done, committed |
-| 3 | **Overview mode (D10–D13) — new, inserted here** | Not started |
-| 4 | `ProviderSelector` tab percent (D6) | Not started (was PR 3) |
-| 5 | `CostSection` + `StatusFooter` (D7–D9) | Not started (was PR 4) |
-| 6 | Goldens + checklist | Not started (was PR 5) |
+| 1–5 | D1–D13 base (row, header, overview, tab %, footer) | Done, committed on branch |
+| 6 | Live polish D19 + D21–D30 (icons, overview cards, custom tabs, detail chrome, tests) | **Implemented, uncommitted** — user owns commit |
+| 7 | Goldens + checklist | Not started |
 
-PR 3 lands before PR 4 so the tab-percent work sees the final tab-0 label/icon and does not re-touch the same `ProviderSelector` lines twice.
+PR 6 working tree is large (~1.4k lines touched). Prefer reviewable commits (see SDD-HANDOFF-CLAUDE.md §7) when user authorizes. Goldens stay last.
 
 ## Open Questions
 
 - [x] Resolved: D2 was corrected after checking `tests/fixtures/codexbar-usage-capture.json` — the band's reset side shows verbatim `resetDescription` when present (falls back to verbatim `Reset: {resetsAt}` when absent), never a literal "Resets in" prefix added by QML. `specs/provider-usage-display/spec.md`'s "Usage window row band layout" requirement reflects this.
 - [ ] **Verified discrepancy**: the spec says `preferredRepresentativeWindow` "continues to govern the compact-panel effective window", but `UsageModel.selectCompact` (`contents/code/UsageModel.js:146`) takes no preference argument and picks the global maximum. The only live consumer today is the summary row that D11 removes, so between PR 3 and PR 4 the setting governs nothing. Confirm whether the spec sentence should be corrected, or whether `selectCompact` was always meant to honor the preference (a separate change).
 - [x] Resolved: user confirmed `versionLabel` should also be selected-detail-only. D12 updated to gate both the login badge and `versionLabel` on `detailed`.
+- [ ] **PR 6 / D16 — root cause is evidence-backed but not yet reproduced at the Qt layer.** What is proven in-repo: the SVG contract is machine-enforced and green (`tests/test_provider_icons.py`), the two legible call sites both use `Kirigami.Icon { isMask: true }`, and the single failing call site is the only QQC2 `icon.*` one. What is *not* proven here: the exact Qt/QQC2 code path by which `icon.color` fails to tint a file-URL SVG under the Plasma desktop style (no live Plasma runtime is available in this environment, and Qt's C++ sources were not inspected). D16 is therefore a behavior-driven fix backed by three independent in-repo discriminators, not a verified Qt bug report. The Breeze Dark live smoke is the decisive check: if a tab icon is still dark after D16, the failure is in the `Kirigami.Icon` mask path (or in `currentColor` resolution) rather than in QQC2, and D17's escape hatch becomes eligible.
+- [x] Resolved (orchestrator, evidence-based): the reported defect's scope is NOT universal — it correlates exactly with stroke-only icons. `grep` across all `contents/icons/providers/*.svg` for `fill="currentColor"` vs `stroke="currentColor"` shows exactly 3 files rely on `stroke="currentColor"` with NO `fill="currentColor"` anywhere in the document: `codex.svg`, `commandcode.svg`, `mimo.svg`. Every other bundled icon (claude, gemini, opencodego, etc.) uses `fill="currentColor"` and already renders correctly under the current QQC2 `icon.color` path — matching the user's live screenshot, where only `codex`'s tab looked wrong and the others looked fine. This refines D16's root cause without changing the fix: QQC2's `icon.color` tinting appears to recolor fill-based SVG paths but not stroke-only ones, while `Kirigami.Icon { isMask: true }` recolors via the rendered pixmap's alpha channel regardless of fill/stroke, so D16's swap fixes all three affected icons uniformly and is a safe no-op improvement for the already-working fill-based ones. Live smoke should specifically confirm codex, commandcode, and mimo tabs (not just codex) turn legible after D16.
 - [x] Resolved during PR 5 apply: `main.qml`'s existing phase label is only visible during loading/error/noData, so the footer's status line is the sole indicator during `ready`/`idle` — not duplicate noise, kept. Separately, the footer's updated-at line WAS duplicate noise against `ProviderHeader.updatedAtLabel` — removed per D9's correction above; footer is now status-only.
