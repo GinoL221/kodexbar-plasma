@@ -24,11 +24,13 @@ def fail(message):
 # plain synchronous Item.width binding, which breaks
 # tests/ProviderRowHarness.qml's resize-then-assert coverage for the
 # Overview single-line bar (confirmed empirically, not a guess). Matched by
-# exact diagnostic id + source span, not by line number, so it stays scoped
-# to this one binding and does not silently swallow a different
-# Quick.layout-positioning warning introduced elsewhere later.
+# exact diagnostic id, source span, AND source line -- not just id+span --
+# so a second, unreviewed `width: root.width` binding introduced elsewhere
+# in this same file (e.g. copy-pasted into a sibling RowLayout) is NOT
+# silently swallowed as "already documented"; it must be reviewed and this
+# exception updated deliberately if the sanctioned binding ever moves.
 LAYOUT_POSITIONING_EXCEPTIONS = frozenset({
-    ("Quick.layout-positioning", "root.width"),
+    ("Quick.layout-positioning", "root.width", 89),
 })
 
 
@@ -134,7 +136,7 @@ def validate_report(root, report):
             is_documented_exception = (
                 path.name == "UsageWindowRow.qml"
                 and path.parent.name == "ui"
-                and (warning["id"], span) in LAYOUT_POSITIONING_EXCEPTIONS
+                and (warning["id"], span, line) in LAYOUT_POSITIONING_EXCEPTIONS
             )
             if not is_translation_id and not is_documented_exception:
                 fail("unaccepted qmllint diagnostic")
