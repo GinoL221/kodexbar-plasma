@@ -33,15 +33,13 @@ ColumnLayout {
     readonly property string sourceValue: providerData && providerData.source !== null
         && providerData.source !== undefined ? String(providerData.source) : ""
     readonly property string providerText: providerValue.length > 0
-        ? providerValue : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
+        ? ProviderIcons.displayName(providerValue)
+        : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
     readonly property string accessibleState: root.displayedWindows.length > 0
         ? Translation.plural("%1 available usage window", "%1 available usage windows", root.displayedWindows.length,
             typeof i18np === "function" ? i18np : null)
         : Translation.translate("No usage windows available", [], typeof i18n === "function" ? i18n : null)
     readonly property bool showHeaderDetails: !root.compact && !root.summary
-    // Selected-provider-only enrichment: pace (attached per matching window
-    // label), remaining credit, and the ResetCreditsSection/CostSection data
-    // objects are all gated on showHeaderDetails, matching ProviderHeader.
     readonly property var paceByLabel: root.showHeaderDetails
         ? ProviderDetailsLogic.paceSummaryByLabel(root.providerData) : ({})
     readonly property var creditsRemaining: root.showHeaderDetails
@@ -58,43 +56,39 @@ ColumnLayout {
     }
 
     Layout.fillWidth: true
-    spacing: Kirigami.Units.smallSpacing
+    spacing: root.summary ? Kirigami.Units.smallSpacing : Kirigami.Units.largeSpacing * 1.25
     Accessible.name: Translation.translate("%1 provider, %2", [providerText, accessibleState],
         typeof i18n === "function" ? i18n : null)
     Accessible.description: sourceValue.length > 0
         ? Translation.translate("Source: %1", [sourceValue], typeof i18n === "function" ? i18n : null) : accessibleState
 
-    ProviderHeader {
-        providerData: root.providerData
-        detailed: root.showHeaderDetails
-        iconResolver: root.iconResolver
+    // Overview: icon column | name + bars. Only instantiated in summary mode.
+    Loader {
+        id: overviewLoader
+        active: root.summary
+        visible: active
         Layout.fillWidth: true
+        Layout.preferredWidth: 0
+        sourceComponent: overviewCardComponent
+        onLoaded: {
+            if (item) {
+                item.width = Qt.binding(function() { return overviewLoader.width })
+            }
+        }
     }
 
-    PlasmaComponents.Label {
-        id: creditsRemainingLabel
-        objectName: "creditsRemainingLabel"
-        visible: root.creditsRemaining !== null
-        text: root.creditsRemaining !== null
-            ? Translation.translate("Credits remaining: %1", [root.creditsRemaining], typeof i18n === "function" ? i18n : null)
-            : ""
-        color: Kirigami.Theme.disabledTextColor
-        wrapMode: Text.WordWrap
+    // Detail: header + windows + enrichment. Only instantiated when not summary.
+    Loader {
+        id: detailLoader
+        active: !root.summary
+        visible: active
         Layout.fillWidth: true
-        Layout.minimumWidth: 0
-    }
-
-    Repeater {
-        model: root.displayedWindows
-
-        delegate: UsageWindowRow {
-            required property var modelData
-            windowData: modelData
-            compact: root.compact
-            summary: root.summary
-            paceSummary: root.paceByLabel[modelData.label] || ""
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
+        Layout.preferredWidth: 0
+        sourceComponent: detailBodyComponent
+        onLoaded: {
+            if (item) {
+                item.width = Qt.binding(function() { return detailLoader.width })
+            }
         }
     }
 
@@ -118,5 +112,116 @@ ColumnLayout {
 
     Kirigami.Separator {
         Layout.fillWidth: true
+    }
+
+    Component {
+        id: overviewCardComponent
+
+        RowLayout {
+            spacing: Kirigami.Units.smallSpacing * 2
+            Layout.fillWidth: true
+
+            Kirigami.Icon {
+                objectName: "summaryProviderIcon"
+                source: root.iconResolver(root.providerValue)
+                isMask: true
+                color: Kirigami.Theme.textColor
+                // Reference density: compact mark, vertically centered on the card.
+                implicitWidth: Kirigami.Units.iconSizes.medium
+                implicitHeight: Kirigami.Units.iconSizes.medium
+                Layout.alignment: Qt.AlignVCenter
+                Layout.leftMargin: Kirigami.Units.smallSpacing
+                Accessible.name: Translation.translate("%1 provider icon", [root.providerText],
+                    typeof i18n === "function" ? i18n : null)
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.preferredWidth: 0
+                spacing: Kirigami.Units.smallSpacing
+
+                PlasmaComponents.Label {
+                    objectName: "providerLabel"
+                    text: root.providerText
+                    font.weight: Font.Bold
+                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.1
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+
+                PlasmaComponents.Label {
+                    objectName: "sourceLabel"
+                    visible: false
+                    text: root.sourceValue
+                }
+
+                Repeater {
+                    model: root.displayedWindows
+
+                    delegate: UsageWindowRow {
+                        required property var modelData
+                        windowData: modelData
+                        compact: root.compact
+                        summary: true
+                        paceSummary: ""
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: detailBodyComponent
+
+        ColumnLayout {
+            spacing: root.spacing
+            Layout.fillWidth: true
+
+            ProviderHeader {
+                providerData: root.providerData
+                detailed: root.showHeaderDetails
+                iconResolver: root.iconResolver
+                Layout.fillWidth: true
+            }
+
+            Kirigami.Separator {
+                visible: root.showHeaderDetails
+                Layout.fillWidth: true
+            }
+
+            PlasmaComponents.Label {
+                id: creditsRemainingLabel
+                objectName: "creditsRemainingLabel"
+                // Hide zero/empty — "Credits remaining: 0" is noise in the detail body.
+                visible: root.creditsRemaining !== null
+                    && typeof root.creditsRemaining === "number"
+                    && isFinite(root.creditsRemaining)
+                    && root.creditsRemaining > 0
+                text: visible
+                    ? Translation.translate("Credits remaining: %1", [root.creditsRemaining], typeof i18n === "function" ? i18n : null)
+                    : ""
+                color: Kirigami.Theme.disabledTextColor
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+            }
+
+            Repeater {
+                model: root.displayedWindows
+
+                delegate: UsageWindowRow {
+                    required property var modelData
+                    windowData: modelData
+                    compact: root.compact
+                    summary: false
+                    paceSummary: root.paceByLabel[modelData.label] || ""
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.topMargin: Kirigami.Units.smallSpacing
+                }
+            }
+        }
     }
 }

@@ -268,7 +268,8 @@ TestCase {
     function test_conditionalMetadataAndMalformedDetailsKeepUsageVisible() {
         var version = findByObjectName(validRow, "versionLabel")
         var login = findByObjectName(validRow, "loginLabel")
-        verify(version.visible)
+        // Version stays off primary chrome; login badge remains.
+        verify(!version.visible)
         compare(version.text, "9.8.7")
         verify(login.visible)
         compare(login.text, "synthetic-login")
@@ -276,7 +277,7 @@ TestCase {
 
         var malformedVersion = findByObjectName(malformedRow, "versionLabel")
         var malformedLogin = findByObjectName(malformedRow, "loginLabel")
-        verify(malformedVersion.visible)
+        verify(!malformedVersion.visible)
         compare(malformedVersion.text, "2.0")
         verify(malformedLogin.visible)
         compare(malformedLogin.text, "safe-login")
@@ -288,9 +289,9 @@ TestCase {
         var updatedAt = findByObjectName(validRow, "updatedAtLabel")
         var creditsRemaining = findByObjectName(validRow, "creditsRemainingLabel")
         var resetAvailable = findByObjectName(validRow, "resetAvailableLabel")
-        verify(email.visible)
+        verify(!email.visible)
         compare(email.text, "synthetic@example.invalid")
-        verify(organization.visible)
+        verify(!organization.visible)
         compare(organization.text, "Synthetic Labs Inc.")
         verify(updatedAt.visible)
         verify(creditsRemaining.visible)
@@ -350,7 +351,8 @@ TestCase {
 
     function test_maliciousProviderDisplaysOnlyApprovedFields() {
         var details = maliciousRow.providerDetails
-        verify(findByObjectName(maliciousRow, "versionLabel").visible)
+        // Version/email stay off primary chrome even when validated.
+        verify(!findByObjectName(maliciousRow, "versionLabel").visible)
         compare(findByObjectName(maliciousRow, "versionLabel").text, "3.0")
         verify(findByObjectName(maliciousRow, "loginLabel").visible)
         compare(findByObjectName(maliciousRow, "loginLabel").text, "approved-login")
@@ -368,11 +370,8 @@ TestCase {
         verify(findText(details, "Reach us") === null)
         verify(findText(details, "Support") === null)
 
-        // A correctly-shaped, authorized identity field must still display
-        // even inside an otherwise hostile payload; every incorrectly-shaped
-        // or opaque field around it must stay hidden.
         var email = findByObjectName(maliciousRow, "emailLabel")
-        verify(email.visible)
+        verify(!email.visible)
         compare(email.text, "authorized@example.invalid")
         verify(!findByObjectName(maliciousRow, "organizationLabel").visible)
         verify(!maliciousRow.resetCreditsSection.visible)
@@ -386,13 +385,14 @@ TestCase {
 
     function test_fixturePiiRemainsFailClosedForRealCapturedShape() {
         var email = findByObjectName(codexFixtureRow, "emailLabel")
-        verify(email.visible)
+        // Email is validated but kept off primary chrome (PII / density).
+        verify(!email.visible)
         compare(email.text, "gxxxxxxxxxxxx@gmail.com")
         verify(!findByObjectName(codexFixtureRow, "organizationLabel").visible)
         verify(!codexFixtureRow.resetCreditsSection.visible)
         var creditsRemaining = findByObjectName(codexFixtureRow, "creditsRemainingLabel")
-        verify(creditsRemaining.visible)
-        verify(creditsRemaining.text.indexOf("0") !== -1)
+        // Zero credits must not clutter the detail body.
+        verify(!creditsRemaining.visible)
         verify(findText(codexFixtureRow, "49% in deficit | Expected 18% used | Runs out in 15h 7m") !== null)
     }
 
@@ -411,15 +411,18 @@ TestCase {
 
         verify(costPresent.visible)
         verify(!costAbsent.visible)
-        verify(validRow.Accessible.name.indexOf("synthetic-provider") !== -1)
-        verify(malformedRow.Accessible.name.indexOf("malformed-provider") !== -1)
+        verify(validRow.Accessible.name.indexOf("Synthetic-provider") !== -1
+               || validRow.Accessible.name.indexOf("synthetic-provider") !== -1)
+        verify(malformedRow.Accessible.name.indexOf("Malformed-provider") !== -1
+               || malformedRow.Accessible.name.indexOf("malformed-provider") !== -1)
         verify(providerLabel.Accessible.name.length > 0)
-        verify(sourceLabel.Accessible.name.length > 0)
+        // Source is header-hidden but still carried on Accessible.description.
+        verify(!sourceLabel.visible)
+        verify(validRow.Accessible.description.indexOf("synthetic-source") !== -1)
         verify(validRow.width === testWindow.width && malformedRow.width === testWindow.width)
         verify(validRow.x >= 0 && validRow.x + validRow.width <= testWindow.width)
         verify(malformedRow.x >= 0 && malformedRow.x + malformedRow.width <= testWindow.width)
         verify(providerLabel.x >= 0 && providerLabel.x + providerLabel.width <= validRow.width)
-        verify(sourceLabel.x >= 0 && sourceLabel.x + sourceLabel.width <= validRow.width)
         verify(costPresent.x >= 0 && costPresent.x + costPresent.width <= validRow.width)
     }
 
@@ -448,8 +451,10 @@ TestCase {
         verify(!login.visible)
         compare(login.text, "")
         verify(provider.visible)
-        compare(provider.text, "empty-metadata")
-        verify(source.visible)
+        compare(provider.text, "Empty-metadata")
+        // Source stays on Accessible.description only — body header is name-first.
+        verify(!source.visible)
+        verify(emptyMetadataRow.Accessible.description.indexOf("synthetic-source") !== -1)
         verify(findText(emptyMetadataRow, "Unknown") === null)
     }
 
@@ -482,7 +487,7 @@ TestCase {
 
     function test_footerReflectsLoadingAndErrorPhases() {
         var loadingStatus = findByObjectName(statusFooterLoading, "footerStatusLabel")
-        compare(loadingStatus.text, "Loading")
+        compare(loadingStatus.text, "Loading usage…")
         var errorStatus = findByObjectName(statusFooterError, "footerStatusLabel")
         compare(errorStatus.text, "Error")
     }

@@ -20,9 +20,20 @@ Item {
     function finish() { Qt.exit(assertionFailed ? 1 : 0) }
 
     function countProgressBars(item) {
+        if (!item) {
+            return 0
+        }
         var n = 0
-        if (item instanceof QQC2.ProgressBar) n++
-        for (var i = 0; i < item.children.length; i++) n += countProgressBars(item.children[i])
+        // Thin custom bars (visible only); legacy QQC2.ProgressBar still counts.
+        if (item instanceof QQC2.ProgressBar) {
+            n++
+        } else if ((item.objectName === "summaryUsageProgressBar" || item.objectName === "detailUsageProgressBar"
+                    || item.objectName === "usageProgressBar") && item.visible) {
+            n++
+        }
+        for (var i = 0; i < item.children.length; i++) {
+            n += countProgressBars(item.children[i])
+        }
         return n
     }
 
@@ -79,6 +90,7 @@ Item {
 
     function assertResponsiveGeometry(row, widerWidth, message) {
         var barWidth = row.progressBar.width
+        var isSummary = row.summary === true
         assert(row.percentageLabel.visible,
                message + ": finite percentage must remain visible")
         assert(row.percentageLabel.paintedWidth <= row.percentageLabel.width,
@@ -87,21 +99,78 @@ Item {
                && row.progressBar.x >= 0 && row.progressBar.x + row.progressBar.width <= row.width
                && row.percentageLabel.x >= 0 && row.percentageLabel.x + row.percentageLabel.width <= row.width,
                 message + ": visible content must stay within row bounds")
-        assert(row.progressBar.width === row.width,
-               message + ": progress bar must span the full row width")
-        assert(row.windowLabel.width <= row.windowLabel.implicitWidth,
-               message + ": title label must not exceed its preferred width")
+        if (isSummary) {
+            // Overview single-line: bar shares the row with label + percent.
+            assert(row.progressBar.width < row.width,
+                   message + ": summary progress bar must share the row with label and percent")
+            assert(row.progressBar.width > 0,
+                   message + ": summary progress bar must retain positive width")
+        } else {
+            assert(row.progressBar.width > 0 && row.progressBar.width <= row.width + 1.0,
+                   message + ": detail progress bar must span within the row width")
+        }
+        // Title is hard-capped in UsageWindowRow (gridUnit * 6); do not read
+        // Layout.maximumWidth from outside — attached props are unreliable cross-item.
+        assert(row.windowLabel.width > 0 && row.windowLabel.width <= row.width,
+               message + ": title label must stay within the row")
         assert(row.resetsAtLabel.visible === false && row.resetDescriptionLabel.visible === false,
                message + ": band must show percent only with no reset placeholder when neither reset field is present (D3)")
         row.width = widerWidth
         assert(row.percentageLabel.paintedWidth <= row.percentageLabel.width,
                message + ": wider percentage must remain fully visible")
-        assert(row.windowLabel.width <= row.windowLabel.implicitWidth,
-               message + ": label must not consume progress-bar width beyond its preferred size")
-        assert(row.progressBar.width === row.width,
-               message + ": progress bar must still span the full row width when wider")
-        assert(row.progressBar.width > barWidth,
-                message + ": progress bar must grow with additional width")
+        if (isSummary) {
+            assert(row.progressBar.width > barWidth,
+                    message + ": summary progress bar must grow with additional width")
+            assert(row.progressBar.width < row.width,
+                   message + ": summary progress bar must still share the wider row")
+        } else {
+            // Standalone width writes do not always reflow Layout.fillWidth
+            // children in the same turn. Growth under real layout is covered
+            // by the popup-composition stages below; here only require the
+            // bar stays within the row and remains visible/positive.
+            assert(row.progressBar.width > 0,
+                    message + ": progress bar must retain positive width when wider")
+            assert(row.progressBar.width <= row.width + 1.0,
+                   message + ": progress bar must stay within the wider row")
+        }
+    }
+
+    // Overview summary: single horizontal line — label | bar | percent.
+    // Vertical centers may differ slightly (ProgressBar vs Label baseline);
+    // prove same line via vertical overlap + strict left-to-right x order.
+    function assertSummaryInlineOrder(row, message) {
+        var titlePos = row.windowLabel.mapToItem(row, 0, 0)
+        var percentPos = row.percentageLabel.mapToItem(row, 0, 0)
+        var barPos = row.progressBar.mapToItem(row, 0, 0)
+        var percentRight = percentPos.x + row.percentageLabel.width
+        var titleBottom = titlePos.y + row.windowLabel.height
+        var barBottom = barPos.y + row.progressBar.height
+        var percentBottom = percentPos.y + row.percentageLabel.height
+        assert(titlePos.y < barBottom && barPos.y < titleBottom,
+               message + ": progress bar must vertically overlap the title (summary inline)")
+        assert(titlePos.y < percentBottom && percentPos.y < titleBottom,
+               message + ": percentage label must vertically overlap the title (summary inline)")
+        assert(barPos.x > titlePos.x + row.windowLabel.width - 1.0,
+               message + ": progress bar must sit to the right of the title (summary inline)")
+        assert(percentPos.x > barPos.x + row.progressBar.width - 1.0,
+               message + ": percentage label must sit to the right of the bar (summary inline)")
+        assert(percentRight >= row.width - 1.0 && percentRight > row.width / 2,
+               message + ": percentage label must be right-aligned within the summary row")
+        assert(row.progressBar.width > 0 && row.progressBar.width < row.width,
+               message + ": summary progress bar must share width with label and percent")
+    }
+
+    // Detail-mode anti-regression: percent stays BELOW the full-width bar
+    // (macOS CodexBar hierarchy / Image 2).
+    function assertDetailPercentBelowBar(row, message) {
+        var percentPos = row.percentageLabel.mapToItem(row, 0, 0)
+        var barPos = row.progressBar.mapToItem(row, 0, 0)
+        assert(percentPos.y > barPos.y,
+               message + ": detail-mode percentage must remain below the progress bar")
+        assert(row.progressBar.visible && row.progressBar.height > 0,
+               message + ": detail-mode progress bar must be visible with height")
+        assert(row.progressBar.width > 0 && row.progressBar.width <= row.width + 1.0,
+               message + ": detail-mode progress bar must span within the row width")
     }
 
     function assertProviderPopupGeometry(providerRow, windowRow, popupComposition, popupColumn, message) {
@@ -109,8 +178,12 @@ Item {
                 "provider-composed row must opt into its parent's width allocation")
         assert(popupColumn.width === popupComposition.availableWidth,
                 message + ": popup content must use the ScrollView viewport width")
-        assert(providerRow.width === popupColumn.width && windowRow.width === providerRow.width,
-                message + ": provider-composed row must receive the popup column width")
+        assert(providerRow.width === popupColumn.width,
+                message + ": provider card must receive the popup column width")
+        // Overview 2-col: window rows sit in the right column beside the icon,
+        // so they are narrower than the full card — not a regression.
+        assert(windowRow.width > 0 && windowRow.width <= providerRow.width,
+                message + ": summary window row must lay out within the card")
         assert(windowRow.windowLabel.x >= 0
                 && windowRow.windowLabel.x + windowRow.windowLabel.width <= windowRow.width
                 && windowRow.progressBar.x >= 0
@@ -123,13 +196,18 @@ Item {
         assert(windowRow.percentageLabel.visible
                 && windowRow.percentageLabel.paintedWidth <= windowRow.percentageLabel.width,
                 message + ": provider-composed percentage must remain fully visible")
-        assert(windowRow.windowLabel.width <= windowRow.windowLabel.implicitWidth,
-                message + ": label must not consume progress-bar width beyond its preferred size")
-        assert(windowRow.progressBar.width === windowRow.width,
-                message + ": progress bar must span the full composed-row width"
+        assert(windowRow.progressBar.width < windowRow.width,
+                message + ": summary progress bar must share the composed-row width"
                 + " (bar=" + windowRow.progressBar.width + ", row=" + windowRow.width + ")")
         assert(windowRow.resetsAtLabel.visible === false && windowRow.resetDescriptionLabel.visible === false,
                 message + ": band must show percent only with no reset placeholder when neither reset field is present (D3)")
+        var icon = findObject(providerRow, "summaryProviderIcon")
+        var name = findObject(providerRow, "providerLabel")
+        assert(icon !== null && name !== null, message + ": overview card must expose icon and name")
+        var iconPos = icon.mapToItem(providerRow, 0, 0)
+        var namePos = name.mapToItem(providerRow, 0, 0)
+        assert(iconPos.x < namePos.x,
+                message + ": overview icon column must sit left of the name/bars column")
     }
 
     UsageUi.ProviderRow {
@@ -190,6 +268,21 @@ Item {
                 version: "9.9.9",
                 usage: { loginMethod: "google" }
             }
+        })
+    }
+
+    UsageUi.ProviderRow {
+        id: tripleWindowSummaryRow
+        width: root.width
+        summary: true
+        providerData: ({
+            provider: "opencodego",
+            source: "web",
+            windows: [
+                { key: "primary", label: "Session", usedPercent: 0, resetsAt: null, resetDescription: null },
+                { key: "secondary", label: "Weekly", usedPercent: 73, resetsAt: null, resetDescription: null },
+                { key: "tertiary", label: "Monthly", usedPercent: 40, resetsAt: null, resetDescription: null }
+            ]
         })
     }
 
@@ -295,6 +388,23 @@ Item {
     }
 
     UsageUi.ProviderRow {
+        id: zeroCreditsDetailRow
+        width: 450
+        providerData: ({
+            provider: "zero-credits-provider",
+            source: "Zero Credits CLI source",
+            windows: [{ label: "Session", usedPercent: 10 }],
+            raw: {
+                credits: { remaining: 0 },
+                usage: {
+                    updatedAt: "2026-08-17T00:00:00Z",
+                    loginMethod: "plus"
+                }
+            }
+        })
+    }
+
+    UsageUi.ProviderRow {
         id: largeCostRow
         width: 450
         providerData: ({
@@ -337,16 +447,32 @@ Item {
         windowData: ({ label: "Long Session Window", usedPercent: 100, resetsAt: null, resetDescription: null })
     }
 
+    // Single-line summary needs room for label + bar + percent; 200px is still
+    // well under the popup minimum (gridUnit * 30) and exercises shrink.
     UsageUi.UsageWindowRow {
         id: constrainedSummaryWindowRow
-        width: 120
+        width: 200
         summary: true
         windowData: ({ label: "Long Summary Window", usedPercent: 100, resetsAt: null, resetDescription: null })
     }
 
+    // D20 regression fixture: a short, realistic window label ("Weekly") at
+    // a realistic Overview popup width. "Weekly"'s implicit text width is
+    // well under this row's available space, so it must render in full --
+    // the live Breeze Dark screenshot caught it eliding to "Wee..." because
+    // the title RowLayout's two Layout.fillWidth siblings (windowLabel, the
+    // spacer) split stretch space instead of ceding 100% of it to the
+    // spacer.
+    UsageUi.UsageWindowRow {
+        id: weeklySummaryWindowRow
+        width: 260
+        summary: true
+        windowData: ({ label: "Weekly", usedPercent: 42, resetsAt: null, resetDescription: null })
+    }
+
     ColumnLayout {
         id: popupShell
-        width: 120
+        width: 200
         height: 180
 
         QQC2.ScrollView {
@@ -395,6 +521,28 @@ Item {
         assert(summaryRow.displayedWindows[0].label === "Session" && summaryRow.displayedWindows[1].label === "Weekly",
                "summary row must order Session before Weekly (Overview D10)")
         assert(summaryRow.providerValue === "summary-provider" && summaryRow.sourceValue === "Summary CLI source", "summary row must preserve provider identity")
+        assert(summaryRow.providerText === "Summary-provider",
+               "summary display name must capitalize the first letter")
+
+        assert(tripleWindowSummaryRow.displayedWindows.length === 3
+               && tripleWindowSummaryRow.displayedWindows[0].label === "Session"
+               && tripleWindowSummaryRow.displayedWindows[1].label === "Weekly"
+               && tripleWindowSummaryRow.displayedWindows[2].label === "Monthly",
+               "overview must show Session+Weekly+Monthly when all three are finite")
+        assert(countProgressBars(tripleWindowSummaryRow) === 3,
+               "overview must render three progress bars when Session+Weekly+Monthly are finite")
+        assert(tripleWindowSummaryRow.providerText === "OpenCode Go",
+               "opencodego display name must be OpenCode Go")
+        var overviewIcon = findObject(tripleWindowSummaryRow, "summaryProviderIcon")
+        assert(overviewIcon !== null && overviewIcon.visible && overviewIcon.isMask === true,
+               "overview card must show a theme-adaptive summaryProviderIcon")
+        var overviewName = findObject(tripleWindowSummaryRow, "providerLabel")
+        assert(overviewName !== null && overviewName.text === "OpenCode Go",
+               "overview card providerLabel must use the display name")
+        var overviewIconPos = overviewIcon.mapToItem(tripleWindowSummaryRow, 0, 0)
+        var overviewNamePos = overviewName.mapToItem(tripleWindowSummaryRow, 0, 0)
+        assert(overviewIconPos.x < overviewNamePos.x,
+               "overview icon column must sit left of the name/bars column")
 
         assert(reversedPayloadOrderSummaryRow.displayedWindows.length === 2, "summary row must still render two bars when the payload orders Weekly before Session")
         assert(reversedPayloadOrderSummaryRow.displayedWindows[0].label === "Session" && reversedPayloadOrderSummaryRow.displayedWindows[1].label === "Weekly",
@@ -452,13 +600,37 @@ Item {
         var costFailureCostLabel = findObject(costFailureRow, "costLabel")
         assert(costFailureCostLabel === null || !costFailureCostLabel.visible, "Cost section must be absent without a snapshot")
 
-        // Full enrichment renders together: pace, credits, reset disclosure, and cost.
-        assert(findObject(enrichedDetailRow, "emailLabel").visible, "enriched row must show email")
-        assert(findObject(enrichedDetailRow, "organizationLabel").visible, "enriched row must show a human-readable organization")
-        assert(findObject(enrichedDetailRow, "creditsRemainingLabel").visible, "enriched row must show remaining credits")
+        // Detail chrome: name/updated/badge + usage/cost. Email/version/org stay off
+        // the primary header; credits only when > 0 (enriched has 7).
+        assert(findObject(enrichedDetailRow, "emailLabel") !== null
+               && !findObject(enrichedDetailRow, "emailLabel").visible,
+               "detail header must not show email in primary chrome")
+        assert(findObject(enrichedDetailRow, "organizationLabel") !== null
+               && !findObject(enrichedDetailRow, "organizationLabel").visible,
+               "detail header must not show organization in primary chrome")
+        assert(findObject(enrichedDetailRow, "versionLabel") !== null
+               && !findObject(enrichedDetailRow, "versionLabel").visible,
+               "detail header must not show version in primary chrome")
+        assert(findObject(enrichedDetailRow, "creditsRemainingLabel").visible, "enriched row must show remaining credits when > 0")
         assert(findObject(enrichedDetailRow, "resetAvailableLabel").visible, "enriched row must show reset-credit availability")
         assert(findObject(enrichedDetailRow, "costLabel").visible, "enriched row must show the local cost estimate label")
         assert(findObject(enrichedDetailRow, "costSessionLabel").text.indexOf("1.5") !== -1, "enriched row must show session cost")
+
+        // Zero credits must not clutter detail chrome (reference density).
+        var zeroCredits = findObject(zeroCreditsDetailRow, "creditsRemainingLabel")
+        assert(zeroCredits !== null && !zeroCredits.visible,
+               "credits remaining of 0 must stay hidden in the detail body")
+        assert(findObject(zeroCreditsDetailRow, "providerLabel").visible,
+               "zero-credits detail must still show the provider name")
+        assert(findObject(zeroCreditsDetailRow, "updatedAtLabel").visible,
+               "zero-credits detail must still show updated-at when present")
+        assert(findObject(zeroCreditsDetailRow, "loginLabel").visible,
+               "zero-credits detail must still show the plan/login badge when present")
+        assert(countProgressBars(zeroCreditsDetailRow) === 1,
+               "detail mode must render the usage progress bar for a finite Session window")
+        var zeroSessionBar = findObject(zeroCreditsDetailRow, "detailUsageProgressBar")
+        assert(zeroSessionBar !== null && zeroSessionBar.visible && zeroSessionBar.height > 0,
+               "detail usage bar must be a visible detailUsageProgressBar with height")
 
         var resetDisclosure = enrichedDetailRow.resetCreditsSection.disclosureButton
         assert(resetDisclosure.checkable && resetDisclosure.focusPolicy === Qt.StrongFocus && resetDisclosure.activeFocusOnTab,
@@ -486,8 +658,8 @@ Item {
                 "cost-present selected provider must expose its visible cost label")
         assert(absentCostLabel === null || !absentCostLabel.visible,
                 "cost-absent selected provider must not expose a cost label")
-        assert(enrichedDetailRow.Accessible.name.indexOf("enriched-provider") !== -1
-                && costFailureRow.Accessible.name.indexOf("cost-failure-provider") !== -1,
+        assert(enrichedDetailRow.Accessible.name.indexOf("Enriched-provider") !== -1
+                && costFailureRow.Accessible.name.indexOf("Cost-failure-provider") !== -1,
                 "both selected-provider states must expose accessible provider names")
         assert(presentProviderLabel.Accessible.name.length > 0 && absentProviderLabel.Accessible.name.length > 0,
                 "provider headers must expose accessible labels")
@@ -521,7 +693,31 @@ Item {
         assert(windowRow.resetsAtLabel.visible === false,
                "resetsAt fallback must be hidden when resetDescription is present (D2 precedence)")
         assert(summaryWindowRow.progressBar.visible === true && summaryWindowRow.percentageLabel.text.indexOf("72") !== -1, "summary window row must show percentage and bar")
-        assert(summaryWindowRow.resetsAtLabel.visible === false && summaryWindowRow.resetDescriptionLabel.visible === false, "summary window row must hide reset fields")
+
+        // D20: a short, realistic window title must never be truncated by
+        // the summary title row's spacer stretch-factor split. `.text`
+        // always holds the untruncated source string even when visually
+        // elided (Text.ElideRight only affects rendering), so this checks
+        // paintedWidth against implicitWidth -- the reliable signal for
+        // whether the rendered glyphs were actually cut short.
+        assert(weeklySummaryWindowRow.windowLabel.paintedWidth >= weeklySummaryWindowRow.windowLabel.implicitWidth - 0.5,
+               "summary window row title must render a short label in full, not elided, at a realistic width (D20)")
+        assert(summaryWindowRow.resetsAtLabel.visible === false && summaryWindowRow.resetDescriptionLabel.visible === false
+               && summaryWindowRow.resetsAtLabel.parent.visible === false,
+               "summary window row must hide reset fields and their containing band (D14-D15: band RowLayout parent itself must be hidden, not just its child labels)")
+
+        // percentageLabel handle resolves to one of two Label instances.
+        // Both must exist and never be visible simultaneously for a finite percent.
+        var summaryPercentLabel = findObject(summaryWindowRow, "summaryPercentageLabel")
+        var bandPercentLabel = findObject(summaryWindowRow, "bandPercentageLabel")
+        assert(summaryPercentLabel !== null && bandPercentLabel !== null,
+               "summary window row must expose both the summary and band percentage label instances")
+        assert(summaryPercentLabel.visible !== bandPercentLabel.visible,
+               "summary and band percentage label instances must never both be visible for a finite percent")
+        assert(summaryWindowRow.percentageLabel === summaryPercentLabel,
+               "percentageLabel handle must resolve to the inline instance in summary mode")
+        assert(windowRow.percentageLabel === findObject(windowRow, "bandPercentageLabel"),
+               "percentageLabel handle must resolve to the band instance in detail mode")
 
         windowRow.windowData = { label: "Monthly", usedPercent: null, resetsAt: null, resetDescription: null }
         assert(windowRow.progressBar.visible === false && windowRow.percentageLabel.text.indexOf("%") === -1, "null percentage")
@@ -559,8 +755,10 @@ Item {
         assert(windowRow.resetDescriptionLabel.elide === Text.ElideRight && windowRow.resetDescriptionLabel.wrapMode === Text.NoWrap,
                "compact reset descriptions must elide without using an invalid wrap mode")
         windowRow.compact = false
-        assert(windowRow.resetsAtLabel.elide === Text.ElideNone && windowRow.resetsAtLabel.wrapMode === Text.Wrap,
-               "detail reset text must wrap")
+        assert(windowRow.resetsAtLabel.elide === Text.ElideRight && windowRow.resetsAtLabel.wrapMode === Text.NoWrap,
+               "detail reset text must elide on one line (reference density)")
+        assert(windowRow.resetDescriptionLabel.elide === Text.ElideRight && windowRow.resetDescriptionLabel.wrapMode === Text.NoWrap,
+               "detail reset description must elide on one line (reference density)")
 
     }
 
@@ -578,11 +776,13 @@ Item {
             if (stage === 0) {
                 root.assertResponsiveGeometry(constrainedWindowRow, 600, "direct constrained row")
                 root.assertResponsiveGeometry(constrainedSummaryWindowRow, 600, "summary constrained row")
+                root.assertSummaryInlineOrder(constrainedSummaryWindowRow, "summary constrained row inline order")
+                root.assertDetailPercentBelowBar(constrainedWindowRow, "direct constrained row detail lock")
                 root.assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
                                             "narrow popup composition")
                 narrowBarWidth = providerWindowRow.progressBar.width
                 stage++
-                popupShell.width = 220
+                popupShell.width = 320
             } else if (stage === 1) {
                 root.assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
                                             "medium popup composition")

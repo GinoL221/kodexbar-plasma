@@ -22,7 +22,7 @@ ColumnLayout {
     readonly property string statusText: {
         switch (root.phase) {
         case "loading":
-            return Translation.translate("Loading", [], typeof i18n === "function" ? i18n : null)
+            return Translation.translate("Loading usage…", [], typeof i18n === "function" ? i18n : null)
         case "error":
             return Translation.translate("Error", [], typeof i18n === "function" ? i18n : null)
         case "noData":

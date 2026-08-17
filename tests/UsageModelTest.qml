@@ -482,6 +482,26 @@ TestCase {
         compare(result[0].usedPercent, 35)
     }
 
+    function test_selectOverviewWindowsReturnsSessionWeeklyAndMonthlyWhenAllFinite() {
+        var provider = UsageModel.normalize({
+            provider: "opencodego",
+            usage: {
+                primary: { usedPercent: 0 },
+                secondary: { usedPercent: 73 },
+                tertiary: { usedPercent: 40 }
+            }
+        }).providers[0]
+
+        var result = UsageModel.selectOverviewWindows(provider.windows)
+        compare(result.length, 3)
+        compare(result[0].label, "Session")
+        compare(result[0].usedPercent, 0)
+        compare(result[1].label, "Weekly")
+        compare(result[1].usedPercent, 73)
+        compare(result[2].label, "Monthly")
+        compare(result[2].usedPercent, 40)
+    }
+
     function test_selectOverviewWindowsReturnsEmptyArrayWhenNoWindowIsFinite() {
         var provider = UsageModel.normalize({
             provider: "p",

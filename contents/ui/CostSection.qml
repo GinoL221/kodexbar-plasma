@@ -19,6 +19,7 @@ ColumnLayout {
 
     visible: root.hasSnapshot
     Layout.fillWidth: true
+    Layout.topMargin: Kirigami.Units.smallSpacing
     spacing: Kirigami.Units.smallSpacing
 
     // Plain, deterministic display formatting -- never a price calculation.
@@ -40,7 +41,7 @@ ColumnLayout {
         id: costLabel
         objectName: "costLabel"
         visible: root.hasSnapshot
-        text: Translation.translate("Local token-cost estimate", [], typeof i18n === "function" ? i18n : null)
+        text: Translation.translate("Cost", [], typeof i18n === "function" ? i18n : null)
         font.weight: Font.DemiBold
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
@@ -52,7 +53,7 @@ ColumnLayout {
         objectName: "costSessionLabel"
         visible: root.hasSnapshot
         text: root.hasSnapshot
-            ? Translation.translate("Session: $%1 (%2 tokens)",
+            ? Translation.translate("Today: $%1 · %2 tokens",
                 [root.formatUsd(root.snapshot.sessionCostUSD), root.formatTokens(root.snapshot.sessionTokens)],
                 typeof i18n === "function" ? i18n : null)
             : ""
@@ -67,7 +68,7 @@ ColumnLayout {
         objectName: "costLast30DaysLabel"
         visible: root.hasSnapshot
         text: root.hasSnapshot
-            ? Translation.translate("Last 30 days: $%1 (%2 tokens)",
+            ? Translation.translate("Last 30 days: $%1 · %2 tokens",
                 [root.formatUsd(root.snapshot.last30DaysCostUSD), root.formatTokens(root.snapshot.last30DaysTokens)],
                 typeof i18n === "function" ? i18n : null)
             : ""
@@ -77,3 +78,4 @@ ColumnLayout {
         Layout.minimumWidth: 0
     }
 }
+

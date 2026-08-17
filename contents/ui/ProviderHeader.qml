@@ -6,12 +6,12 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
 import "../code/ProviderDetails.js" as ProviderDetailsLogic
+import "../code/ProviderIcons.js" as ProviderIcons
 import "../code/Translation.js" as Translation
 
-// Native icon/name/source header, reused by summary and selected-detail
-// ProviderRow instances. Email, organization, and updated-at are validated,
-// selected-provider-only enrichment: they are computed only when `detailed`
-// is true, so summary/All rows never read or render them.
+// Detail header hierarchy (reference IA): name + updated left, plan/login
+// badge right. Version/email/org stay off the primary chrome (noise/PII);
+// objectNames remain for harness discovery with visible:false.
 RowLayout {
     id: root
 
@@ -24,7 +24,8 @@ RowLayout {
     readonly property string sourceValue: providerData && providerData.source !== null
         && providerData.source !== undefined ? String(providerData.source) : ""
     readonly property string providerText: providerValue.length > 0
-        ? providerValue : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
+        ? ProviderIcons.displayName(providerValue)
+        : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
     readonly property string headerVersion: ProviderDetailsLogic.validVersion(root.providerData)
     readonly property string headerLogin: ProviderDetailsLogic.validLoginMethod(root.providerData)
     readonly property string headerEmail: root.detailed ? ProviderDetailsLogic.validEmail(root.providerData) : ""
@@ -35,25 +36,31 @@ RowLayout {
     spacing: Kirigami.Units.smallSpacing
 
     Kirigami.Icon {
+        // Overview cards keep the mark next to the name. Detail body omits
+        // it — the selected tab already shows the provider icon.
+        visible: !root.detailed
         source: root.iconResolver(root.providerValue)
         isMask: true
         color: Kirigami.Theme.textColor
         implicitWidth: Kirigami.Units.iconSizes.smallMedium
         implicitHeight: Kirigami.Units.iconSizes.smallMedium
-        Layout.alignment: Qt.AlignTop
+        Layout.alignment: Qt.AlignVCenter
         Accessible.name: Translation.translate("%1 provider icon", [root.providerText],
             typeof i18n === "function" ? i18n : null)
     }
 
     ColumnLayout {
         Layout.fillWidth: true
-        spacing: 0
+        spacing: Math.max(1, Math.round(Kirigami.Units.smallSpacing / 3))
 
         PlasmaComponents.Label {
             id: providerLabel
             objectName: "providerLabel"
             text: root.providerText
-            font.weight: Font.DemiBold
+            font.weight: Font.Bold
+            font.pointSize: root.detailed
+                ? Kirigami.Theme.defaultFont.pointSize * 1.25
+                : Kirigami.Theme.defaultFont.pointSize
             elide: Text.ElideRight
             Layout.fillWidth: true
         }
@@ -61,17 +68,18 @@ RowLayout {
         PlasmaComponents.Label {
             id: sourceLabel
             objectName: "sourceLabel"
-            visible: root.sourceValue.length > 0
+            visible: false
             text: root.sourceValue
             color: Kirigami.Theme.disabledTextColor
             elide: Text.ElideRight
             Layout.fillWidth: true
         }
 
+        // Hidden from primary chrome — keep nodes for harness objectName lookup.
         PlasmaComponents.Label {
             id: versionLabel
             objectName: "versionLabel"
-            visible: root.detailed && root.headerVersion.length > 0
+            visible: false
             text: root.headerVersion
             color: Kirigami.Theme.disabledTextColor
             elide: Text.ElideRight
@@ -81,7 +89,7 @@ RowLayout {
         PlasmaComponents.Label {
             id: emailLabel
             objectName: "emailLabel"
-            visible: root.headerEmail.length > 0
+            visible: false
             text: root.headerEmail
             color: Kirigami.Theme.disabledTextColor
             elide: Text.ElideRight
@@ -91,7 +99,7 @@ RowLayout {
         PlasmaComponents.Label {
             id: organizationLabel
             objectName: "organizationLabel"
-            visible: root.headerOrganization.length > 0
+            visible: false
             text: root.headerOrganization
             color: Kirigami.Theme.disabledTextColor
             elide: Text.ElideRight
@@ -104,6 +112,7 @@ RowLayout {
             visible: root.headerUpdatedAt.length > 0
             text: visible ? Translation.translate("Updated: %1", [root.headerUpdatedAt], typeof i18n === "function" ? i18n : null) : ""
             color: Kirigami.Theme.disabledTextColor
+            font.pointSize: Kirigami.Theme.smallFont.pointSize
             elide: Text.ElideRight
             Layout.fillWidth: true
         }

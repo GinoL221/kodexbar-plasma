@@ -46,7 +46,18 @@ BANNED_COLOR_TOKENS = {
 # Files where a literal color is a documented, intentional exception (see
 # design.md's "Documented literal-color fallback" scenario), plus any file
 # added by the Slice 2 de-risking fallback procedure (none were needed).
-LITERAL_COLOR_ALLOWLIST = {"codebuff.svg", "stepfun.svg", "vertexai.svg"}
+# D19: codex.svg, commandcode.svg, and mimo.svg are the 3 stroke-only icons
+# where Kirigami.Icon's isMask theme-adaptive recoloring did not visibly
+# work under the live Breeze Dark smoke -- a narrow, named exception, not a
+# general loosening (see visual-parity-polish design.md D16-D19).
+LITERAL_COLOR_ALLOWLIST = {
+    "codebuff.svg",
+    "stepfun.svg",
+    "vertexai.svg",
+    "codex.svg",
+    "commandcode.svg",
+    "mimo.svg",
+}
 
 # Elements inside these subtrees are skipped by tree position: paint here
 # never renders directly (clipPath geometry, mask luminance source).
