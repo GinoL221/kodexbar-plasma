@@ -17,6 +17,8 @@ ColumnLayout {
     // Expected 18% used"), attached by the caller when this window's label
     // matches a valid CLI-supplied pace.primary/secondary/tertiary entry.
     property string paceSummary: ""
+    // Optional brand accent (#rrggbb). Empty → Kirigami.Theme.highlightColor.
+    property string accentColor: ""
 
     readonly property bool hasFinitePercent: typeof root.windowData.usedPercent === "number" && isFinite(root.windowData.usedPercent)
     readonly property string resetText: root.windowData.resetsAt !== null && root.windowData.resetsAt !== undefined ? String(root.windowData.resetsAt) : ""
@@ -47,6 +49,36 @@ ColumnLayout {
     readonly property int barHeight: root.summary
         ? Math.max(4, Math.round(Kirigami.Units.smallSpacing * 0.75))
         : Math.max(8, Math.round(Kirigami.Units.smallSpacing * 1.1))
+
+    readonly property color barFillColor: root.accentColor.length > 0
+        ? root.accentColor
+        : Kirigami.Theme.highlightColor
+
+    // Fixed summary columns so Session/Weekly/Monthly and 1%/100% share one
+    // track length. Both hug their own worst-case text metrics -- earlier
+    // gridUnit*5/*6 floors were wider than the text itself (label: 90px vs
+    // ~62px, percent: 108px vs ~80px), leaving a large visual gap on both
+    // sides of the bar. The small smallSpacing buffer guards against
+    // TextMetrics under-measuring by a sub-pixel versus the live Breeze
+    // font actually used to paint the Text item -- an exact-fit column
+    // clipped "Monthly" to "Mont..." in a live Breeze Dark session even
+    // though the same text fit fine against this offscreen test font.
+    readonly property int summaryLabelColumnWidth: Math.ceil(labelColumnMetrics.width) + Kirigami.Units.smallSpacing
+    readonly property int summaryPercentColumnWidth: Math.ceil(percentColumnMetrics.width) + Kirigami.Units.smallSpacing
+
+    TextMetrics {
+        id: labelColumnMetrics
+        font: windowLabel.font
+        // "Monthly" is the longest of the standard Session/Weekly/Monthly
+        // window labels; longer CLI-supplied labels still elide safely.
+        text: Translation.translate("Monthly", [], typeof i18n === "function" ? i18n : null)
+    }
+
+    TextMetrics {
+        id: percentColumnMetrics
+        font: summaryPercentageLabel.font
+        text: Translation.translate("%1% used", [100], typeof i18n === "function" ? i18n : null)
+    }
 
     function valueText(value) {
         return value === null || value === undefined ? "" : String(value)
@@ -94,15 +126,24 @@ ColumnLayout {
         PlasmaComponents.Label {
             id: windowLabel
             text: root.valueText(root.windowData.label)
-            font.weight: root.summary ? Font.Normal : Font.DemiBold
+            font.weight: root.summary ? Font.Normal : Font.Medium
             font.pointSize: root.summary
                 ? Kirigami.Theme.smallFont.pointSize
-                : Kirigami.Theme.defaultFont.pointSize * 1.05
+                : Kirigami.Theme.defaultFont.pointSize
             elide: Text.ElideRight
+            // minimumWidth stays 0 (not the fixed column width) so this label
+            // can shrink below its aligned column when the row is narrower
+            // than label+bar+percent combined -- locking min==max here left
+            // RowLayout unable to compress at constrained widths, overflowing
+            // the row instead of shrinking (recursive-rearrange abort).
             Layout.minimumWidth: 0
-            Layout.maximumWidth: root.summary ? Kirigami.Units.gridUnit * 6 : -1
-            Layout.fillWidth: !root.summary
-            Layout.preferredWidth: root.summary ? Math.min(implicitWidth, Kirigami.Units.gridUnit * 5) : -1
+            Layout.maximumWidth: root.summary ? root.summaryLabelColumnWidth : -1
+            // fillWidth (not just non-summary) so a non-fillWidth item isn't
+            // pinned to preferredWidth by Qt Quick Layouts' Fixed size policy
+            // -- summary mode still can't grow past summaryLabelColumnWidth
+            // (maximumWidth above), but it can now shrink under it.
+            Layout.fillWidth: true
+            Layout.preferredWidth: root.summary ? root.summaryLabelColumnWidth : -1
             Layout.alignment: Qt.AlignVCenter
             Layout.bottomMargin: root.summary ? 0 : Math.round(Kirigami.Units.smallSpacing / 2)
         }
@@ -135,7 +176,7 @@ ColumnLayout {
                 anchors.bottom: parent.bottom
                 width: Math.round(parent.width * root.barRatio)
                 radius: height / 2
-                color: Kirigami.Theme.highlightColor
+                color: root.barFillColor
             }
         }
 
@@ -154,10 +195,17 @@ ColumnLayout {
                 typeof i18n === "function" ? i18n : null) : ""
             color: Kirigami.Theme.disabledTextColor
             font.pointSize: Kirigami.Theme.smallFont.pointSize
+            font.weight: Font.Normal
             elide: Text.ElideRight
+            horizontalAlignment: Text.AlignRight
+            // Same shrink allowance as windowLabel above -- fixed min==max
+            // overflowed the row at constrained widths instead of shrinking.
+            // fillWidth: true is needed for the same reason as windowLabel
+            // (Fixed size policy otherwise pins this to preferredWidth).
+            Layout.fillWidth: true
             Layout.minimumWidth: 0
-            Layout.preferredWidth: implicitWidth
-            Layout.maximumWidth: implicitWidth
+            Layout.preferredWidth: root.summary ? root.summaryPercentColumnWidth : implicitWidth
+            Layout.maximumWidth: root.summary ? root.summaryPercentColumnWidth : implicitWidth
             Layout.alignment: Qt.AlignVCenter
         }
     }
@@ -199,7 +247,7 @@ ColumnLayout {
                 anchors.bottom: parent.bottom
                 width: parent.width > 0 ? Math.round(parent.width * root.barRatio) : 0
                 radius: height / 2
-                color: Kirigami.Theme.highlightColor
+                color: root.barFillColor
             }
         }
     }

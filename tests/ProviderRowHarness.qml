@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
 import "../contents/ui" as UsageUi
 
 Item {
@@ -470,6 +471,19 @@ Item {
         windowData: ({ label: "Weekly", usedPercent: 42, resetsAt: null, resetDescription: null })
     }
 
+    // Regression: "Monthly" is the exact reference string the label column
+    // sizes itself against (summaryLabelColumnWidth's TextMetrics), so a
+    // column sized to precisely that metric can still clip it by a
+    // sub-pixel rounding difference between TextMetrics and actual Text
+    // rendering -- live Breeze Dark caught "OpenCode Go"'s Monthly row
+    // eliding to "Mont...".
+    UsageUi.UsageWindowRow {
+        id: monthlySummaryWindowRow
+        width: 260
+        summary: true
+        windowData: ({ label: "Monthly", usedPercent: 87, resetsAt: null, resetDescription: null })
+    }
+
     ColumnLayout {
         id: popupShell
         width: 200
@@ -543,6 +557,15 @@ Item {
         var overviewNamePos = overviewName.mapToItem(tripleWindowSummaryRow, 0, 0)
         assert(overviewIconPos.x < overviewNamePos.x,
                "overview icon column must sit left of the name/bars column")
+
+        // Hanging indent: window rows (Session/Weekly/Monthly) sit indented
+        // under the provider name, not flush with it, matching the
+        // reference wireframe's nested list structure.
+        var overviewFirstWindowRow = firstUsageWindowRow(tripleWindowSummaryRow)
+        assert(overviewFirstWindowRow !== null, "overview card must render at least one usage window row")
+        var overviewWindowLabelPos = overviewFirstWindowRow.windowLabel.mapToItem(tripleWindowSummaryRow, 0, 0)
+        assert(overviewWindowLabelPos.x > overviewNamePos.x,
+               "overview window rows must be indented (hanging indent) relative to the provider name")
 
         assert(reversedPayloadOrderSummaryRow.displayedWindows.length === 2, "summary row must still render two bars when the payload orders Weekly before Session")
         assert(reversedPayloadOrderSummaryRow.displayedWindows[0].label === "Session" && reversedPayloadOrderSummaryRow.displayedWindows[1].label === "Weekly",
@@ -694,6 +717,18 @@ Item {
                "resetsAt fallback must be hidden when resetDescription is present (D2 precedence)")
         assert(summaryWindowRow.progressBar.visible === true && summaryWindowRow.percentageLabel.text.indexOf("72") !== -1, "summary window row must show percentage and bar")
 
+        // The percent column must hug its own "100% used" worst-case text
+        // metrics, not an oversized fixed floor -- an artificial floor wider
+        // than the text left a large visual gap between the bar and the
+        // percentage (user-reported: overview text sits too far from its bar).
+        assert(summaryWindowRow.summaryPercentColumnWidth < Kirigami.Units.gridUnit * 6,
+               "summary percent column must not be padded by a fixed gridUnit*6 floor wider than its own text")
+        // Same gap bug on the label side: "Session"/"Weekly"/"Monthly" text
+        // is far narrower than the old fixed gridUnit*5 column, leaving a
+        // large visual gap between the window label and the bar.
+        assert(summaryWindowRow.summaryLabelColumnWidth < Kirigami.Units.gridUnit * 5,
+               "summary label column must not be padded by a fixed gridUnit*5 floor wider than its own text")
+
         // D20: a short, realistic window title must never be truncated by
         // the summary title row's spacer stretch-factor split. `.text`
         // always holds the untruncated source string even when visually
@@ -702,6 +737,8 @@ Item {
         // whether the rendered glyphs were actually cut short.
         assert(weeklySummaryWindowRow.windowLabel.paintedWidth >= weeklySummaryWindowRow.windowLabel.implicitWidth - 0.5,
                "summary window row title must render a short label in full, not elided, at a realistic width (D20)")
+        assert(monthlySummaryWindowRow.windowLabel.paintedWidth >= monthlySummaryWindowRow.windowLabel.implicitWidth - 0.5,
+               "summary window row title must render \"Monthly\" in full, not elided to \"Mont...\", even though it is the label column's own sizing reference")
         assert(summaryWindowRow.resetsAtLabel.visible === false && summaryWindowRow.resetDescriptionLabel.visible === false
                && summaryWindowRow.resetsAtLabel.parent.visible === false,
                "summary window row must hide reset fields and their containing band (D14-D15: band RowLayout parent itself must be hidden, not just its child labels)")

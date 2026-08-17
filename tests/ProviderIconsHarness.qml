@@ -55,6 +55,22 @@ Item {
         assert(ProviderIcons.displayName(null) === "", "null displayName stays empty")
         assert(ProviderIcons.displayName(undefined) === "", "undefined displayName stays empty")
 
+        // Brand accent: limited UI token (tab underline + bar fill only).
+        // Empty string means "use Kirigami.Theme.highlightColor" at the call site.
+        assert(typeof ProviderIcons.accent === "function", "accent() must exist")
+        assert(ProviderIcons.accent("claude").length > 0, "claude must have a brand accent")
+        assert(ProviderIcons.accent("codex").length > 0, "codex must have a brand accent")
+        assert(ProviderIcons.accent("claude") !== ProviderIcons.accent("codex"),
+               "claude and codex accents must differ")
+        assert(ProviderIcons.accent("CLAUDE") === ProviderIcons.accent("claude"),
+               "accent must be case-insensitive")
+        assert(ProviderIcons.accent("not-a-provider") === "",
+               "unknown provider accent must be empty for theme fallback")
+        assert(ProviderIcons.accent(null) === "" && ProviderIcons.accent(undefined) === "",
+               "null/undefined accent must be empty")
+        assert(ProviderIcons.accent("claude").charAt(0) === "#",
+               "mapped accents must be #rrggbb tokens")
+
         finish()
     }
 }

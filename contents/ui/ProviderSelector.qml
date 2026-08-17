@@ -439,6 +439,10 @@ ColumnLayout {
                             property string percentText: root._percentText(providerData)
                             property real percentValue: root._percentValue(providerData)
                             property bool hasFinitePercent: isFinite(percentValue)
+                            property string accentColor: providerData
+                                ? ProviderIcons.accent(providerData.provider) : ""
+                            readonly property color accentOrHighlight: accentColor.length > 0
+                                ? accentColor : Kirigami.Theme.highlightColor
 
                             // Visible label is name only — percent is the underline bar + a11y.
                             text: providerText
@@ -533,7 +537,7 @@ ColumnLayout {
                                         radius: height / 2
                                         color: providerTab.checked
                                             ? Kirigami.Theme.highlightedTextColor
-                                            : Kirigami.Theme.highlightColor
+                                            : providerTab.accentOrHighlight
                                     }
                                 }
 

@@ -42,7 +42,7 @@ ColumnLayout {
         objectName: "costLabel"
         visible: root.hasSnapshot
         text: Translation.translate("Cost", [], typeof i18n === "function" ? i18n : null)
-        font.weight: Font.DemiBold
+        font.weight: Font.Medium
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
         Layout.minimumWidth: 0

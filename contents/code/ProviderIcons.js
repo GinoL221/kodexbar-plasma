@@ -47,3 +47,37 @@ function displayName(value) {
     }
     return text.charAt(0).toUpperCase() + text.slice(1)
 }
+
+// Limited brand accents for tab underline + usage bar fill only.
+// Empty string → call site uses Kirigami.Theme.highlightColor.
+// Tokens are #rrggbb chosen for legibility on both Breeze Light and Dark tracks.
+var accents = {
+    "claude": "#D97757",
+    "codex": "#2AA8A0",
+    "openai": "#10A37F",
+    "opencode": "#3B82F6",
+    "opencodego": "#3B82F6",
+    "gemini": "#4285F4",
+    "grok": "#A78BFA",
+    "copilot": "#7C3AED",
+    "cursor": "#F59E0B",
+    "mistral": "#F97316",
+    "kiro": "#8B5CF6",
+    "perplexity": "#22D3EE",
+    "deepseek": "#0EA5E9",
+    "ollama": "#94A3B8",
+    "openrouter": "#6366F1",
+    "azureopenai": "#0078D4",
+    "vertexai": "#34A853"
+}
+
+function accent(value) {
+    var k = key(value)
+    if (k.length === 0) {
+        return ""
+    }
+    if (Object.prototype.hasOwnProperty.call(accents, k)) {
+        return accents[k]
+    }
+    return ""
+}

@@ -7,6 +7,7 @@ import org.kde.plasma.components as PlasmaComponents
 
 import "../code/ProviderDetails.js" as ProviderDetailsLogic
 import "../code/ProviderIcons.js" as ProviderIcons
+import "../code/RelativeTime.js" as RelativeTime
 import "../code/Translation.js" as Translation
 
 // Detail header hierarchy (reference IA): name + updated left, plan/login
@@ -31,6 +32,17 @@ RowLayout {
     readonly property string headerEmail: root.detailed ? ProviderDetailsLogic.validEmail(root.providerData) : ""
     readonly property string headerOrganization: root.detailed ? ProviderDetailsLogic.validOrganization(root.providerData) : ""
     readonly property string headerUpdatedAt: root.detailed ? ProviderDetailsLogic.validUpdatedAt(root.providerData) : ""
+    // A present-but-unparseable updatedAt (validUpdatedAt only checks
+    // non-empty, not ISO validity) must stay omitted rather than leak the
+    // raw CLI string -- never invent or expose an unformatted timestamp.
+    readonly property string headerUpdatedAtDisplay: root.headerUpdatedAt.length > 0
+        ? RelativeTime.formatUpdatedLabel(
+            root.headerUpdatedAt,
+            Date.now(),
+            function(template, args) {
+                return Translation.translate(template, args, typeof i18n === "function" ? i18n : null)
+            })
+        : ""
 
     Layout.fillWidth: true
     spacing: Kirigami.Units.smallSpacing
@@ -57,10 +69,8 @@ RowLayout {
             id: providerLabel
             objectName: "providerLabel"
             text: root.providerText
-            font.weight: Font.Bold
-            font.pointSize: root.detailed
-                ? Kirigami.Theme.defaultFont.pointSize * 1.25
-                : Kirigami.Theme.defaultFont.pointSize
+            font.weight: Font.DemiBold
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize
             elide: Text.ElideRight
             Layout.fillWidth: true
         }
@@ -109,10 +119,11 @@ RowLayout {
         PlasmaComponents.Label {
             id: updatedAtLabel
             objectName: "updatedAtLabel"
-            visible: root.headerUpdatedAt.length > 0
-            text: visible ? Translation.translate("Updated: %1", [root.headerUpdatedAt], typeof i18n === "function" ? i18n : null) : ""
+            visible: root.headerUpdatedAtDisplay.length > 0
+            text: visible ? root.headerUpdatedAtDisplay : ""
             color: Kirigami.Theme.disabledTextColor
             font.pointSize: Kirigami.Theme.smallFont.pointSize
+            font.weight: Font.Normal
             elide: Text.ElideRight
             Layout.fillWidth: true
         }

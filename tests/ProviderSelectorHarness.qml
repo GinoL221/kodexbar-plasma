@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import "../contents/ui" as UsageUi
+import "../contents/code/ProviderIcons.js" as ProviderIcons
 
 Item {
     id: root
@@ -178,6 +179,50 @@ Item {
         s.popupOpen = true
         assert(s.tabBar.contentChildren[1].text === "OpenCode Go",
             "opencodego tab label must use the OpenCode Go display name")
+
+        // Brand accent on the tab underline bar: differs per provider when
+        // unchecked; unmapped providers fall back to the theme highlight.
+        // Checked tabs stay theme-driven (highlightedTextColor) regardless
+        // of accent, for contrast against the highlighted background.
+        s.popupOpen = false
+        s.providers = [
+            p("claude", "src-claude", [w("Weekly", 40, null, null)]),
+            p("codex", "src-codex", [w("Weekly", 60, null, null)]),
+            p("not-a-real-provider", "src-unknown", [w("Weekly", 80, null, null)])
+        ]
+        s.popupOpen = true
+        assert(s.selectedProvider && s.selectedProvider.provider === "claude",
+            "accent fixture defaults to the first usable provider (claude)")
+
+        var claudeTab = s.tabBar.contentChildren[1]
+        var codexTab = s.tabBar.contentChildren[2]
+        var unknownTab = s.tabBar.contentChildren[3]
+        assert(claudeTab.checked, "claude tab is checked by default in the accent fixture")
+        assert(!codexTab.checked && !unknownTab.checked,
+            "codex and unknown tabs stay unchecked in the accent fixture")
+
+        var claudeBar = findProgressBar(claudeTab)
+        var codexBar = findProgressBar(codexTab)
+        var unknownBar = findProgressBar(unknownTab)
+        assert(claudeBar !== null && codexBar !== null && unknownBar !== null,
+            "accent fixture tabs must all show an underline bar")
+
+        var claudeFill = claudeBar.children[1]
+        var codexFill = codexBar.children[1]
+        var unknownFill = unknownBar.children[1]
+
+        assert(Qt.colorEqual(claudeFill.color, Kirigami.Theme.highlightedTextColor),
+            "a checked tab's underline fill must use highlightedTextColor, not the brand accent")
+
+        assert(Qt.colorEqual(codexFill.color, ProviderIcons.accent("codex")),
+            "an unchecked codex tab's underline fill must use the codex brand accent")
+        assert(!Qt.colorEqual(codexFill.color, ProviderIcons.accent("claude")),
+            "codex and claude underline accents must render as visibly different colors")
+
+        assert(ProviderIcons.accent("not-a-real-provider") === "",
+            "sanity: unmapped provider has no accent")
+        assert(Qt.colorEqual(unknownFill.color, Kirigami.Theme.highlightColor),
+            "an unchecked tab with no brand accent must fall back to Kirigami.Theme.highlightColor")
 
         // Regression: selecting a provider while phase is loading (slow refresh
         // / pending default Overview) must leave Overview and stick to that

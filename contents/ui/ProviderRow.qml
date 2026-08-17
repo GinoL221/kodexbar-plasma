@@ -35,6 +35,7 @@ ColumnLayout {
     readonly property string providerText: providerValue.length > 0
         ? ProviderIcons.displayName(providerValue)
         : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
+    readonly property string providerAccent: ProviderIcons.accent(root.providerValue)
     readonly property string accessibleState: root.displayedWindows.length > 0
         ? Translation.plural("%1 available usage window", "%1 available usage windows", root.displayedWindows.length,
             typeof i18np === "function" ? i18np : null)
@@ -143,8 +144,8 @@ ColumnLayout {
                 PlasmaComponents.Label {
                     objectName: "providerLabel"
                     text: root.providerText
-                    font.weight: Font.Bold
-                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.1
+                    font.weight: Font.DemiBold
+                    font.pointSize: Kirigami.Theme.defaultFont.pointSize
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
@@ -155,19 +156,24 @@ ColumnLayout {
                     text: root.sourceValue
                 }
 
-                Repeater {
-                    model: root.displayedWindows
+                    Repeater {
+                        model: root.displayedWindows
 
-                    delegate: UsageWindowRow {
-                        required property var modelData
-                        windowData: modelData
-                        compact: root.compact
-                        summary: true
-                        paceSummary: ""
-                        Layout.fillWidth: true
-                        Layout.minimumWidth: 0
+                        delegate: UsageWindowRow {
+                            required property var modelData
+                            windowData: modelData
+                            compact: root.compact
+                            summary: true
+                            paceSummary: ""
+                            accentColor: root.providerAccent
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            // Hanging indent: window rows nest visually
+                            // under the provider name instead of sitting
+                            // flush with it.
+                            Layout.leftMargin: Kirigami.Units.smallSpacing * 2
+                        }
                     }
-                }
             }
         }
     }
@@ -208,20 +214,21 @@ ColumnLayout {
                 Layout.minimumWidth: 0
             }
 
-            Repeater {
-                model: root.displayedWindows
+                Repeater {
+                    model: root.displayedWindows
 
-                delegate: UsageWindowRow {
-                    required property var modelData
-                    windowData: modelData
-                    compact: root.compact
-                    summary: false
-                    paceSummary: root.paceByLabel[modelData.label] || ""
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    Layout.topMargin: Kirigami.Units.smallSpacing
+                    delegate: UsageWindowRow {
+                        required property var modelData
+                        windowData: modelData
+                        compact: root.compact
+                        summary: false
+                        paceSummary: root.paceByLabel[modelData.label] || ""
+                        accentColor: root.providerAccent
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.topMargin: Kirigami.Units.smallSpacing
+                    }
                 }
-            }
         }
     }
 }

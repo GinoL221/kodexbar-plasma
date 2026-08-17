@@ -78,6 +78,9 @@ TestCase {
             UsageUi.ProviderRow { id: absentMetadataRow; y: malformedRow.y + malformedRow.height; width: parent.width; providerData: ({ provider: "absent-metadata", source: "synthetic-source", windows: [{ label: "Session", usedPercent: 1 }], raw: { usage: { details: [] } } }) }
             UsageUi.ProviderRow { id: emptyMetadataRow; y: absentMetadataRow.y + absentMetadataRow.height; width: parent.width; providerData: ({ provider: "empty-metadata", source: "synthetic-source", windows: [{ label: "Session", usedPercent: 1 }], raw: { version: "", usage: { loginMethod: "", details: [] } } }) }
             UsageUi.ProviderRow { id: malformedMetadataRow; y: emptyMetadataRow.y + emptyMetadataRow.height; width: parent.width; providerData: ({ provider: "malformed-metadata", source: "synthetic-source", windows: [{ label: "Session", usedPercent: 1 }], raw: { version: 7, usage: { loginMethod: {}, details: [] } } }) }
+            // updatedAt present but not a parseable ISO-8601 stamp -- must stay
+            // omitted, never render as raw "Updated: not-a-real-date" text.
+            UsageUi.ProviderRow { id: malformedUpdatedAtRow; y: malformedMetadataRow.y + malformedMetadataRow.height; width: parent.width; providerData: ({ provider: "malformed-updated-at", source: "synthetic-source", windows: [{ label: "Session", usedPercent: 1 }], raw: { usage: { updatedAt: "not-a-real-date", details: [] } } }) }
 
             UsageUi.ProviderRow {
                 id: maliciousRow
@@ -294,6 +297,10 @@ TestCase {
         verify(!organization.visible)
         compare(organization.text, "Synthetic Labs Inc.")
         verify(updatedAt.visible)
+        verify(updatedAt.text !== "Updated: 2026-08-14T19:01:20Z",
+            "updatedAtLabel must render a relative label, not the raw ISO fallback, for a parseable stamp")
+        verify(updatedAt.text.indexOf("2026-08-14T19:01:20Z") === -1,
+            "updatedAtLabel must never leak the raw ISO stamp when relative formatting succeeds")
         verify(creditsRemaining.visible)
         verify(creditsRemaining.text.indexOf("12") !== -1)
         verify(resetAvailable.visible)
@@ -301,6 +308,13 @@ TestCase {
         verify(findText(validRow, "On pace, 42% used") !== null)
         verify(!validRow.resetCreditsSection.expanded)
         verify(findText(validRow, "2026-09-01T00:00:00Z") === null, "collapsed disclosure must not render expiry rows")
+    }
+
+    function test_updatedAtOmittedForUnparseableValue() {
+        var updatedAt = findByObjectName(malformedUpdatedAtRow, "updatedAtLabel")
+        verify(!updatedAt.visible,
+            "a present but unparseable updatedAt must be omitted, never shown as raw text (D-relative)")
+        compare(updatedAt.text, "")
     }
 
     function test_invalidMetadataIsOmittedWithoutPlaceholdersInRealProviderRows() {
