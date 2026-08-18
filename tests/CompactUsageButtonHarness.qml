@@ -20,6 +20,20 @@ Item {
 
     function finish() { Qt.exit(assertionFailed ? 1 : 0) }
 
+    function findIcon(item) {
+        for (var i = 0; i < item.children.length; i++) {
+            var child = item.children[i]
+            if (child.source !== undefined && child.source.toString().indexOf("kodexbar-monochrome.svg") !== -1) {
+                return child
+            }
+            var nested = findIcon(child)
+            if (nested !== null) {
+                return nested
+            }
+        }
+        return null
+    }
+
     UsageUi.CompactUsageButton {
         id: button
         usageText: "42%"
@@ -35,6 +49,10 @@ Item {
                "the compact control must expose its status to assistive technology when translations are available")
         assert(button.enabled, "Return and Space activation must remain available on the enabled native control")
         assert(typeof button.click === "function", "the native control must expose its standard activation path")
+        var icon = findIcon(button.contentItem)
+        assert(icon !== null, "the compact control must expose its icon in the content item")
+        assert(Math.abs((icon.x + icon.width / 2) - (button.contentItem.width / 2)) <= 0.5,
+               "the compact icon must be centered without a trailing blank slot")
         button.click()
         assert(root.activationCount === 1, "the native button activation path must open details")
         finish()

@@ -63,12 +63,24 @@ An unredacted value cannot be removed from git history by revert, so a failing g
 | Field | Value |
 |---|---|
 | Fixture | `tests/fixtures/codexbar-usage-capture.json` |
-| Captured | 2026-08-14 |
+| Captured | 2026-08-17 |
 | CodexBar version | **Not self-reported by this build** — see below |
 | Binary | `~/.local/bin/codexbar`, mtime 2026-08-08, sha256 `2a914798540109cabba2f600a3ae4f19d8c95096ff686b346eaf4851f3078b4d` |
 | Platform | Linux (CachyOS), Plasma 6, Qt 6.11.1 |
-| Providers present | 67 entries — 6 usable (`codex`, `claude`, `opencodego`, `gemini`, `copilot`, `grok`), 61 error-shaped |
-| Redacted | account email (masked in the supplied capture), home path (`/home/redacted-user`), local timezone in `resetDescription` |
+| Providers present | 67 entries — 5 usable (`codex`, `claude`, `opencodego`, `gemini`, `grok`), 62 error-shaped (`copilot`/`cursor` failed at capture time) |
+| Redacted | account email → `gxxxxxxxxxxxx@example.com`, organization → `Redacted Org`, home path (`/home/redacted-user`) |
+
+### Field inventory (usable providers, 2026-08-17)
+
+| Provider | Windows | Pace | loginMethod | details[] | providerCost | notes |
+|---|---|---|---|---|---|---|
+| codex | Weekly only | — | plus | — | — | credits.remaining 0; reset credits 0 |
+| claude | Session + Weekly | primary + secondary | — | — | — | no plan badge in payload |
+| opencodego | Session + Weekly + Monthly | tertiary | — | — | Zen balance used/limit 0 | only structured providerCost |
+| gemini | Session + Weekly + Monthly | — | — | — | — | resetDescription “Resets in …” |
+| grok | Session only | primary | SuperGrok | — | — | |
+
+No per-model (“Sonnet”) or Extra-usage dollar windows appeared in this capture. UI must not invent them.
 
 ### On the missing CodexBar version
 

@@ -309,5 +309,64 @@ class RealTreeBannedColorIntegrationTest(unittest.TestCase):
         self.assertEqual(violations, [])
 
 
+class DocumentedLiteralColorFallbackTest(unittest.TestCase):
+    """D19 anchor: live Breeze Dark smoke found that `Kirigami.Icon`'s
+    theme-adaptive mask recoloring only visibly worked for `fill="currentColor"`
+    icons, not the 3 stroke-only icons (`codex.svg`, `commandcode.svg`,
+    `mimo.svg`). Those 3 files now use the spec's own documented
+    literal-color fallback (`stroke="#9a9a9a"`) instead of
+    `stroke="currentColor"`. This is a narrow, explicitly-named exception
+    for exactly these 3 files -- not a general loosening of invariant 4's
+    banned-color rule (RED at write time: the SVGs still carry
+    `stroke="currentColor"` and are not yet in LITERAL_COLOR_ALLOWLIST).
+    """
+
+    DOCUMENTED_LITERAL_FALLBACK_FILES = ("codex.svg", "commandcode.svg", "mimo.svg")
+    DOCUMENTED_LITERAL_FALLBACK_COLOR = "#9a9a9a"
+
+    def test_stroke_only_icons_use_documented_literal_fallback(self):
+        svg_dir = REPO_ROOT / "contents/icons/providers"
+        for name in self.DOCUMENTED_LITERAL_FALLBACK_FILES:
+            content = (svg_dir / name).read_text(encoding="utf-8")
+            self.assertIn(
+                'stroke="%s"' % self.DOCUMENTED_LITERAL_FALLBACK_COLOR,
+                content,
+                "%s must use the documented literal-color fallback "
+                'stroke="%s" (D19)' % (name, self.DOCUMENTED_LITERAL_FALLBACK_COLOR),
+            )
+            self.assertNotIn(
+                "currentColor",
+                content,
+                "%s must no longer use stroke=\"currentColor\" once the "
+                "literal fallback is applied (D19)" % name,
+            )
+
+    def test_stroke_only_icons_are_named_exceptions_in_checker_allowlist(self):
+        checker = load_checker()
+        for name in self.DOCUMENTED_LITERAL_FALLBACK_FILES:
+            self.assertIn(
+                name,
+                checker.LITERAL_COLOR_ALLOWLIST,
+                "%s must be a documented, named exception in "
+                "LITERAL_COLOR_ALLOWLIST, not a blanket loosening (D19)" % name,
+            )
+
+    # Snapshot of the allowlist's pre-D19 membership (Slice 3's documented
+    # exceptions), so the guard below proves D19 adds *exactly* the 3 named
+    # files on top of it -- never a broader loosening.
+    PRE_D19_ALLOWLIST = frozenset({"codebuff.svg", "stepfun.svg", "vertexai.svg"})
+
+    def test_allowlist_grows_by_exactly_the_three_named_files(self):
+        checker = load_checker()
+        expected = self.PRE_D19_ALLOWLIST | set(self.DOCUMENTED_LITERAL_FALLBACK_FILES)
+        self.assertEqual(
+            set(checker.LITERAL_COLOR_ALLOWLIST),
+            expected,
+            "D19 must add exactly codex.svg, commandcode.svg, and mimo.svg to "
+            "LITERAL_COLOR_ALLOWLIST on top of the pre-existing exceptions -- "
+            "never a broader loosening",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

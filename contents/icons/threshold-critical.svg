@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <mask id="threshold-critical-cut">
+    <rect width="64" height="64" fill="white"/>
+    <rect x="28.5" y="15" width="7" height="24" rx="3.5" fill="black"/>
+    <circle cx="32" cy="47" r="4" fill="black"/>
+  </mask>
+  <circle cx="32" cy="32" r="28" fill="currentColor" mask="url(#threshold-critical-cut)"/>
+</svg>

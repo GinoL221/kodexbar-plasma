@@ -28,8 +28,8 @@ class CliContractFixtureTest(unittest.TestCase):
         digest = hashlib.sha256(data).hexdigest()
         self.assertEqual(
             digest,
-            "46343115c0b1c82960147e1d9a16746c0b5f915d44f4d29a209be6f0aa290c0b",
-            "fixture bytes must match the pinned Phase 1 capture",
+            "b1f022136b0d641fe87852d0efe6e846c370d645880e2393098135f2b5920c98",
+            "fixture bytes must match the pinned 2026-08-17 capture",
         )
 
     def test_fixture_is_valid_json_array(self):
@@ -40,7 +40,7 @@ class CliContractFixtureTest(unittest.TestCase):
     def test_docs_reference_fixture_path_and_capture_date(self):
         text = DOCS.read_text(encoding="utf-8")
         self.assertIn("tests/fixtures/codexbar-usage-capture.json", text)
-        self.assertIn("2026-08-14", text)
+        self.assertIn("2026-08-17", text)
 
     def test_docs_record_non_self_reported_version_and_binary_pin(self):
         text = DOCS.read_text(encoding="utf-8")

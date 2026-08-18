@@ -214,7 +214,8 @@ QQC2.ApplicationWindow {
                         source: "fixture-source",
                         windows: [
                             { label: "Session", usedPercent: 42, resetDescription: "Resets tomorrow" },
-                            { label: "Weekly", usedPercent: 13 }
+                            { label: "Weekly", usedPercent: 13 },
+                            { label: "Monthly", usedPercent: 94 }
                         ],
                         raw: {
                             version: "fixture-version",
@@ -277,7 +278,11 @@ QQC2.ApplicationWindow {
                 "fixture must not create horizontal overflow")
             root.assert(providerRow.width === fixtureColumn.width && providerRow.width > 0,
                 "selected-provider row must use the fixture viewport width")
-            root.assert(providerRow.Accessible.name.indexOf("fixture-provider") !== -1,
+            // D26: the accessible name uses ProviderIcons.displayName(), which
+            // capitalizes the first letter of an unmapped id ("fixture-provider"
+            // -> "Fixture-provider") -- match case-insensitively rather than the
+            // raw lowercase fixture id.
+            root.assert(providerRow.Accessible.name.toLowerCase().indexOf("fixture-provider") !== -1,
                 "selected-provider row must expose its accessible provider name")
             root.assert(providerLabel !== null && sourceLabel !== null
                 && providerLabel.x >= 0 && providerLabel.x + providerLabel.width <= providerRow.width

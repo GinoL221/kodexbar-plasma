@@ -78,6 +78,9 @@ TestCase {
             UsageUi.ProviderRow { id: absentMetadataRow; y: malformedRow.y + malformedRow.height; width: parent.width; providerData: ({ provider: "absent-metadata", source: "synthetic-source", windows: [{ label: "Session", usedPercent: 1 }], raw: { usage: { details: [] } } }) }
             UsageUi.ProviderRow { id: emptyMetadataRow; y: absentMetadataRow.y + absentMetadataRow.height; width: parent.width; providerData: ({ provider: "empty-metadata", source: "synthetic-source", windows: [{ label: "Session", usedPercent: 1 }], raw: { version: "", usage: { loginMethod: "", details: [] } } }) }
             UsageUi.ProviderRow { id: malformedMetadataRow; y: emptyMetadataRow.y + emptyMetadataRow.height; width: parent.width; providerData: ({ provider: "malformed-metadata", source: "synthetic-source", windows: [{ label: "Session", usedPercent: 1 }], raw: { version: 7, usage: { loginMethod: {}, details: [] } } }) }
+            // updatedAt present but not a parseable ISO-8601 stamp -- must stay
+            // omitted, never render as raw "Updated: not-a-real-date" text.
+            UsageUi.ProviderRow { id: malformedUpdatedAtRow; y: malformedMetadataRow.y + malformedMetadataRow.height; width: parent.width; providerData: ({ provider: "malformed-updated-at", source: "synthetic-source", windows: [{ label: "Session", usedPercent: 1 }], raw: { usage: { updatedAt: "not-a-real-date", details: [] } } }) }
 
             UsageUi.ProviderRow {
                 id: maliciousRow
@@ -133,6 +136,34 @@ TestCase {
                         }
                     }
                 })
+            }
+
+            UsageUi.StatusFooter {
+                id: statusFooterWithProvider
+                y: codexFixtureRow.y + codexFixtureRow.height
+                width: 200
+                phase: "ready"
+            }
+
+            UsageUi.StatusFooter {
+                id: statusFooterOverview
+                y: statusFooterWithProvider.y + statusFooterWithProvider.height
+                width: 200
+                phase: "ready"
+            }
+
+            UsageUi.StatusFooter {
+                id: statusFooterLoading
+                y: statusFooterOverview.y + statusFooterOverview.height
+                width: 200
+                phase: "loading"
+            }
+
+            UsageUi.StatusFooter {
+                id: statusFooterError
+                y: statusFooterLoading.y + statusFooterLoading.height
+                width: 200
+                phase: "error"
             }
         }
 
@@ -240,7 +271,8 @@ TestCase {
     function test_conditionalMetadataAndMalformedDetailsKeepUsageVisible() {
         var version = findByObjectName(validRow, "versionLabel")
         var login = findByObjectName(validRow, "loginLabel")
-        verify(version.visible)
+        // Version stays off primary chrome; login badge remains.
+        verify(!version.visible)
         compare(version.text, "9.8.7")
         verify(login.visible)
         compare(login.text, "synthetic-login")
@@ -248,7 +280,7 @@ TestCase {
 
         var malformedVersion = findByObjectName(malformedRow, "versionLabel")
         var malformedLogin = findByObjectName(malformedRow, "loginLabel")
-        verify(malformedVersion.visible)
+        verify(!malformedVersion.visible)
         compare(malformedVersion.text, "2.0")
         verify(malformedLogin.visible)
         compare(malformedLogin.text, "safe-login")
@@ -260,11 +292,15 @@ TestCase {
         var updatedAt = findByObjectName(validRow, "updatedAtLabel")
         var creditsRemaining = findByObjectName(validRow, "creditsRemainingLabel")
         var resetAvailable = findByObjectName(validRow, "resetAvailableLabel")
-        verify(email.visible)
+        verify(!email.visible)
         compare(email.text, "synthetic@example.invalid")
-        verify(organization.visible)
+        verify(!organization.visible)
         compare(organization.text, "Synthetic Labs Inc.")
         verify(updatedAt.visible)
+        verify(updatedAt.text !== "Updated: 2026-08-14T19:01:20Z",
+            "updatedAtLabel must render a relative label, not the raw ISO fallback, for a parseable stamp")
+        verify(updatedAt.text.indexOf("2026-08-14T19:01:20Z") === -1,
+            "updatedAtLabel must never leak the raw ISO stamp when relative formatting succeeds")
         verify(creditsRemaining.visible)
         verify(creditsRemaining.text.indexOf("12") !== -1)
         verify(resetAvailable.visible)
@@ -272,6 +308,13 @@ TestCase {
         verify(findText(validRow, "On pace, 42% used") !== null)
         verify(!validRow.resetCreditsSection.expanded)
         verify(findText(validRow, "2026-09-01T00:00:00Z") === null, "collapsed disclosure must not render expiry rows")
+    }
+
+    function test_updatedAtOmittedForUnparseableValue() {
+        var updatedAt = findByObjectName(malformedUpdatedAtRow, "updatedAtLabel")
+        verify(!updatedAt.visible,
+            "a present but unparseable updatedAt must be omitted, never shown as raw text (D-relative)")
+        compare(updatedAt.text, "")
     }
 
     function test_invalidMetadataIsOmittedWithoutPlaceholdersInRealProviderRows() {
@@ -322,7 +365,8 @@ TestCase {
 
     function test_maliciousProviderDisplaysOnlyApprovedFields() {
         var details = maliciousRow.providerDetails
-        verify(findByObjectName(maliciousRow, "versionLabel").visible)
+        // Version/email stay off primary chrome even when validated.
+        verify(!findByObjectName(maliciousRow, "versionLabel").visible)
         compare(findByObjectName(maliciousRow, "versionLabel").text, "3.0")
         verify(findByObjectName(maliciousRow, "loginLabel").visible)
         compare(findByObjectName(maliciousRow, "loginLabel").text, "approved-login")
@@ -340,11 +384,8 @@ TestCase {
         verify(findText(details, "Reach us") === null)
         verify(findText(details, "Support") === null)
 
-        // A correctly-shaped, authorized identity field must still display
-        // even inside an otherwise hostile payload; every incorrectly-shaped
-        // or opaque field around it must stay hidden.
         var email = findByObjectName(maliciousRow, "emailLabel")
-        verify(email.visible)
+        verify(!email.visible)
         compare(email.text, "authorized@example.invalid")
         verify(!findByObjectName(maliciousRow, "organizationLabel").visible)
         verify(!maliciousRow.resetCreditsSection.visible)
@@ -358,13 +399,14 @@ TestCase {
 
     function test_fixturePiiRemainsFailClosedForRealCapturedShape() {
         var email = findByObjectName(codexFixtureRow, "emailLabel")
-        verify(email.visible)
+        // Email is validated but kept off primary chrome (PII / density).
+        verify(!email.visible)
         compare(email.text, "gxxxxxxxxxxxx@gmail.com")
         verify(!findByObjectName(codexFixtureRow, "organizationLabel").visible)
         verify(!codexFixtureRow.resetCreditsSection.visible)
         var creditsRemaining = findByObjectName(codexFixtureRow, "creditsRemainingLabel")
-        verify(creditsRemaining.visible)
-        verify(creditsRemaining.text.indexOf("0") !== -1)
+        // Zero credits must not clutter the detail body.
+        verify(!creditsRemaining.visible)
         verify(findText(codexFixtureRow, "49% in deficit | Expected 18% used | Runs out in 15h 7m") !== null)
     }
 
@@ -383,16 +425,51 @@ TestCase {
 
         verify(costPresent.visible)
         verify(!costAbsent.visible)
-        verify(validRow.Accessible.name.indexOf("synthetic-provider") !== -1)
-        verify(malformedRow.Accessible.name.indexOf("malformed-provider") !== -1)
+        verify(validRow.Accessible.name.indexOf("Synthetic-provider") !== -1
+               || validRow.Accessible.name.indexOf("synthetic-provider") !== -1)
+        verify(malformedRow.Accessible.name.indexOf("Malformed-provider") !== -1
+               || malformedRow.Accessible.name.indexOf("malformed-provider") !== -1)
         verify(providerLabel.Accessible.name.length > 0)
-        verify(sourceLabel.Accessible.name.length > 0)
+        // Source is header-hidden but still carried on Accessible.description.
+        verify(!sourceLabel.visible)
+        verify(validRow.Accessible.description.indexOf("synthetic-source") !== -1)
         verify(validRow.width === testWindow.width && malformedRow.width === testWindow.width)
         verify(validRow.x >= 0 && validRow.x + validRow.width <= testWindow.width)
         verify(malformedRow.x >= 0 && malformedRow.x + malformedRow.width <= testWindow.width)
         verify(providerLabel.x >= 0 && providerLabel.x + providerLabel.width <= validRow.width)
-        verify(sourceLabel.x >= 0 && sourceLabel.x + sourceLabel.width <= validRow.width)
         verify(costPresent.x >= 0 && costPresent.x + costPresent.width <= validRow.width)
+    }
+
+    function test_headerBadgeOccupiesRightColumnWhenLoginMethodValid() {
+        var login = findByObjectName(validRow, "loginLabel")
+        var provider = findByObjectName(validRow, "providerLabel")
+        verify(login.visible)
+        compare(login.text, "synthetic-login")
+
+        // The badge lives in a right-aligned column: its right edge must reach
+        // the row's right edge, and it must start to the right of the left
+        // column's identity label instead of stacking directly beneath it.
+        var loginRight = login.mapToItem(validRow, login.width, 0).x
+        var providerLeft = provider.mapToItem(validRow, 0, 0).x
+        var loginLeft = login.mapToItem(validRow, 0, 0).x
+        verify(loginRight > validRow.width - Kirigami.Units.smallSpacing * 2,
+               "badge right edge (" + loginRight + ") must reach row right edge (" + validRow.width + ")")
+        verify(loginLeft > providerLeft,
+               "badge (x=" + loginLeft + ") must sit right of the left identity column (x=" + providerLeft + "), not beneath it")
+    }
+
+    function test_headerBadgeOmittedWithoutPlaceholderLeavesLeftColumnUnaffected() {
+        var login = findByObjectName(emptyMetadataRow, "loginLabel")
+        var provider = findByObjectName(emptyMetadataRow, "providerLabel")
+        var source = findByObjectName(emptyMetadataRow, "sourceLabel")
+        verify(!login.visible)
+        compare(login.text, "")
+        verify(provider.visible)
+        compare(provider.text, "Empty-metadata")
+        // Source stays on Accessible.description only — body header is name-first.
+        verify(!source.visible)
+        verify(emptyMetadataRow.Accessible.description.indexOf("synthetic-source") !== -1)
+        verify(findText(emptyMetadataRow, "Unknown") === null)
     }
 
     function test_expandedOverHeightDetailsAreVerticallyReachableWithoutHorizontalOverflow() {
@@ -408,5 +485,43 @@ TestCase {
         var lastValue = findText(overHeightRow, "value 8")
         verify(lastValue !== null)
         verify(verticalBar.position > 0)
+    }
+
+    function test_footerShowsStatus() {
+        var status = findByObjectName(statusFooterWithProvider, "footerStatusLabel")
+        verify(status.visible)
+        compare(status.text, "Ready")
+
+        // Status is shown the same way regardless of provider selection --
+        // the footer no longer carries a selectedProvider concept at all.
+        var overviewStatus = findByObjectName(statusFooterOverview, "footerStatusLabel")
+        verify(overviewStatus.visible)
+        compare(overviewStatus.text, "Ready")
+    }
+
+    function test_footerReflectsLoadingAndErrorPhases() {
+        var loadingStatus = findByObjectName(statusFooterLoading, "footerStatusLabel")
+        compare(loadingStatus.text, "Loading usage…")
+        var errorStatus = findByObjectName(statusFooterError, "footerStatusLabel")
+        compare(errorStatus.text, "Error")
+    }
+
+    function test_footerExcludesCountsControlsAndTimestamp() {
+        var footers = [statusFooterWithProvider, statusFooterOverview, statusFooterLoading, statusFooterError]
+        for (var i = 0; i < footers.length; i++) {
+            var footer = footers[i]
+            verify(findByObjectName(footer, "footerUpdatedAtLabel") === null)
+            verify(findByObjectName(footer, "providerCountLabel") === null)
+            verify(findByObjectName(footer, "errorCountLabel") === null)
+            verify(findByObjectName(footer, "settingsButton") === null)
+            verify(findByObjectName(footer, "aboutButton") === null)
+            verify(findByObjectName(footer, "quitButton") === null)
+            verify(findByObjectName(footer, "addAccountButton") === null)
+            verify(findText(footer, "Settings") === null)
+            verify(findText(footer, "About") === null)
+            verify(findText(footer, "Quit") === null)
+            verify(findText(footer, "Add Account") === null)
+            verify(findText(footer, "Updated") === null)
+        }
     }
 }

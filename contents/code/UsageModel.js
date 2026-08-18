@@ -143,6 +143,20 @@ function selectRepresentative(windows, preferredKey) {
     return firstFiniteWindow(windows)
 }
 
+// Overview body: every finite Session/Weekly/Monthly window, in that order.
+// Providers like opencodego often expose all three; dropping Monthly when
+// Session/Weekly exist hid real data. Empty when none are finite.
+function selectOverviewWindows(windows) {
+    var result = []
+    for (var i = 0; i < windowDefinitions.length; i++) {
+        var window = preferredFiniteWindow(windows, windowDefinitions[i])
+        if (window !== null) {
+            result.push(window)
+        }
+    }
+    return result
+}
+
 function selectCompact(providers) {
     var best = null
     var rows = providers instanceof Array ? providers : []

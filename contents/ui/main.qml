@@ -86,45 +86,68 @@ PlasmoidItem {
     fullRepresentation: Item {
         id: full
         property alias scrollView: usageScrollView
+        // Outer chrome margin + extra body inset so provider cards sit off the
+        // popup edge like the reference (Kirigami.Units only).
         readonly property int popupMargin: Kirigami.Units.largeSpacing * 2
+        readonly property int bodyInset: Kirigami.Units.smallSpacing
+        // Cap only — preferred height follows content so the popup is not a
+        // fixed tall empty slab. Scroll kicks in once content hits the cap.
         readonly property int maxPopupHeight: Kirigami.Units.gridUnit * 44
+        readonly property int minPopupHeight: Kirigami.Units.gridUnit * 16
+        readonly property int contentPreferredHeight: {
+            var body = usageColumn.implicitHeight
+            var chrome = refreshButton.implicitHeight + statusFooter.implicitHeight
+                + mainColumn.spacing * 2
+            return body + chrome + full.popupMargin * 2
+        }
 
         Layout.minimumWidth: Kirigami.Units.gridUnit * 30
-        Layout.minimumHeight: Math.min(Layout.preferredHeight, maxPopupHeight)
+        Layout.minimumHeight: full.minPopupHeight
         Layout.preferredWidth: Kirigami.Units.gridUnit * 34
-        Layout.preferredHeight: maxPopupHeight
+        Layout.preferredHeight: Math.max(full.minPopupHeight,
+            Math.min(full.contentPreferredHeight, full.maxPopupHeight))
+        Layout.maximumHeight: full.maxPopupHeight
 
         ColumnLayout {
+            id: mainColumn
             anchors.fill: parent
             anchors.margins: full.popupMargin
             spacing: Kirigami.Units.largeSpacing
-
-            QQC2.ToolButton {
-                icon.name: "view-refresh"
-                display: QQC2.AbstractButton.IconOnly
-                text: i18n("Refresh")
-                onClicked: root.controller.requestRefresh()
-            }
 
             QQC2.ScrollView {
                 id: usageScrollView
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 contentWidth: availableWidth
+                // Overlay scrollbar: no reserved grey gutter; fades with AsNeeded.
                 QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
-                QQC2.ScrollBar.vertical.policy: QQC2.ScrollBar.AsNeeded
+                QQC2.ScrollBar.vertical: QQC2.ScrollBar {
+                    parent: usageScrollView
+                    x: usageScrollView.mirrored ? 0 : usageScrollView.width - width
+                    y: usageScrollView.topPadding
+                    height: usageScrollView.availableHeight
+                    policy: QQC2.ScrollBar.AsNeeded
+                }
 
                 ColumnLayout {
+                    id: usageColumn
                     width: full.scrollView.availableWidth
                     spacing: Kirigami.Units.largeSpacing
 
+                     // Loading stays in the pinned footer so it never grows the
+                     // scroll body. Body only surfaces terminal empty/error copy.
                      PlasmaComponents.Label {
-                        visible: root.controller.phase === "loading" || root.controller.phase === "noData" || root.controller.phase === "error"
-                        text: root.controller.phase === "loading" ? i18n("Loading usage…")
-                            : root.controller.phase === "noData" ? i18n("No usage data available") : root.controller.errorMessage
-                        color: root.controller.phase === "error" ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.disabledTextColor
+                        visible: root.controller.phase === "noData" || root.controller.phase === "error"
+                        text: root.controller.phase === "noData"
+                            ? i18n("No usage data available")
+                            : root.controller.errorMessage
+                        color: root.controller.phase === "error"
+                            ? Kirigami.Theme.negativeTextColor
+                            : Kirigami.Theme.disabledTextColor
                         wrapMode: Text.WordWrap
                          Layout.fillWidth: true
+                         Layout.leftMargin: full.bodyInset
+                         Layout.rightMargin: full.bodyInset
                      }
 
                     ProviderSelector {
@@ -132,42 +155,73 @@ PlasmoidItem {
                         providers: root.controller.committedProviders
                         phase: root.controller.phase
                         popupOpen: root.expanded
+                        preferredWindowKey: root.preferredWindowKey
                         Layout.fillWidth: true
+                        Layout.leftMargin: full.bodyInset
+                        Layout.rightMargin: full.bodyInset
                         onSelectedProviderChanged: root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
                     }
 
-                    Repeater {
-                        model: providerSelector.allSelected ? providerSelector.usableProviders : []
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: full.bodyInset
+                        Layout.rightMargin: full.bodyInset
+                        spacing: Kirigami.Units.largeSpacing
 
-                        delegate: ProviderRow {
-                            required property var modelData
+                        Kirigami.Separator {
+                            objectName: "overviewProviderListSeparator"
+                            visible: providerSelector.allSelected
+                            Layout.fillWidth: true
+                        }
 
-                            providerData: modelData
-                            summary: true
-                            preferredWindowKey: root.preferredWindowKey
+                        Repeater {
+                            model: providerSelector.allSelected ? providerSelector.usableProviders : []
+
+                            delegate: ProviderRow {
+                                required property var modelData
+
+                                providerData: modelData
+                                summary: true
+                                iconResolver: providerSelector.iconResolver
+                                Layout.fillWidth: true
+                            }
+                        }
+
+                        ProviderRow {
+                            visible: !providerSelector.allSelected && providerSelector.selectedProvider !== null
+                            providerData: providerSelector.selectedProvider || ({})
+                            compact: false
                             iconResolver: providerSelector.iconResolver
+                            // "All" is never bound here: selectedProvider is null
+                            // whenever allSelected, so no cost record is ever read.
+                            costSnapshot: providerSelector.selectedProvider
+                                ? costController.snapshotFor(providerSelector.selectedProvider.provider, root.controller.committedGeneration)
+                                : null
                             Layout.fillWidth: true
                         }
                     }
 
-                    ProviderRow {
-                        visible: !providerSelector.allSelected && providerSelector.selectedProvider !== null
-                        providerData: providerSelector.selectedProvider || ({})
-                        compact: false
-                        iconResolver: providerSelector.iconResolver
-                        // "All" is never bound here: selectedProvider is null
-                        // whenever allSelected, so no cost record is ever read.
-                        costSnapshot: providerSelector.selectedProvider
-                            ? costController.snapshotFor(providerSelector.selectedProvider.provider, root.controller.committedGeneration)
-                            : null
-                        Layout.fillWidth: true
-                    }
-
-                    ErrorSummary {
-                        errors: root.controller.committedErrors
-                        Layout.fillWidth: true
-                    }
+                    // Provider failures stay in the controller for tests/debug
+                    // but are never shown in the popup (CLI returns dozens of
+                    // unsupported providers on Linux — pure noise for users).
                 }
+            }
+
+            // Chrome below the scroll body: Refresh (text+icon), then status.
+            // Settings/About stay deferred — not part of this change.
+            QQC2.ToolButton {
+                id: refreshButton
+                icon.name: "view-refresh"
+                display: QQC2.AbstractButton.TextBesideIcon
+                text: i18n("Refresh")
+                Layout.alignment: Qt.AlignLeft
+                onClicked: root.controller.requestRefresh()
+            }
+
+            StatusFooter {
+                id: statusFooter
+                phase: root.controller.phase
+                Layout.fillWidth: true
             }
         }
 

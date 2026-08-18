@@ -59,9 +59,9 @@ Refresh MUST invoke the authoritative path with exactly `usage --provider all --
 
 ### Requirement: Provider presentation
 
-On open, the popup MUST select the first response-ordered provider having a window. A native selector MUST expose `All` and usable providers with name, exact `source`, and either an authoritative icon or a themed fallback; every bundled provider icon MUST be visually distinct from every other bundled provider's icon and MUST adapt to the active Breeze theme, remaining a visible, non-blank mark in both Breeze Light and Breeze Dark rather than a fixed light-only or dark-only rendering. A bundled icon MUST NOT rely on a hardcoded absolute literal color (including pure white or pure near-black) that renders it indistinguishable from its background in either theme; bundled icons use `fill="currentColor"` (and `stroke="currentColor"` where the source strokes), matching the repository's existing theme-adaptive SVG convention, unless a documented literal-color fallback is used after a proven `Kirigami.Icon` theme-adaptation defect, in which case that fallback MUST remain legible against both Breeze Light and Breeze Dark panel backgrounds. `All` MUST show providers in response order with exactly one summary row per provider. Each summary row MUST preserve provider identity and MUST show exactly one representative usage bar when a finite `usedPercent` exists in that provider's effective window. A persisted global `preferredRepresentativeWindow` setting (Automatic default, or Session, Weekly, Monthly) governs the effective window uniformly for every provider in `All`; no per-provider override exists. Automatic, absent, or an unrecognized value MUST select the first finite value in Session, then Weekly, then Monthly order, unchanged from prior behavior. An explicit window with a finite value for that provider MUST be used. An explicit window with no finite value for that provider MUST fall back to that automatic order for that provider only. When no window has a finite value, the row MUST show identity only and MUST NOT invent a percentage or bar, regardless of the setting. A fallback bar MUST render with no visual distinction beyond its existing per-window label. This setting MUST NOT affect compact-panel selection (Requirement: Deterministic compact summary), which stays fixed. This persisted settings-panel preference differs from the transient popup provider/tab selection banned under Requirement: Provider-focused exclusions and MUST NOT be read as that banned persistent selection. `All` rows MUST NOT expand or expose additional window detail. Existing provider tabs MUST continue to show every supplied Session, Weekly, and Monthly window with exact raw resets; missing values MUST be omitted. Selection MUST be transient. Refresh or reorder MUST preserve `All` or the selected provider by identity; otherwise it MUST select the first usable provider, or `All`. Reopening MUST reapply the default. The stable four-key contract — `provider`, `source`, and `windows[]` (with each window's `key`, `label`, `usedPercent`, `resetsAt`, and `resetDescription`) — MUST remain shape-stable in value, type, and ordering across normalization; additive siblings on a provider entry, such as a verbatim `raw` passthrough, MAY be present without altering that stability.
+Tab selection across popup opens is governed by Requirement: Tab selection persists across popup reopen; the selector still exposes usable providers as follows. A native selector MUST expose `Overview` (grid icon) and usable providers with display name, exact `source` (accessible metadata), and either an authoritative icon or a themed fallback; every bundled provider icon MUST be visually distinct from every other bundled provider's icon and MUST adapt to the active Breeze theme, remaining a visible, non-blank mark in both Breeze Light and Breeze Dark rather than a fixed light-only or dark-only rendering. A bundled icon MUST NOT rely on a hardcoded absolute literal color (including pure white or pure near-black) that renders it indistinguishable from its background in either theme; bundled icons use `fill="currentColor"` (and `stroke="currentColor"` where the source strokes), matching the repository's existing theme-adaptive SVG convention, unless a documented literal-color fallback is used after a proven theme-adaptation defect, in which case that fallback MUST remain legible against both Breeze Light and Breeze Dark panel backgrounds. Provider tabs MAY use a custom Plasma chip strip (not only QQC2.TabBar) when required for reliable icon theming and layout. Overflowing tabs MUST remain reachable without a permanent horizontal scrollbar (for example side affordances). `Overview` MUST show providers in response order with exactly one summary card per provider: provider icon and display name, plus one bar per finite Session, Weekly, and/or Monthly window in that order (zero to three bars). The internal layout of each such bar is governed by Requirement: Overview summary row title/percent layout. When no window has a finite value, the row MUST show identity only and MUST NOT invent a percentage or bar. `Overview`'s body window selection MUST NOT be governed by `preferredRepresentativeWindow`. The popup MUST NOT present a global expandable provider-failure disclosure for optional CLI provider errors when usable providers are shown (those errors may remain in controller state for tests or debug).
 
-(Previously: a bundled icon or themed fallback was accepted with no requirement that it be visually distinct per provider or adapt to the active Breeze theme, permitting hardcoded literal-color icons that could render as a blank block or an invisible mark in one theme; the four-key contract's stability under additive provider-entry fields was unaddressed, with no explicit guarantee constraining whether a new key could alter `provider`, `source`, or `windows[]` value, type, or ordering.)
+(Previously: Session+Weekly exclusive of Monthly; percent in tab text; native TabBar assumed; ErrorSummary in popup.)
 
 #### Scenario: Heterogeneous providers
 
@@ -69,28 +69,39 @@ On open, the popup MUST select the first response-ordered provider having a wind
 - WHEN results are displayed
 - THEN values are preserved, absent fields are omitted, and a themed fallback icon is used
 
-#### Scenario: Session is representative
+#### Scenario: Overview shows Session Weekly and Monthly together when all finite
 
 - GIVEN a provider has finite Session, Weekly, and Monthly percentages
-- WHEN `All` is displayed
-- THEN exactly one bar uses the Session percentage for that provider
+- WHEN `Overview` is displayed
+- THEN the card shows three bars in Session, Weekly, Monthly order
 
-#### Scenario: Representative fallback order
+#### Scenario: Overview shows Session and Weekly together
+- GIVEN a provider has finite Session and finite Weekly percentages and Monthly is missing or non-finite
+- WHEN `Overview` is displayed
+- THEN the row shows a separate Session bar and a separate Weekly bar for that provider
 
-- GIVEN Session is missing or non-finite and Weekly and Monthly are finite
-- WHEN `All` is displayed
-- THEN exactly one bar uses the Weekly percentage for that provider
+#### Scenario: Only Session is finite
 
-#### Scenario: Monthly is the only finite window
+- GIVEN Session is finite and Weekly and Monthly are missing or non-finite
+- WHEN `Overview` is displayed
+- THEN the row shows only the Session bar, with no invented Weekly or Monthly bar
 
-- GIVEN only Monthly has a finite percentage
-- WHEN `All` is displayed
-- THEN exactly one bar uses the Monthly percentage for that provider
+#### Scenario: Only Weekly is finite
+
+- GIVEN Weekly is finite and Session and Monthly are missing or non-finite
+- WHEN `Overview` is displayed
+- THEN the row shows only the Weekly bar, with no invented Session or Monthly bar
+
+#### Scenario: Monthly alone when Session and Weekly are absent
+
+- GIVEN Session and Weekly are both missing or non-finite and Monthly is finite
+- WHEN `Overview` is displayed
+- THEN the row shows only the Monthly bar for that provider
 
 #### Scenario: Provider has no finite percentage
 
-- GIVEN Session, Weekly, and Monthly percentages are missing, nonnumeric, or non-finite, for any `preferredRepresentativeWindow` value
-- WHEN `All` is displayed
+- GIVEN Session, Weekly, and Monthly percentages are missing, nonnumeric, or non-finite
+- WHEN `Overview` is displayed
 - THEN the provider identity remains visible without a bar or invented percentage
 
 #### Scenario: Full detail remains in provider tab
@@ -99,41 +110,17 @@ On open, the popup MUST select the first response-ordered provider having a wind
 - WHEN its provider tab is selected
 - THEN every supplied window and exact raw reset remains visible
 
-#### Scenario: All summaries are not expandable
+#### Scenario: Overview summaries are not expandable
 
-- GIVEN a provider summary is visible in `All`
+- GIVEN a provider summary is visible in `Overview`
 - WHEN the user navigates or activates the row
 - THEN no inline window details or expandable content are revealed
 
-#### Scenario: Explicit preferred window with a finite value
+#### Scenario: preferredRepresentativeWindow does not govern Overview
 
-- GIVEN `preferredRepresentativeWindow` is Weekly and a provider has a finite Weekly percentage
-- WHEN `All` is displayed
-- THEN exactly one bar uses that provider's Weekly percentage
-
-#### Scenario: Per-provider fallback under an explicit preference
-
-- GIVEN `preferredRepresentativeWindow` is Monthly; one provider lacks a finite Monthly value but has a finite Session value; another provider has a finite Monthly value
-- WHEN `All` is displayed
-- THEN the first provider falls back to Session while the second still uses Monthly
-
-#### Scenario: Automatic preserves current default behavior
-
-- GIVEN `preferredRepresentativeWindow` is Automatic, absent, or an unrecognized persisted value
-- WHEN `All` is displayed
-- THEN every provider's bar selection follows the exact Session-then-Weekly-then-Monthly order, unchanged
-
-#### Scenario: Preference is global, not per-provider
-
-- GIVEN `preferredRepresentativeWindow` is set to an explicit window
-- WHEN `All` is displayed
-- THEN the same preferred window governs selection for every provider uniformly, with no per-provider override
-
-#### Scenario: Fallback bar has no special visual treatment
-
-- GIVEN a provider's bar is rendered via automatic fallback rather than the explicit preference
-- WHEN `All` is displayed
-- THEN the bar uses identical styling to any other representative bar, distinguished only by its existing per-window label
+- GIVEN `preferredRepresentativeWindow` is set to any value, including an explicit Session, Weekly, or Monthly preference
+- WHEN `Overview` is displayed
+- THEN each provider's bars render per the finite Session/Weekly/Monthly rules above, unaffected by that setting
 
 #### Scenario: Every known provider renders a distinct, visible icon
 
@@ -191,15 +178,16 @@ On open, the popup MUST select the first response-ordered provider having a wind
 
 ### Requirement: Selected-provider enrichment
 
-Selected-provider detail MUST map valid CLI-supplied `pace.primary`, `pace.secondary`, and `pace.tertiary` to Session, Weekly, and Monthly; show valid `credits.remaining`; and show reset-credit `availableCount` plus an expandable list of valid `credits[]` expirations only when the count is positive. Its header MUST show supplied account email and MAY show a human-readable organization, but MUST omit UUID/hex-like organizations. Tabs MUST contain an icon and short provider name only; `All` MUST remain compact and omit email, organization, pace, credits, resets, and cost.
+Selected-provider detail MUST map valid CLI-supplied `pace.primary`, `pace.secondary`, and `pace.tertiary` to Session, Weekly, and Monthly; show `credits.remaining` only when it is a finite number greater than zero; and show reset-credit `availableCount` plus an expandable list of valid `credits[]` expirations only when the count is positive. Its primary header MUST show display name and Updated plus plan/login badge when valid, and MUST NOT show email, organization, or version in that chrome. Tabs MUST show an icon and short display name; when a finite representative `usedPercent` exists, the tab MUST expose that percent via an underline usage bar and accessible name, not as numeric text in the visible tab label. When no finite percentage exists, the tab MUST show icon and name only, with no invented percent. `Overview` MUST remain compact and omit email, organization, pace, credits, resets, and cost.
+(Previously: tabs put percent in the visible label; header showed email/org; credits of 0 could render.)
 
 #### Scenario: Valid enrichment is displayed
-- GIVEN a selected provider supplies valid identity, pace, credit, and positive reset-credit data
+- GIVEN a selected provider supplies valid pace, positive credits, and positive reset-credit data
 - WHEN its detail is shown
-- THEN values appear in the specified header, window, credit, and reset sections
+- THEN values appear in the window, credit, and reset sections without requiring email in the header
 
 #### Scenario: Invalid or zero data is hidden
-- GIVEN enrichment is absent, malformed, non-finite, or reset `availableCount` is zero
+- GIVEN enrichment is absent, malformed, non-finite, credits remaining is zero, or reset `availableCount` is zero
 - WHEN detail is shown
 - THEN affected fields or sections are omitted without placeholders or failure
 
@@ -210,8 +198,18 @@ Selected-provider detail MUST map valid CLI-supplied `pace.primary`, `pace.secon
 
 #### Scenario: Privacy remains provider-scoped
 - GIVEN email and an opaque organization are supplied
-- WHEN tabs, `All`, and selected detail render
-- THEN only the selected header shows email, organization is omitted, and tabs show icon plus short name
+- WHEN tabs, Overview, and selected detail render
+- THEN email and organization are not shown in primary chrome, and tabs show icon, display name, and underline percent when available
+
+#### Scenario: Tab shows a usage percent without numeric label text
+- GIVEN a provider has a finite representative `usedPercent`
+- WHEN its tab renders
+- THEN the tab shows icon and display name, exposes that percent on an underline bar and in the accessible name, and does not append a numeric percent to the visible tab text
+
+#### Scenario: Tab omits percent when none is finite
+- GIVEN a provider has no finite `usedPercent` in any window
+- WHEN its tab renders
+- THEN the tab shows icon and display name only, without an invented percent
 
 ### Requirement: Protected native presentation
 
@@ -459,6 +457,84 @@ Provider/auth implementation, setup automation, inherited `PATH`, filesystem sca
 
 ## ADDED Requirements
 
+### Requirement: Usage window row band layout
+
+Each selected-provider detail window row — that is, a window row rendered in the selected-provider tab view, not an Overview summary row — MUST render, top to bottom: a title, a full-width progress bar, then a trailing band. The band MUST always show `{percent}% used` when `usedPercent` is finite. For the reset side of the band, the row MUST show the CLI-supplied `resetDescription` verbatim, unmodified, with no added prefix or literal wording, when `resetDescription` is a non-empty string. When `resetDescription` is absent or empty but `resetsAt` is present, the band MUST fall back to the existing verbatim `Reset: {resetsAt}` text. When neither `resetDescription` nor `resetsAt` is present, the band MUST show only `{percent}% used`, with no reset placeholder text. The row MUST NOT compute, concatenate with invented wording, or fabricate any percent, reset, or pace value beyond the existing normalized `windows[]` contract — `resetDescription` already varies in wording per provider (e.g. some providers' CLI-supplied text already reads "Resets in 23h 59m" or starts with "Resets"), so the UI MUST NOT prepend its own "Resets in" or similar wording on top of it. Overview's summary rows use a different internal layout entirely; see Requirement: Overview summary row title/percent layout.
+
+#### Scenario: Window with a CLI-supplied reset description
+- GIVEN a selected-provider detail row's window has a finite `usedPercent` and a non-empty `resetDescription`
+- WHEN the row renders
+- THEN the band shows percent used and the verbatim `resetDescription` text together, with no added prefix
+
+#### Scenario: Window with resetsAt but no resetDescription
+- GIVEN a selected-provider detail row's window has a finite `usedPercent`, a valid `resetsAt`, and no `resetDescription`
+- WHEN the row renders
+- THEN the band shows percent used and the verbatim `Reset: {resetsAt}` text together
+
+#### Scenario: Window with neither resetDescription nor resetsAt
+- GIVEN a selected-provider detail row's window has a finite `usedPercent` and neither a valid `resetsAt` nor a `resetDescription`
+- WHEN the row renders
+- THEN the band shows only percent used, with no reset text or placeholder
+
+### Requirement: Overview summary row title/percent layout
+
+Each bar shown within an Overview summary row MUST render as a **single horizontal line**: window title on the left, a progress bar in the middle, and `{percent}% used` on the right when `usedPercent` is finite. A summary row's bar MUST NOT render a trailing band, MUST NOT show `resetDescription` or `resetsAt` text in any form, and MUST NOT show a reset placeholder — regardless of whether the underlying window supplies a `resetDescription` or `resetsAt` value. This layout applies only within Overview; it does not alter Requirement: Usage window row band layout, which continues to govern selected-provider detail rows unchanged.
+
+(Previously: title and percent on one line above a full-width bar — superseded by live Overview reference density.)
+
+#### Scenario: Summary bar with a finite percent
+- GIVEN an Overview summary row's window has a finite `usedPercent`
+- WHEN that window's bar renders
+- THEN one line shows the window title, a progress bar, and `{percent}% used` together
+
+#### Scenario: Summary row with no finite percentage shows identity only
+- GIVEN a provider's Session, Weekly, and Monthly percentages are all missing, nonnumeric, or non-finite (per Requirement: Provider presentation's "Provider has no finite percentage" scenario)
+- WHEN the Overview row renders
+- THEN only provider identity is shown, with no title/percent line, no bar, and no invented percent
+
+#### Scenario: Summary rows never show reset text
+- GIVEN an Overview summary row's window supplies a non-empty `resetDescription`, a valid `resetsAt`, both, or neither
+- WHEN that window's bar renders
+- THEN no reset text, reset placeholder, or trailing band appears, in every case
+
+### Requirement: Provider header identity and plan badge
+
+The selected-provider header MUST use two columns: the left column MUST show the provider display name and the `Updated` timestamp when available; the right column MUST show a plan/login badge built from `loginMethod` when it passes the existing `ProviderDetailsLogic.validLoginMethod` check. When `loginMethod` is absent or invalid, the badge MUST be omitted entirely, never shown as a placeholder such as "Unknown". The primary header chrome MUST NOT show CLI version, account email, or organization (those fields remain validated for optional secondary surfaces / accessibility contracts but MUST stay off the default detail header).
+
+#### Scenario: Valid login method shows a badge
+- GIVEN a selected provider's `loginMethod` passes `validLoginMethod`
+- WHEN the header renders
+- THEN the right column shows the plan/login badge and the left column shows display name and Updated when present
+
+#### Scenario: Absent or invalid login method omits the badge
+- GIVEN a selected provider's `loginMethod` is absent or fails `validLoginMethod`
+- WHEN the header renders
+- THEN the right column shows no badge and no placeholder text, while the left column is unaffected
+
+#### Scenario: Version email and organization stay off primary chrome
+- GIVEN a selected provider supplies valid version, email, and organization
+- WHEN the detail header renders
+- THEN version, email, and organization are not shown in the primary header columns
+
+### Requirement: Informational popup footer
+
+The popup MUST show a read-only footer with only the controller's current phase/status (including a loading phrase such as `Loading usage…` while loading). The footer MUST NOT show a provider count, an error count, a last-updated timestamp, or any Settings, About, Quit, or Add Account control. Loading status MUST NOT be duplicated as a scroll-body label that grows the popup layout; body phase copy is limited to terminal no-data/error messaging.
+
+#### Scenario: Footer shows status
+- GIVEN the controller has a current phase/status
+- WHEN the popup is open
+- THEN the footer shows exactly that one piece of information
+
+#### Scenario: Footer excludes counts, timestamp, and controls
+- GIVEN the popup is open in any provider/error state
+- WHEN the footer renders
+- THEN it shows no provider count, no error count, no last-updated timestamp, and no Settings, About, Quit, or Add Account control
+
+#### Scenario: Loading does not enlarge the scroll body
+- GIVEN the controller phase is loading
+- WHEN the popup is open
+- THEN loading copy appears in the footer and not as an extra growing label above the provider list
+
 ### Requirement: Parallel package transition guidance
 
 The installation and live-smoke documentation MUST identify `org.kde.plasma.kodexbar` as the legacy package and `org.kde.plasma.kodexbar.plasma` as the current package. It MUST explain that both package IDs MAY coexist, installation and updates of the current product MUST target `org.kde.plasma.kodexbar.plasma`, and users MUST add a new `KodexBar Plasma` widget rather than expect an existing legacy instance to change identity. Optional configuration-copy guidance MUST be manual and MUST preserve the destination instance's independent `General` settings: `codexbarCommand`, refresh interval, request timeout, and representative window. Guidance MUST NOT require package removal, panel mutation, or package/panel migration.
@@ -518,3 +594,105 @@ Responsive behavior MUST preserve package identity, all per-instance settings, p
 - GIVEN the responsive and documentation acceptance checks pass
 - WHEN the change is reviewed
 - THEN package IDs, per-instance settings, panels, legacy UI, provider behavior, and lifecycle behavior are unchanged
+
+### Requirement: Usage window threshold risk marker
+
+Each rendered usage window bar (Overview summary and selected-provider detail alike) MUST classify its finite `usedPercent` into a fixed level — `ok` (<70), `warn` (70–89.99), `critical` (90–99.99), `exhausted` (>=100) — via pure classification logic, with no level for non-finite or absent `usedPercent`. The `warn`, `critical`, and `exhausted` levels MUST render one risk marker icon positioned adjacent to the window's percent value, sized independently of the bar's own height so it stays legible on thin Overview bars: in Overview summary mode the marker sits after the bar, immediately before the percent text; in selected-provider detail mode the marker sits immediately after the percent text. `warn` uses a bundled warning-triangle glyph (`contents/icons/threshold-warning.svg`) colored `Kirigami.Theme.neutralTextColor`; `critical` uses a bundled critical-circle glyph (`contents/icons/threshold-critical.svg`) colored `Kirigami.Theme.negativeTextColor`; `exhausted` uses a bundled octagon-with-diagonal-slash glyph (`contents/icons/threshold-exhausted.svg`), also colored `Kirigami.Theme.negativeTextColor` — `critical` and `exhausted` share the same color and are distinguished by icon shape only, not color. All three are recolorable mask icons, not a system icon-theme lookup. The `ok` level and the no-level case MUST render no marker. The bar fill color (`ProviderIcons.accent()`, `Kirigami.Theme.highlightColor` fallback) MUST remain identical at every level; the marker MUST NOT recolor, resize, or otherwise alter the fill, and MUST NOT be overlaid on top of the bar itself. The marker's layout slot MUST be reserved at a fixed width regardless of threshold level — bar track length MUST stay identical across all windows whether or not a given window shows a marker (`ok`/no-level windows render the marker invisible-but-space-reserved, not absent-and-collapsed), preserving the existing fixed-column, equal-track-length convention. Marker presence, position, icon, and color rules MUST apply identically whether the bar renders in Overview summary mode or selected-provider detail mode, using one shared implementation so all levels and both modes cannot diverge. `ProviderSelector.qml`'s tab underline usage bar MUST NOT gain this marker; it remains brand-accent only, unchanged. Each window's accessible description MUST append risk phrasing after its existing percent entry when the level is `warn`, `critical`, or `exhausted` — `warn` appends `"Elevated usage"`, `critical` appends `"Critical usage"`, `exhausted` appends `"Quota exhausted"` — leaving all other entries and their relative order unchanged; `ok` and no-level add no risk phrasing. Threshold boundaries (70/90/100) are fixed v1 policy, not user-configurable, and this marker is a UI-only display change with no CLI invocation, model, schema, or controller change.
+
+#### Scenario: Below warn threshold shows no risk marker
+- GIVEN a finite `usedPercent` below 70
+- WHEN the bar renders in summary or detail mode
+- THEN no risk marker icon appears
+
+#### Scenario: Warn range shows a neutral risk marker
+- GIVEN a finite `usedPercent` in [70, 90)
+- WHEN the bar renders
+- THEN the bundled warning-triangle marker (`threshold-warning.svg`) appears adjacent to the percent text, colored `Kirigami.Theme.neutralTextColor`
+
+#### Scenario: Critical range shows a negative risk marker
+- GIVEN a finite `usedPercent` in [90, 100)
+- WHEN the bar renders
+- THEN the bundled critical-circle marker (`threshold-critical.svg`) appears adjacent to the percent text, colored `Kirigami.Theme.negativeTextColor`
+
+#### Scenario: Exhausted level shows a distinct negative risk marker
+- GIVEN a finite `usedPercent` >= 100
+- WHEN the bar renders
+- THEN the bundled octagon-with-slash marker (`threshold-exhausted.svg`) appears adjacent to the percent text, colored `Kirigami.Theme.negativeTextColor` — same color as `critical`, distinguished only by icon shape
+
+#### Scenario: Fill color is threshold-independent
+- GIVEN any threshold level, including no level
+- WHEN the bar renders
+- THEN the fill remains `ProviderIcons.accent()` or the `Kirigami.Theme.highlightColor` fallback, never threshold-colored
+
+#### Scenario: Bar track length is threshold-independent
+- GIVEN two Overview summary windows with the same label and percent-text width but different threshold levels (e.g. one `ok`, one `exhausted`)
+- WHEN both bars render
+- THEN their track widths are equal — the reserved marker slot does not shrink the bar on rows that show a marker relative to rows that don't
+
+#### Scenario: Non-finite or absent percent shows no bar and no risk marker
+- GIVEN `usedPercent` is non-finite or absent
+- WHEN the row renders
+- THEN no bar is rendered and no risk marker appears, preserving existing behavior
+
+#### Scenario: Accessible description gains risk phrasing at risk levels
+- GIVEN a window's level is `warn`, `critical`, or `exhausted`
+- WHEN its accessible description is computed
+- THEN risk phrasing (`"Elevated usage"`, `"Critical usage"`, or `"Quota exhausted"` respectively) is appended after the existing percent entry, with existing entries and their order otherwise unchanged
+
+#### Scenario: Tab underline bar is excluded from the marker
+- GIVEN `ProviderSelector.qml`'s tab underline usage bar
+- WHEN any provider tab renders at any threshold level, including `exhausted`
+- THEN the underline shows brand accent color only, with no risk marker icon or recoloring
+
+#### Scenario: Summary and detail modes stay identical
+- GIVEN the same provider and window rendered in both Overview summary mode and selected-provider detail mode
+- WHEN each bar renders
+- THEN risk marker presence, icon, and color match exactly between the two modes, with no mode-specific divergence
+
+### Requirement: Compact panel presentation
+
+The compact/panel representation MUST show only the KodexBar logo icon, sized at least `Kirigami.Units.iconSizes.smallMedium`, with no visible percentage or status text beside it. The current percentage/status text MUST remain available through the control's accessible name for assistive technology.
+
+#### Scenario: Icon-only panel button
+- GIVEN the compact representation renders
+- WHEN the panel button is shown
+- THEN only the logo icon is visible, at or above `iconSizes.smallMedium`, with no adjacent text label
+
+#### Scenario: Percentage remains accessible
+- GIVEN a computed usage percentage exists
+- WHEN the panel button's accessible name is queried
+- THEN it still reports the percentage, even though no visible text shows it
+
+### Requirement: Tab selection persists across popup reopen
+
+The very first time the popup opens in a running widget session, the provider tab strip MUST default to `All` (Overview), regardless of whether usage data has already finished loading. Every subsequent popup open MUST restore whichever tab (`All` or a specific provider) was selected the last time the popup closed, rather than resetting to a default. If the previously-selected provider is no longer present when the popup reopens, the selector MUST fall back to its existing reconciliation behavior (first usable provider, or `All` if none). `All` MUST be a stable selection: it MUST NOT automatically switch to any provider tab on its own once usage data finishes loading — only an explicit user pick changes the selection.
+
+#### Scenario: First open defaults to Overview
+- GIVEN the popup has never been opened in this widget session
+- WHEN it opens, even with usage data already loaded
+- THEN the `All` tab is selected
+
+#### Scenario: Reopen restores the last provider tab
+- GIVEN the popup was previously open with a specific provider tab selected
+- WHEN the popup closes and reopens
+- THEN the same provider tab is selected again, not the default
+
+#### Scenario: Reopen restores Overview
+- GIVEN the popup was previously open with `All` selected
+- WHEN the popup closes and reopens
+- THEN `All` remains selected
+
+#### Scenario: Vanished provider falls back sensibly
+- GIVEN the previously-selected provider is no longer in the provider list when the popup reopens
+- WHEN reconciliation runs
+- THEN selection falls back to the first usable provider, or `All` if none exist — not an error state
+
+#### Scenario: Overview never auto-switches away on its own
+- GIVEN `All` is selected while usage data is still loading
+- WHEN loading finishes with usable providers now available
+- THEN `All` remains selected — no automatic switch to any provider tab
+
+#### Scenario: Explicit picks survive loading churn
+- GIVEN the user explicitly selects a specific provider tab, including while `phase === "loading"`
+- WHEN the provider list or phase subsequently changes (refresh churn)
+- THEN that explicit selection persists unless the provider itself disappears from the list

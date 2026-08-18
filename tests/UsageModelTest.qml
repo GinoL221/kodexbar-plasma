@@ -407,6 +407,115 @@ TestCase {
                "raw must preserve non-finite values that windows normalize to null")
     }
 
+    function test_selectOverviewWindowsReturnsSessionThenWeeklyRegardlessOfPayloadOrder() {
+        var payloadOrder = UsageModel.normalize({
+            provider: "p",
+            usage: {
+                primary: { usedPercent: 10 },
+                secondary: { usedPercent: 20 }
+            }
+        }).providers[0]
+        var reversedPayloadOrder = UsageModel.normalize({
+            provider: "p",
+            usage: {
+                secondary: { usedPercent: 20 },
+                primary: { usedPercent: 10 }
+            }
+        }).providers[0]
+
+        var result = UsageModel.selectOverviewWindows(payloadOrder.windows)
+        compare(result.length, 2)
+        compare(result[0].label, "Session")
+        compare(result[0].usedPercent, 10)
+        compare(result[1].label, "Weekly")
+        compare(result[1].usedPercent, 20)
+
+        var reversedResult = UsageModel.selectOverviewWindows(reversedPayloadOrder.windows)
+        compare(reversedResult.length, 2)
+        compare(reversedResult[0].label, "Session")
+        compare(reversedResult[1].label, "Weekly")
+    }
+
+    function test_selectOverviewWindowsReturnsSessionOnlyWhenWeeklyIsNotFinite() {
+        var provider = UsageModel.normalize({
+            provider: "p",
+            usage: {
+                primary: { usedPercent: 15 },
+                secondary: { usedPercent: null }
+            }
+        }).providers[0]
+
+        var result = UsageModel.selectOverviewWindows(provider.windows)
+        compare(result.length, 1)
+        compare(result[0].label, "Session")
+        compare(result[0].usedPercent, 15)
+    }
+
+    function test_selectOverviewWindowsReturnsWeeklyOnlyWhenSessionIsNotFinite() {
+        var provider = UsageModel.normalize({
+            provider: "p",
+            usage: {
+                primary: { usedPercent: NaN },
+                secondary: { usedPercent: 25 }
+            }
+        }).providers[0]
+
+        var result = UsageModel.selectOverviewWindows(provider.windows)
+        compare(result.length, 1)
+        compare(result[0].label, "Weekly")
+        compare(result[0].usedPercent, 25)
+    }
+
+    function test_selectOverviewWindowsReturnsMonthlyOnlyWhenSessionAndWeeklyAreNotFinite() {
+        var provider = UsageModel.normalize({
+            provider: "p",
+            usage: {
+                primary: { usedPercent: null },
+                secondary: { usedPercent: Infinity },
+                tertiary: { usedPercent: 35 }
+            }
+        }).providers[0]
+
+        var result = UsageModel.selectOverviewWindows(provider.windows)
+        compare(result.length, 1)
+        compare(result[0].label, "Monthly")
+        compare(result[0].usedPercent, 35)
+    }
+
+    function test_selectOverviewWindowsReturnsSessionWeeklyAndMonthlyWhenAllFinite() {
+        var provider = UsageModel.normalize({
+            provider: "opencodego",
+            usage: {
+                primary: { usedPercent: 0 },
+                secondary: { usedPercent: 73 },
+                tertiary: { usedPercent: 40 }
+            }
+        }).providers[0]
+
+        var result = UsageModel.selectOverviewWindows(provider.windows)
+        compare(result.length, 3)
+        compare(result[0].label, "Session")
+        compare(result[0].usedPercent, 0)
+        compare(result[1].label, "Weekly")
+        compare(result[1].usedPercent, 73)
+        compare(result[2].label, "Monthly")
+        compare(result[2].usedPercent, 40)
+    }
+
+    function test_selectOverviewWindowsReturnsEmptyArrayWhenNoWindowIsFinite() {
+        var provider = UsageModel.normalize({
+            provider: "p",
+            usage: {
+                primary: { usedPercent: NaN },
+                secondary: { usedPercent: "20" },
+                tertiary: { usedPercent: null }
+            }
+        }).providers[0]
+
+        compare(UsageModel.selectOverviewWindows(provider.windows), [])
+        compare(UsageModel.selectOverviewWindows([]), [])
+    }
+
     function test_errorEntriesGainNoRawSibling() {
         var result = UsageModel.normalize([
             {

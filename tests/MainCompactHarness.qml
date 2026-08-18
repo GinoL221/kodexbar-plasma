@@ -22,9 +22,19 @@ Item {
     function finish() { Qt.exit(assertionFailed ? 1 : 0) }
 
     function countProgressBars(item) {
+        if (!item) {
+            return 0
+        }
         var n = 0
-        if (item instanceof QQC2.ProgressBar) n++
-        for (var i = 0; i < item.children.length; i++) n += countProgressBars(item.children[i])
+        if (item instanceof QQC2.ProgressBar) {
+            n++
+        } else if ((item.objectName === "summaryUsageProgressBar" || item.objectName === "detailUsageProgressBar"
+                    || item.objectName === "usageProgressBar") && item.visible) {
+            n++
+        }
+        for (var i = 0; i < item.children.length; i++) {
+            n += countProgressBars(item.children[i])
+        }
         return n
     }
 
@@ -58,8 +68,8 @@ Item {
             providerData: controller.committedProviders[1],
             summary: true
         })
-        assert(countProgressBars(firstSummary) === 1, "first summary row renders exactly one bar")
-        assert(countProgressBars(secondSummary) === 1, "second summary row renders exactly one bar")
+        assert(countProgressBars(firstSummary) === 2, "first summary row renders two bars when Session and Weekly are both finite (Overview D10)")
+        assert(countProgressBars(secondSummary) === 2, "second summary row renders two bars when Session and Weekly are both finite (Overview D10)")
 
         controller.requestRefresh()
         controller.timeoutForTest(controller.generation)
