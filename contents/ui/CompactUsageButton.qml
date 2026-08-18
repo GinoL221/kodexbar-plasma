@@ -21,15 +21,18 @@ QQC2.ToolButton {
     Layout.minimumWidth: contentItem.implicitWidth + Kirigami.Units.smallSpacing * 2
     Layout.minimumHeight: Kirigami.Units.iconSizes.smallMedium
 
-    contentItem: RowLayout {
-        spacing: Kirigami.Units.smallSpacing
+    contentItem: Item {
+        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+        implicitHeight: Kirigami.Units.iconSizes.smallMedium
 
         Kirigami.Icon {
+            id: compactIcon
             source: Qt.resolvedUrl("../icons/kodexbar-monochrome.svg")
             isMask: true
             color: Kirigami.Theme.textColor
             implicitWidth: Kirigami.Units.iconSizes.smallMedium
             implicitHeight: Kirigami.Units.iconSizes.smallMedium
+            anchors.centerIn: parent
         }
     }
 }
