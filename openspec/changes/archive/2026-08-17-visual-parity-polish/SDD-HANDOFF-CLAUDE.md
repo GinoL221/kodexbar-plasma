@@ -1,8 +1,8 @@
 # SDD Handoff — visual-parity-polish (for Claude closeout)
 
-**Date:** 2026-08-17  
-**Branch:** `visual-parity-polish/pr6-overview-and-icon-fix` (stacked on PR1–PR5 commits)  
-**Working tree:** large uncommitted polish on top of PR5 tip — **do not commit without explicit user OK**  
+**Date:** 2026-08-17
+**Branch:** `visual-parity-polish/pr6-overview-and-icon-fix` (stacked on PR1–PR5 commits)
+**Working tree:** large uncommitted polish on top of PR5 tip — **do not commit without explicit user OK**
 **Goal of this doc:** let Claude finish SDD (sync artifacts → verify → archive / PR) without inventing UI that was already rejected live.
 
 ---
@@ -29,7 +29,7 @@
 | Usage CLI unchanged | Auth / Add Account / Quit / redeem |
 | Plasmoid popup | Tray-app conversion |
 
-**Usage argv (unchanged):**  
+**Usage argv (unchanged):**
 `usage --provider all --format json --json-only`
 
 ---
@@ -53,15 +53,15 @@
 
 - **2-column card:** left `summaryProviderIcon` (medium, VCenter); right name (bold) + 0–N thin bars.
 - Each bar = **single line:** `Session | ████ | 30% used` (not title/percent above bar).
-- Window set = `UsageModel.selectOverviewWindows`: **all finite** among Session, Weekly, Monthly **in that order** (up to 3).  
-  - Example: OpenCode Go with all three finite → **three bars**.  
+- Window set = `UsageModel.selectOverviewWindows`: **all finite** among Session, Weekly, Monthly **in that order** (up to 3).
+  - Example: OpenCode Go with all three finite → **three bars**.
   - Supersedes old D10 exclusive “Session+Weekly OR Monthly-only”.
 - No email/org/pace/credits/cost/reset in Overview.
 - Card separators between providers.
 
 ### 3.3 Detail body (selected provider)
 
-- Header chrome: **name (bold large)** + **Updated:** + **login badge** right.  
+- Header chrome: **name (bold large)** + **Updated:** + **login badge** right.
   **Hidden from primary chrome:** version, email, organization (nodes remain `visible: false` for objectName harnesses; values still validated).
 - Credits line only if `credits.remaining` is a finite number **> 0**.
 - Windows: title (DemiBold) → thin full-width bar → band `% used` | reset (verbatim `resetDescription` or `Reset: {resetsAt}`).
@@ -152,10 +152,10 @@ plasmawindowed org.kde.plasma.kodexbar.plasma
 ```
 
 **Known deferred (not this change):**
-- Threshold-colored bars  
-- Footer Settings/About  
-- `selectCompact` ignoring `preferredRepresentativeWindow` (pre-existing)  
-- Phase 7 goldens unless user wants them now  
+- Threshold-colored bars
+- Footer Settings/About
+- `selectCompact` ignoring `preferredRepresentativeWindow` (pre-existing)
+- Phase 7 goldens unless user wants them now
 
 ---
 
@@ -163,10 +163,10 @@ plasmawindowed org.kde.plasma.kodexbar.plasma
 
 Keep PR6 scope reviewable; optional split:
 
-1. `fix(ui): restore theme-safe provider tab icons (D19)` — SVGs + checker  
-2. `feat(ui): overview cards, custom tabs, detail chrome polish` — main QML/JS  
-3. `test(ui): harnesses for displayName, overview, tabs, detail chrome`  
-4. `docs(sdd): record D21–D30 live polish for visual-parity-polish`  
+1. `fix(ui): restore theme-safe provider tab icons (D19)` — SVGs + checker
+2. `feat(ui): overview cards, custom tabs, detail chrome polish` — main QML/JS
+3. `test(ui): harnesses for displayName, overview, tabs, detail chrome`
+4. `docs(sdd): record D21–D30 live polish for visual-parity-polish`
 
 Or one commit if user prefers a single PR6 blob.
 
@@ -202,9 +202,9 @@ email/version/org in detail header, or Overview 2-line bar layout.
 
 ## 9. Gotchas for the next agent
 
-1. **Breeze TabButton** = paint in background; never contentItem-only icon fix.  
-2. **ColumnLayout + `width: root.width` on child** = often zero-size bars.  
-3. **`item.Layout.leftMargin` from outside** = undefined; use plain props on the item.  
-4. **Live smoke beats offscreen** for tab/icon density.  
-5. **User owns commit**; PR6 was explicitly “leave uncommitted until I decide”.  
-6. **ErrorSummary** still unit-tested; absence is popup wiring only (`main.qml`).  
+1. **Breeze TabButton** = paint in background; never contentItem-only icon fix.
+2. **ColumnLayout + `width: root.width` on child** = often zero-size bars.
+3. **`item.Layout.leftMargin` from outside** = undefined; use plain props on the item.
+4. **Live smoke beats offscreen** for tab/icon density.
+5. **User owns commit**; PR6 was explicitly “leave uncommitted until I decide”.
+6. **ErrorSummary** still unit-tested; absence is popup wiring only (`main.qml`).
