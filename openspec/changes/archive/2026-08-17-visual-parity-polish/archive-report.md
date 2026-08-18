@@ -46,7 +46,7 @@ All implementation phases completed and verified:
   - Result: Commit `8b06956` added named lint exception with precise source span
 - **Re-verify**: PASS WITH WARNINGS — One non-blocking suggestion for lint exception precision
   - Result: Commit `a9dcdad` tightened matcher to exact source line
-  
+
 **Current Status**: Both blockers resolved, CI-clean, fully verified
 
 ### Native Review Receipt Gate
