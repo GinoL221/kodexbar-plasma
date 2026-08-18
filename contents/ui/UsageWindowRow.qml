@@ -6,6 +6,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
 import "../code/Translation.js" as Translation
+import "../code/UsageThreshold.js" as UsageThreshold
 
 ColumnLayout {
     id: root
@@ -30,6 +31,7 @@ ColumnLayout {
         }
         return Math.max(0, Math.min(1, root.windowData.usedPercent / 100))
     }
+    readonly property string thresholdLevel: UsageThreshold.level(root.windowData.usedPercent)
 
     // Summary uses the in-line bar; detail uses the full-width bar below the title.
     // Always point at a real Item (never null) for harness geometry handles.
@@ -37,6 +39,9 @@ ColumnLayout {
     property var progressBar: root.summary ? summaryBar : detailBarHost
     property alias windowLabel: windowLabel
     property var percentageLabel: root.summary ? summaryPercentageLabel : bandPercentageLabel
+    // Row-sibling marker handle (D25): the Loader is always active (D24),
+    // so this is never null -- only the loaded icon's opacity toggles.
+    property var thresholdMarker: root.summary ? summaryThresholdMarkerLoader.item : detailThresholdMarkerLoader.item
     property alias resetsAtLabel: resetsAtLabel
     property alias resetDescriptionLabel: resetDescriptionLabel
 
@@ -84,6 +89,36 @@ ColumnLayout {
         return value === null || value === undefined ? "" : String(value)
     }
 
+    // Shared threshold marker (D23-D26, D21): one inline Component
+    // instantiated by a Loader as a row sibling next to the percent label
+    // in each of the two layouts below (never overlaid on the bar), so
+    // summary and detail share a single geometry/color implementation and
+    // cannot drift. The Loader is always active and its layout slot is
+    // always reserved at a fixed width (D24) -- only the icon's opacity
+    // toggles between 0 (ok/no-level) and 1 (warn/critical), so bar track
+    // length never changes based on marker presence.
+    Component {
+        id: thresholdMarkerComponent
+        Kirigami.Icon {
+            objectName: "thresholdMarker"
+            implicitWidth: Kirigami.Units.iconSizes.small
+            implicitHeight: Kirigami.Units.iconSizes.small
+            isMask: true
+            opacity: UsageThreshold.isRisk(root.thresholdLevel) ? 1 : 0
+            source: root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED
+                ? Qt.resolvedUrl("../icons/threshold-exhausted.svg")
+                : root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
+                    ? Qt.resolvedUrl("../icons/threshold-critical.svg")
+                    : Qt.resolvedUrl("../icons/threshold-warning.svg")
+            color: root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED
+                || root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
+                ? Kirigami.Theme.negativeTextColor
+                : root.thresholdLevel === UsageThreshold.LEVEL_WARN
+                    ? Kirigami.Theme.neutralTextColor
+                    : "transparent"
+        }
+    }
+
     Accessible.name: Translation.translate("%1 window", [root.valueText(root.windowData.label)],
         typeof i18n === "function" ? i18n : null)
     Accessible.description: {
@@ -91,6 +126,16 @@ ColumnLayout {
         if (root.hasFinitePercent) {
             details.push(Translation.translate("%1% used", [root.windowData.usedPercent],
                 typeof i18n === "function" ? i18n : null))
+            if (root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED) {
+                details.push(Translation.translate("Quota exhausted", [],
+                    typeof i18n === "function" ? i18n : null))
+            } else if (root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL) {
+                details.push(Translation.translate("Critical usage", [],
+                    typeof i18n === "function" ? i18n : null))
+            } else if (root.thresholdLevel === UsageThreshold.LEVEL_WARN) {
+                details.push(Translation.translate("Elevated usage", [],
+                    typeof i18n === "function" ? i18n : null))
+            }
         }
         if (root.resetText.length > 0) {
             details.push(Translation.translate("Reset: %1", [root.resetText],
@@ -187,6 +232,14 @@ ColumnLayout {
             Layout.preferredHeight: 1
         }
 
+        Loader {
+            id: summaryThresholdMarkerLoader
+            sourceComponent: thresholdMarkerComponent
+            Layout.preferredWidth: Kirigami.Units.iconSizes.small
+            Layout.preferredHeight: Kirigami.Units.iconSizes.small
+            Layout.alignment: Qt.AlignVCenter
+        }
+
         PlasmaComponents.Label {
             id: summaryPercentageLabel
             objectName: "summaryPercentageLabel"
@@ -269,6 +322,14 @@ ColumnLayout {
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             Layout.minimumWidth: implicitWidth
             Layout.maximumWidth: implicitWidth
+        }
+
+        Loader {
+            id: detailThresholdMarkerLoader
+            sourceComponent: thresholdMarkerComponent
+            Layout.preferredWidth: Kirigami.Units.iconSizes.small
+            Layout.preferredHeight: Kirigami.Units.iconSizes.small
+            Layout.alignment: Qt.AlignVCenter
         }
 
         Item {

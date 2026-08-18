@@ -168,6 +168,12 @@ PlasmoidItem {
                         Layout.rightMargin: full.bodyInset
                         spacing: Kirigami.Units.largeSpacing
 
+                        Kirigami.Separator {
+                            objectName: "overviewProviderListSeparator"
+                            visible: providerSelector.allSelected
+                            Layout.fillWidth: true
+                        }
+
                         Repeater {
                             model: providerSelector.allSelected ? providerSelector.usableProviders : []
 

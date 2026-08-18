@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <mask id="threshold-exhausted-cut">
+    <rect width="64" height="64" fill="white"/>
+    <rect x="2" y="28.5" width="60" height="7" rx="3.5" fill="black" transform="rotate(45 32 32)"/>
+  </mask>
+  <path d="M56.9 42.3 42.3 56.9H21.7L7.1 42.3V21.7L21.7 7.1H42.3L56.9 21.7Z" fill="currentColor" mask="url(#threshold-exhausted-cut)"/>
+</svg>

@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.components as PlasmaComponents
 
 QQC2.ToolButton {
     id: root
@@ -29,16 +28,8 @@ QQC2.ToolButton {
             source: Qt.resolvedUrl("../icons/kodexbar-monochrome.svg")
             isMask: true
             color: Kirigami.Theme.textColor
-            implicitWidth: Kirigami.Units.iconSizes.small
-            implicitHeight: Kirigami.Units.iconSizes.small
-        }
-
-        PlasmaComponents.Label {
-            text: root.usageText
-            visible: text.length > 0
-            font.weight: Font.DemiBold
-            elide: Text.ElideRight
-            Layout.maximumWidth: Kirigami.Units.gridUnit * 8
+            implicitWidth: Kirigami.Units.iconSizes.smallMedium
+            implicitHeight: Kirigami.Units.iconSizes.smallMedium
         }
     }
 }

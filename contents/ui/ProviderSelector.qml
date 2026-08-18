@@ -31,6 +31,7 @@ ColumnLayout {
     property var _selectedIdentity: undefined
     property bool _hasSelectedIdentity: false
     property bool _pendingDefault: false
+    property bool _hasOpenedBefore: false
     property int _requestedIndex: 0
     property int _delegateCapacity: 0
 
@@ -213,11 +214,7 @@ ColumnLayout {
     }
 
     function _selectDefault() {
-        if (root.phase === "loading") {
-            root._selectAll(true)
-            return
-        }
-        root._selectFirstOrAll(root.usableProviders)
+        root._selectAll(false)
     }
 
     function _reconcile() {
@@ -271,7 +268,12 @@ ColumnLayout {
 
     onPopupOpenChanged: {
         if (root.popupOpen) {
-            root._selectDefault()
+            if (!root._hasOpenedBefore) {
+                root._hasOpenedBefore = true
+                root._selectDefault()
+            } else {
+                root._reconcile()
+            }
         }
     }
     onProvidersChanged: {

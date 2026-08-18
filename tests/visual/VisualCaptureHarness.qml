@@ -214,7 +214,8 @@ QQC2.ApplicationWindow {
                         source: "fixture-source",
                         windows: [
                             { label: "Session", usedPercent: 42, resetDescription: "Resets tomorrow" },
-                            { label: "Weekly", usedPercent: 13 }
+                            { label: "Weekly", usedPercent: 13 },
+                            { label: "Monthly", usedPercent: 94 }
                         ],
                         raw: {
                             version: "fixture-version",

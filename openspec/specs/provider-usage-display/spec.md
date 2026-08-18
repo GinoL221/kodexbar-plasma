@@ -59,7 +59,7 @@ Refresh MUST invoke the authoritative path with exactly `usage --provider all --
 
 ### Requirement: Provider presentation
 
-On open, the popup MUST select the first response-ordered provider having a window. A native selector MUST expose `Overview` (grid icon) and usable providers with display name, exact `source` (accessible metadata), and either an authoritative icon or a themed fallback; every bundled provider icon MUST be visually distinct from every other bundled provider's icon and MUST adapt to the active Breeze theme, remaining a visible, non-blank mark in both Breeze Light and Breeze Dark rather than a fixed light-only or dark-only rendering. A bundled icon MUST NOT rely on a hardcoded absolute literal color (including pure white or pure near-black) that renders it indistinguishable from its background in either theme; bundled icons use `fill="currentColor"` (and `stroke="currentColor"` where the source strokes), matching the repository's existing theme-adaptive SVG convention, unless a documented literal-color fallback is used after a proven theme-adaptation defect, in which case that fallback MUST remain legible against both Breeze Light and Breeze Dark panel backgrounds. Provider tabs MAY use a custom Plasma chip strip (not only QQC2.TabBar) when required for reliable icon theming and layout. Overflowing tabs MUST remain reachable without a permanent horizontal scrollbar (for example side affordances). `Overview` MUST show providers in response order with exactly one summary card per provider: provider icon and display name, plus one bar per finite Session, Weekly, and/or Monthly window in that order (zero to three bars). The internal layout of each such bar is governed by Requirement: Overview summary row title/percent layout. When no window has a finite value, the row MUST show identity only and MUST NOT invent a percentage or bar. `Overview`'s body window selection MUST NOT be governed by `preferredRepresentativeWindow`. The popup MUST NOT present a global expandable provider-failure disclosure for optional CLI provider errors when usable providers are shown (those errors may remain in controller state for tests or debug).
+Tab selection across popup opens is governed by Requirement: Tab selection persists across popup reopen; the selector still exposes usable providers as follows. A native selector MUST expose `Overview` (grid icon) and usable providers with display name, exact `source` (accessible metadata), and either an authoritative icon or a themed fallback; every bundled provider icon MUST be visually distinct from every other bundled provider's icon and MUST adapt to the active Breeze theme, remaining a visible, non-blank mark in both Breeze Light and Breeze Dark rather than a fixed light-only or dark-only rendering. A bundled icon MUST NOT rely on a hardcoded absolute literal color (including pure white or pure near-black) that renders it indistinguishable from its background in either theme; bundled icons use `fill="currentColor"` (and `stroke="currentColor"` where the source strokes), matching the repository's existing theme-adaptive SVG convention, unless a documented literal-color fallback is used after a proven theme-adaptation defect, in which case that fallback MUST remain legible against both Breeze Light and Breeze Dark panel backgrounds. Provider tabs MAY use a custom Plasma chip strip (not only QQC2.TabBar) when required for reliable icon theming and layout. Overflowing tabs MUST remain reachable without a permanent horizontal scrollbar (for example side affordances). `Overview` MUST show providers in response order with exactly one summary card per provider: provider icon and display name, plus one bar per finite Session, Weekly, and/or Monthly window in that order (zero to three bars). The internal layout of each such bar is governed by Requirement: Overview summary row title/percent layout. When no window has a finite value, the row MUST show identity only and MUST NOT invent a percentage or bar. `Overview`'s body window selection MUST NOT be governed by `preferredRepresentativeWindow`. The popup MUST NOT present a global expandable provider-failure disclosure for optional CLI provider errors when usable providers are shown (those errors may remain in controller state for tests or debug).
 
 (Previously: Session+Weekly exclusive of Monthly; percent in tab text; native TabBar assumed; ErrorSummary in popup.)
 
@@ -594,3 +594,105 @@ Responsive behavior MUST preserve package identity, all per-instance settings, p
 - GIVEN the responsive and documentation acceptance checks pass
 - WHEN the change is reviewed
 - THEN package IDs, per-instance settings, panels, legacy UI, provider behavior, and lifecycle behavior are unchanged
+
+### Requirement: Usage window threshold risk marker
+
+Each rendered usage window bar (Overview summary and selected-provider detail alike) MUST classify its finite `usedPercent` into a fixed level — `ok` (<70), `warn` (70–89.99), `critical` (90–99.99), `exhausted` (>=100) — via pure classification logic, with no level for non-finite or absent `usedPercent`. The `warn`, `critical`, and `exhausted` levels MUST render one risk marker icon positioned adjacent to the window's percent value, sized independently of the bar's own height so it stays legible on thin Overview bars: in Overview summary mode the marker sits after the bar, immediately before the percent text; in selected-provider detail mode the marker sits immediately after the percent text. `warn` uses a bundled warning-triangle glyph (`contents/icons/threshold-warning.svg`) colored `Kirigami.Theme.neutralTextColor`; `critical` uses a bundled critical-circle glyph (`contents/icons/threshold-critical.svg`) colored `Kirigami.Theme.negativeTextColor`; `exhausted` uses a bundled octagon-with-diagonal-slash glyph (`contents/icons/threshold-exhausted.svg`), also colored `Kirigami.Theme.negativeTextColor` — `critical` and `exhausted` share the same color and are distinguished by icon shape only, not color. All three are recolorable mask icons, not a system icon-theme lookup. The `ok` level and the no-level case MUST render no marker. The bar fill color (`ProviderIcons.accent()`, `Kirigami.Theme.highlightColor` fallback) MUST remain identical at every level; the marker MUST NOT recolor, resize, or otherwise alter the fill, and MUST NOT be overlaid on top of the bar itself. The marker's layout slot MUST be reserved at a fixed width regardless of threshold level — bar track length MUST stay identical across all windows whether or not a given window shows a marker (`ok`/no-level windows render the marker invisible-but-space-reserved, not absent-and-collapsed), preserving the existing fixed-column, equal-track-length convention. Marker presence, position, icon, and color rules MUST apply identically whether the bar renders in Overview summary mode or selected-provider detail mode, using one shared implementation so all levels and both modes cannot diverge. `ProviderSelector.qml`'s tab underline usage bar MUST NOT gain this marker; it remains brand-accent only, unchanged. Each window's accessible description MUST append risk phrasing after its existing percent entry when the level is `warn`, `critical`, or `exhausted` — `warn` appends `"Elevated usage"`, `critical` appends `"Critical usage"`, `exhausted` appends `"Quota exhausted"` — leaving all other entries and their relative order unchanged; `ok` and no-level add no risk phrasing. Threshold boundaries (70/90/100) are fixed v1 policy, not user-configurable, and this marker is a UI-only display change with no CLI invocation, model, schema, or controller change.
+
+#### Scenario: Below warn threshold shows no risk marker
+- GIVEN a finite `usedPercent` below 70
+- WHEN the bar renders in summary or detail mode
+- THEN no risk marker icon appears
+
+#### Scenario: Warn range shows a neutral risk marker
+- GIVEN a finite `usedPercent` in [70, 90)
+- WHEN the bar renders
+- THEN the bundled warning-triangle marker (`threshold-warning.svg`) appears adjacent to the percent text, colored `Kirigami.Theme.neutralTextColor`
+
+#### Scenario: Critical range shows a negative risk marker
+- GIVEN a finite `usedPercent` in [90, 100)
+- WHEN the bar renders
+- THEN the bundled critical-circle marker (`threshold-critical.svg`) appears adjacent to the percent text, colored `Kirigami.Theme.negativeTextColor`
+
+#### Scenario: Exhausted level shows a distinct negative risk marker
+- GIVEN a finite `usedPercent` >= 100
+- WHEN the bar renders
+- THEN the bundled octagon-with-slash marker (`threshold-exhausted.svg`) appears adjacent to the percent text, colored `Kirigami.Theme.negativeTextColor` — same color as `critical`, distinguished only by icon shape
+
+#### Scenario: Fill color is threshold-independent
+- GIVEN any threshold level, including no level
+- WHEN the bar renders
+- THEN the fill remains `ProviderIcons.accent()` or the `Kirigami.Theme.highlightColor` fallback, never threshold-colored
+
+#### Scenario: Bar track length is threshold-independent
+- GIVEN two Overview summary windows with the same label and percent-text width but different threshold levels (e.g. one `ok`, one `exhausted`)
+- WHEN both bars render
+- THEN their track widths are equal — the reserved marker slot does not shrink the bar on rows that show a marker relative to rows that don't
+
+#### Scenario: Non-finite or absent percent shows no bar and no risk marker
+- GIVEN `usedPercent` is non-finite or absent
+- WHEN the row renders
+- THEN no bar is rendered and no risk marker appears, preserving existing behavior
+
+#### Scenario: Accessible description gains risk phrasing at risk levels
+- GIVEN a window's level is `warn`, `critical`, or `exhausted`
+- WHEN its accessible description is computed
+- THEN risk phrasing (`"Elevated usage"`, `"Critical usage"`, or `"Quota exhausted"` respectively) is appended after the existing percent entry, with existing entries and their order otherwise unchanged
+
+#### Scenario: Tab underline bar is excluded from the marker
+- GIVEN `ProviderSelector.qml`'s tab underline usage bar
+- WHEN any provider tab renders at any threshold level, including `exhausted`
+- THEN the underline shows brand accent color only, with no risk marker icon or recoloring
+
+#### Scenario: Summary and detail modes stay identical
+- GIVEN the same provider and window rendered in both Overview summary mode and selected-provider detail mode
+- WHEN each bar renders
+- THEN risk marker presence, icon, and color match exactly between the two modes, with no mode-specific divergence
+
+### Requirement: Compact panel presentation
+
+The compact/panel representation MUST show only the KodexBar logo icon, sized at least `Kirigami.Units.iconSizes.smallMedium`, with no visible percentage or status text beside it. The current percentage/status text MUST remain available through the control's accessible name for assistive technology.
+
+#### Scenario: Icon-only panel button
+- GIVEN the compact representation renders
+- WHEN the panel button is shown
+- THEN only the logo icon is visible, at or above `iconSizes.smallMedium`, with no adjacent text label
+
+#### Scenario: Percentage remains accessible
+- GIVEN a computed usage percentage exists
+- WHEN the panel button's accessible name is queried
+- THEN it still reports the percentage, even though no visible text shows it
+
+### Requirement: Tab selection persists across popup reopen
+
+The very first time the popup opens in a running widget session, the provider tab strip MUST default to `All` (Overview), regardless of whether usage data has already finished loading. Every subsequent popup open MUST restore whichever tab (`All` or a specific provider) was selected the last time the popup closed, rather than resetting to a default. If the previously-selected provider is no longer present when the popup reopens, the selector MUST fall back to its existing reconciliation behavior (first usable provider, or `All` if none). `All` MUST be a stable selection: it MUST NOT automatically switch to any provider tab on its own once usage data finishes loading — only an explicit user pick changes the selection.
+
+#### Scenario: First open defaults to Overview
+- GIVEN the popup has never been opened in this widget session
+- WHEN it opens, even with usage data already loaded
+- THEN the `All` tab is selected
+
+#### Scenario: Reopen restores the last provider tab
+- GIVEN the popup was previously open with a specific provider tab selected
+- WHEN the popup closes and reopens
+- THEN the same provider tab is selected again, not the default
+
+#### Scenario: Reopen restores Overview
+- GIVEN the popup was previously open with `All` selected
+- WHEN the popup closes and reopens
+- THEN `All` remains selected
+
+#### Scenario: Vanished provider falls back sensibly
+- GIVEN the previously-selected provider is no longer in the provider list when the popup reopens
+- WHEN reconciliation runs
+- THEN selection falls back to the first usable provider, or `All` if none exist — not an error state
+
+#### Scenario: Overview never auto-switches away on its own
+- GIVEN `All` is selected while usage data is still loading
+- WHEN loading finishes with usable providers now available
+- THEN `All` remains selected — no automatic switch to any provider tab
+
+#### Scenario: Explicit picks survive loading churn
+- GIVEN the user explicitly selects a specific provider tab, including while `phase === "loading"`
+- WHEN the provider list or phase subsequently changes (refresh churn)
+- THEN that explicit selection persists unless the provider itself disappears from the list

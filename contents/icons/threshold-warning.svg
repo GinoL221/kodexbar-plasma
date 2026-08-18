@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <mask id="threshold-warning-cut">
+    <rect width="64" height="64" fill="white"/>
+    <rect x="28.5" y="22" width="7" height="20" rx="3.5" fill="black"/>
+    <circle cx="32" cy="49" r="4" fill="black"/>
+  </mask>
+  <path d="M32 5 60.5 55.5A3 3 0 0 1 57.9 60H6.1A3 3 0 0 1 3.5 55.5L32 5Z" fill="currentColor" mask="url(#threshold-warning-cut)"/>
+</svg>

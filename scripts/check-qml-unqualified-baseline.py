@@ -30,7 +30,7 @@ def fail(message):
 # silently swallowed as "already documented"; it must be reviewed and this
 # exception updated deliberately if the sanctioned binding ever moves.
 LAYOUT_POSITIONING_EXCEPTIONS = frozenset({
-    ("Quick.layout-positioning", "root.width", 89),
+    ("Quick.layout-positioning", "root.width", 166),
 })
 
 

@@ -62,6 +62,34 @@ Item {
         popupOpen: false
     }
 
+    // Dedicated instances for the three new tests added by
+    // provider-selector-remember-tab. Kept separate from `s`'s long
+    // sequential narrative below so each new scenario is isolated and does
+    // not entangle state with (or drift because of) the rest of the script.
+    UsageUi.ProviderSelector {
+        id: sFirstOpen
+        width: root.width
+        providers: []
+        phase: "idle"
+        popupOpen: false
+    }
+
+    UsageUi.ProviderSelector {
+        id: sReopenProvider
+        width: root.width
+        providers: []
+        phase: "idle"
+        popupOpen: false
+    }
+
+    UsageUi.ProviderSelector {
+        id: sOverviewStable
+        width: root.width
+        providers: []
+        phase: "idle"
+        popupOpen: false
+    }
+
     Component.onCompleted: {
         s.popupOpen = true
         assert(s.allSelected && s.selectedProvider === null && s.usableProviders.length === 0, "empty default All")
@@ -69,7 +97,11 @@ Item {
         s.popupOpen = false
         s.providers = [p("empty","src-empty",[]), p("second","src-second",[w("Weekly",45,"2026-08-10T10:00:00Z","raw desc")]), p("third","src-third",[w("Session",10,null,null)])]
         s.popupOpen = true
-        assert(!s.allSelected && s.selectedProvider && s.selectedProvider.provider === "second", "first usable")
+        // Second-ever open: no longer resets to the first provider. The
+        // previous close left All selected, and _reconcile() (not
+        // _selectDefault()) runs on every open past the first, so it keeps
+        // whatever was already selected.
+        assert(s.allSelected && s.selectedProvider === null, "reopen after providers load keeps Overview (no reset to first provider)")
         assert(s.usableProviders.length === 2 && s.usableProviders[0].provider === "second" && s.usableProviders[1].provider === "third", "order")
         assert(s.tabBar.contentChildren.length === 3, "tabs count")
         s.tabBar.currentIndex = 0
@@ -77,9 +109,25 @@ Item {
         assert(s.allSelected && s.selectedProvider === null, "explicit All")
 
         s.popupOpen = false; s.providers = []; s.phase = "loading"; s.popupOpen = true
-        assert(s.allSelected, "pending loading All")
+        // Reopening no longer resets to a pending-Overview state -- whatever
+        // was selected before close (All, from the explicit pick above)
+        // carries straight through regardless of phase.
+        assert(s.allSelected, "reopen while loading keeps whatever was selected (Overview here) -- no pending mechanism")
         s.providers = [p("later","src-later",[w("Session",5,"reset-later","desc-later")])]; s.phase = "idle"
-        assert(!s.allSelected && s.selectedProvider.provider === "later", "settle first usable")
+        // Overview never auto-switches away on its own once loading finishes
+        // and providers arrive -- only an explicit pick changes the
+        // selection (see the dedicated "new test 3" below for the full
+        // loading -> ready cycle in isolation).
+        assert(s.allSelected && s.selectedProvider === null,
+            "Overview stays selected once loading finishes -- no auto-switch to the first provider")
+
+        // An explicit pick is still required to leave Overview. Pick
+        // "later" so the identity-preservation narrative below (fallback /
+        // reorder / duplicate handling) has a known non-Overview starting
+        // point, matching what this script exercised before this change.
+        s.tabBar.currentIndex = 1
+        s._activateIndex(1)
+        assert(!s.allSelected && s.selectedProvider.provider === "later", "explicit pick selects later")
 
         s.providers = [p("alpha","a",[w("W",20,null,null)]), p("beta","b",[w("M",30,null,null)])]
         assert(s.selectedProvider.provider === "alpha", "default alpha")
@@ -102,7 +150,46 @@ Item {
         s.tabBar.currentIndex = 0
         s._activateIndex(0)
         s.popupOpen = false; s.popupOpen = true
-        assert(!s.allSelected && s.selectedProvider.provider === "delta", "reopen default")
+        assert(s.allSelected && s.selectedProvider === null, "reopen preserves Overview")
+
+        // New test 1: first open defaults to All even when providers are
+        // already loaded and phase is not "loading" (spec scenario "First
+        // open defaults to Overview").
+        sFirstOpen.providers = [p("eager","src-eager",[w("Weekly",50,null,null)])]
+        sFirstOpen.phase = "ready"
+        sFirstOpen.popupOpen = true
+        assert(sFirstOpen.allSelected && sFirstOpen.selectedProvider === null,
+            "new test: first open defaults to All even with providers already loaded, phase not loading")
+
+        // New test 2: reopen preserves a SPECIFIC provider tab, not just All
+        // (spec scenario "Reopen restores the last provider tab").
+        sReopenProvider.popupOpen = true
+        assert(sReopenProvider.allSelected, "new test setup: first open defaults to All")
+        sReopenProvider.providers = [p("west","src-west",[w("Weekly",20,null,null)]), p("east","src-east",[w("Weekly",30,null,null)])]
+        sReopenProvider.tabBar.currentIndex = 2
+        sReopenProvider._activateIndex(2)
+        assert(sReopenProvider.selectedProvider && sReopenProvider.selectedProvider.provider === "east",
+            "new test setup: explicit pick of east")
+        sReopenProvider.popupOpen = false
+        sReopenProvider.popupOpen = true
+        assert(!sReopenProvider.allSelected
+            && sReopenProvider.selectedProvider && sReopenProvider.selectedProvider.provider === "east"
+            && sReopenProvider.tabBar.currentIndex === 2,
+            "new test: reopen preserves a specific provider tab, not just All, without needing to re-pick it")
+
+        // New test 3: All never auto-switches away once loading finishes,
+        // across a full loading -> providers-arrive -> ready cycle in
+        // isolation (spec scenario "Overview never auto-switches away on
+        // its own").
+        sOverviewStable.popupOpen = true
+        assert(sOverviewStable.allSelected, "new test setup: first open lands on All")
+        sOverviewStable.phase = "loading"
+        assert(sOverviewStable.allSelected, "new test: All remains selected once phase becomes loading")
+        sOverviewStable.providers = [p("north","src-north",[w("Weekly",40,null,null)]), p("south","src-south",[w("Weekly",60,null,null)])]
+        assert(sOverviewStable.allSelected, "new test: All remains selected when providers arrive while still loading")
+        sOverviewStable.phase = "ready"
+        assert(sOverviewStable.allSelected && sOverviewStable.selectedProvider === null,
+            "new test: All never auto-switches away once loading finishes with usable providers available")
 
         s.providers = [p(null,"src-null",[w("S",2,null,null)]), p("epsilon","e",[w("W",3,null,null)])]
         assert(s.usableProviders[0].provider === null, "null retained")
@@ -224,9 +311,39 @@ Item {
         assert(Qt.colorEqual(unknownFill.color, Kirigami.Theme.highlightColor),
             "an unchecked tab with no brand accent must fall back to Kirigami.Theme.highlightColor")
 
-        // Regression: selecting a provider while phase is loading (slow refresh
-        // / pending default Overview) must leave Overview and stick to that
-        // provider — not snap back to tab 0 on reconcile.
+        // D17: the usage-threshold risk marker (UsageWindowRow) must never
+        // leak into the tab strip's own underline bar, for warn (80) or
+        // critical (95) representative percents -- the underline stays
+        // accent-only.
+        assert(findObject(unknownTab, "thresholdMarker") === null,
+            "an unchecked warn-percent (80) tab must never render a thresholdMarker under its underline bar")
+        assert(Qt.colorEqual(unknownFill.color, Kirigami.Theme.highlightColor),
+            "the warn-percent tab's underline fill must remain accent/highlight-only, unaffected by the threshold marker")
+
+        s.popupOpen = false
+        s.providers = [
+            p("claude", "src-claude", [w("Weekly", 40, null, null)]),
+            p("mistral", "src-mistral", [w("Weekly", 95, null, null)])
+        ]
+        s.popupOpen = true
+        var criticalTab = s.tabBar.contentChildren[2]
+        assert(findObject(criticalTab, "thresholdMarker") === null,
+            "a critical-percent (95) tab must never render a thresholdMarker under its underline bar")
+        var criticalBar = findProgressBar(criticalTab)
+        assert(criticalBar !== null, "critical-percent tab must still show its underline bar")
+        var criticalFill = criticalBar.children[1]
+        assert(Qt.colorEqual(criticalFill.color, ProviderIcons.accent("mistral")),
+            "a critical-percent tab's underline fill must stay the provider accent, not a risk color")
+
+        // Regression: selecting a provider while phase is loading (slow refresh)
+        // must leave Overview and stick to that provider — not snap back to
+        // tab 0 on reconcile. Reopening no longer resets to a predictable
+        // pending-Overview state on its own (G4), so force a known All
+        // starting point explicitly before the loading-churn assertions.
+        s.tabBar.currentIndex = 0
+        s._activateIndex(0)
+        assert(s.allSelected === true, "explicit reset to Overview before regression setup")
+
         s.popupOpen = false
         s.providers = [
             p("codex", "src-codex", [w("Weekly", 10, null, null)]),
@@ -234,11 +351,11 @@ Item {
         ]
         s.phase = "loading"
         s.popupOpen = true
-        assert(s.allSelected === true, "open while loading starts on Overview/pending default")
-        assert(s.tabBar.currentIndex === 0, "pending default keeps tab index on Overview")
+        assert(s.allSelected === true, "reopen while loading keeps Overview (explicit reset above, no pending mechanism)")
+        assert(s.tabBar.currentIndex === 0, "Overview keeps tab index at 0")
         s.tabBar.currentIndex = 2
         s._activateIndex(2)
-        assert(s._pendingDefault === false, "explicit provider pick clears pending default")
+        assert(s._pendingDefault === false, "pending default stays inert (never engaged) after an explicit provider pick")
         assert(s.allSelected === false, "explicit provider pick must leave Overview during loading")
         assert(s.selectedProvider && s.selectedProvider.provider === "claude",
             "explicit provider pick during loading must select that provider")
