@@ -230,9 +230,9 @@ Item {
         assert(dupBar.nameGap > 0,
             "tab underline bar must expose a positive gap under the provider name")
 
-        var dupIcon = findKirigamiIcon(t)
-        assert(dupIcon !== null && dupIcon.isMask === true,
-            "provider tab must render a theme-adaptive Kirigami.Icon mask")
+        var dupIcon = findObject(t, "providerTabIcon")
+        assert(dupIcon !== null && !dupIcon.usesSvgRenderer,
+            "unknown providers must stay on the shared themed fallback path")
         assert(dupIcon.implicitWidth >= Kirigami.Units.iconSizes.smallMedium,
             "tab provider icons must be at least smallMedium (user-facing size)")
         assert(String(dupIcon.source).indexOf("dup") !== -1 || String(t.icon.source).length >= 0,
@@ -414,9 +414,9 @@ Item {
                     + s.tabBar.implicitWidth + " w=" + s.width + ")")
 
                 var codexTabDelegate = s.tabBar.contentChildren[1]
-                var codexIcon = root.findKirigamiIcon(codexTabDelegate)
-                root.assert(codexIcon !== null && codexIcon.isMask === true,
-                    "provider tab must use Kirigami.Icon isMask for theme adaptation")
+                var codexIcon = root.findObject(codexTabDelegate, "providerTabIcon")
+                root.assert(codexIcon !== null && codexIcon.usesSvgRenderer,
+                    "provider tab must bypass Kirigami.Icon masking for SVG providers")
                 root.assert(String(codexIcon.source).indexOf("codex.svg") !== -1,
                     "provider tab icon source must resolve to codex.svg")
 

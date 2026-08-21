@@ -520,8 +520,8 @@ Item {
         assert(tripleWindowSummaryRow.providerText === "OpenCode Go",
                "opencodego display name must be OpenCode Go")
         var overviewIcon = findObject(tripleWindowSummaryRow, "summaryProviderIcon")
-        assert(overviewIcon !== null && overviewIcon.visible && overviewIcon.isMask === true,
-               "overview card must show a theme-adaptive summaryProviderIcon")
+        assert(overviewIcon !== null && overviewIcon.visible && overviewIcon.usesSvgRenderer,
+               "overview card must show a direct-rendered, theme-adaptive summaryProviderIcon")
         var overviewName = findObject(tripleWindowSummaryRow, "providerLabel")
         assert(overviewName !== null && overviewName.text === "OpenCode Go",
                "overview card providerLabel must use the display name")

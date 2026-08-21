@@ -129,6 +129,15 @@ run_cost_termination_harness() {
 printf 'Using QtTest runner: %s\n' "$runner"
 
 for test_file in \
+    "$tests_dir/ProviderIconRenderTest.qml" \
+    "$tests_dir/ProviderSelectorIconRenderTest.qml"
+do
+    printf 'Running scenegraph pixel test %s\n' "${test_file#"$repo_root/"}"
+    QSG_RHI_BACKEND=opengl \
+        "$runner" -input "$test_file" -import "$repo_root"
+done
+
+for test_file in \
     "$tests_dir/UsageModelTest.qml" \
     "$tests_dir/UsageControllerFixture.qml" \
     "$tests_dir/SettingsInteractionTest.qml"

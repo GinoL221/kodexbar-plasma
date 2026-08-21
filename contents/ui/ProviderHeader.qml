@@ -47,12 +47,12 @@ RowLayout {
     Layout.fillWidth: true
     spacing: Kirigami.Units.smallSpacing
 
-    Kirigami.Icon {
+    ProviderIcon {
+        objectName: "providerHeaderIcon"
         // Overview cards keep the mark next to the name. Detail body omits
         // it — the selected tab already shows the provider icon.
         visible: !root.detailed
         source: root.iconResolver(root.providerValue)
-        isMask: true
         color: Kirigami.Theme.textColor
         implicitWidth: Kirigami.Units.iconSizes.smallMedium
         implicitHeight: Kirigami.Units.iconSizes.smallMedium

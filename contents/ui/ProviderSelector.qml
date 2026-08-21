@@ -483,14 +483,16 @@ ColumnLayout {
                             contentItem: ColumnLayout {
                                 spacing: Math.max(1, Math.round(Kirigami.Units.smallSpacing / 3))
 
-                                Kirigami.Icon {
+                                ProviderIcon {
+                                    objectName: "providerTabIcon"
                                     source: providerTab.icon.source
-                                    isMask: true
                                     color: providerTab.checked
                                         ? Kirigami.Theme.highlightedTextColor
                                         : Kirigami.Theme.textColor
-                                    implicitWidth: Kirigami.Units.iconSizes.medium
-                                    implicitHeight: Kirigami.Units.iconSizes.medium
+                                    Layout.minimumWidth: Kirigami.Units.iconSizes.smallMedium
+                                    Layout.minimumHeight: Kirigami.Units.iconSizes.smallMedium
+                                    Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+                                    Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
                                     Layout.alignment: Qt.AlignHCenter
                                 }
 

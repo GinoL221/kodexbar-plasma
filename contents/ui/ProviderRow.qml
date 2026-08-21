@@ -122,10 +122,9 @@ ColumnLayout {
             spacing: Kirigami.Units.smallSpacing * 2
             Layout.fillWidth: true
 
-            Kirigami.Icon {
+            ProviderIcon {
                 objectName: "summaryProviderIcon"
                 source: root.iconResolver(root.providerValue)
-                isMask: true
                 color: Kirigami.Theme.textColor
                 // Reference density: compact mark, vertically centered on the card.
                 implicitWidth: Kirigami.Units.iconSizes.medium

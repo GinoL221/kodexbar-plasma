@@ -13,6 +13,7 @@ class BoundQmlComponentsTest(unittest.TestCase):
         for name in (
             "main.qml",
             "ProviderSelector.qml",
+            "ProviderIcon.qml",
             "ProviderRow.qml",
             "UsageWindowRow.qml",
             "ErrorSummary.qml",
