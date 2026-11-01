@@ -14,7 +14,7 @@ TestCase {
         var component = controllerComponent()
         verify(component.status === Component.Ready, component.errorString())
         var controller = component.createObject(null, { commandPath: "/tmp/cli dir/cli'$(unsafe)" })
-        verify(controller.commandLine().indexOf("usage --provider all --format json --json-only") > 0)
+        verify(controller.commandLine().indexOf("usage --format json --json-only") > 0)
         controller.destroy()
     }
 
@@ -34,7 +34,7 @@ TestCase {
                                        controller.activeSource, { "exit code": "0" })
         tryVerify(function() { return controller.activeStage === "command" }, 1000)
         compare(controller.activeSource,
-                "'/tmp/cli dir/codexbar' usage --provider all --format json --json-only")
+                "'/tmp/cli dir/codexbar' usage --format json --json-only")
         controller.deliverStageForTest("command", controller.generation,
                                        controller.activeSource, {
                                            stdout: JSON.stringify([
@@ -174,7 +174,7 @@ TestCase {
         compare(controller.activeStage, "command")
         compare(controller.discoveredPathForTest, "")
         compare(controller.activeSource,
-                "'/tmp/codexbar' usage --provider all --format json --json-only")
+                "'/tmp/codexbar' usage --format json --json-only")
         controller.destroy()
     }
 
@@ -196,12 +196,12 @@ TestCase {
         compare(emptyPath.discoveredPathForTest, "/opt/codexbar")
         tryVerify(function() { return emptyPath.activeStage === "command" }, 1000)
         compare(emptyPath.activeSource,
-                "'/opt/codexbar' usage --provider all --format json --json-only")
+                "'/opt/codexbar' usage --format json --json-only")
         invalidPath.requestRefresh()
         compare(invalidPath.discoveredPathForTest, "/opt/recovered-codexbar")
         tryVerify(function() { return invalidPath.activeStage === "command" }, 1000)
         compare(invalidPath.activeSource,
-                "'/opt/recovered-codexbar' usage --provider all --format json --json-only")
+                "'/opt/recovered-codexbar' usage --format json --json-only")
         emptyPath.destroy()
         invalidPath.destroy()
     }
@@ -276,7 +276,7 @@ TestCase {
         var timeoutMessage = "CodexBar did not return all-provider usage within 120 seconds. Check enabled providers in CodexBar, temporarily disable a provider that hangs, then retry."
 
         controller.requestRefresh()
-        compare(controller.commandLine(), "'/tmp/codexbar' usage --provider all --format json --json-only")
+        compare(controller.commandLine(), "'/tmp/codexbar' usage --format json --json-only")
         controller.completeForTest(controller.generation, JSON.stringify([
             { provider: "usable", usage: { primary: { usedPercent: 42 } } }
         ]), 0)

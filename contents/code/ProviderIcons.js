@@ -16,6 +16,25 @@ function key(value) {
     return knownProviders.indexOf(normalized) !== -1 ? normalized : ""
 }
 
+// Some provider keys collide with an icon name already shipped by common
+// desktop icon themes (e.g. the Claude Desktop app icon installed as
+// "claude" under ~/.local/share/icons/<theme>/apps/scalable/claude.svg).
+// Kirigami.Icon's theme-name fallback can shadow our own file:// source in
+// that case, so affected providers ship their asset under a distinct
+// on-disk filename while keeping the CLI-facing key unchanged.
+var iconFileOverrides = {
+    "claude": "claude-mark",
+    "antigravity": "antigravity-mark"
+}
+
+function iconFile(value) {
+    var k = key(value)
+    if (k.length === 0) {
+        return ""
+    }
+    return Object.prototype.hasOwnProperty.call(iconFileOverrides, k) ? iconFileOverrides[k] : k
+}
+
 // Known multi-word / brand spellings. Keys are lowercase CLI provider ids.
 // Unlisted ids fall back to a single leading capital (codex → Codex).
 var displayNames = {

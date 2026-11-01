@@ -4,15 +4,16 @@ set -eu
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 tests_dir="$repo_root/tests"
-runner=$(command -v qmltestrunner 2>/dev/null || true)
+runner=""
+for candidate in /usr/lib/qt6/bin/qmltestrunner /usr/lib64/qt6/bin/qmltestrunner; do
+    if [ -x "$candidate" ]; then
+        runner=$candidate
+        break
+    fi
+done
 
 if [ -z "$runner" ]; then
-    for candidate in /usr/lib/qt6/bin/qmltestrunner /usr/lib64/qt6/bin/qmltestrunner; do
-        if [ -x "$candidate" ]; then
-            runner=$candidate
-            break
-        fi
-    done
+    runner=$(command -v qmltestrunner 2>/dev/null || true)
 fi
 
 if [ -z "$runner" ]; then
@@ -48,22 +49,21 @@ is_special_harness() {
 run_usage_lifecycle_harness() {
     args_file=$(mktemp)
     pid_file=$(mktemp)
+    tmp_home=$(mktemp -d)
     rm -f "$pid_file"
-    trap 'rm -f "$args_file" "$pid_file"' EXIT HUP INT TERM
-    CODEXBAR_LIFECYCLE_ARGS_FILE="$args_file" \
+    trap 'rm -rf "$args_file" "$pid_file" "$tmp_home"' EXIT HUP INT TERM
+    HOME="$tmp_home" CODEXBAR_LIFECYCLE_ARGS_FILE="$args_file" \
         QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software \
         qml6 --software -f "$tests_dir/UsageControllerDataSourceLifecycleHarness.qml" -- \
         "$tests_dir/fixtures/codexbar-lifecycle-fixture.sh"
     expected_args='usage
---provider
-all
 --format
 json
 --json-only'
     if ! printf '%s\n' "$expected_args" | cmp -s - "$args_file"; then
         fail "lifecycle fixture received unexpected argv"
     fi
-    rm -f "$args_file" "$pid_file"
+    rm -rf "$args_file" "$pid_file" "$tmp_home"
     trap - EXIT HUP INT TERM
 }
 

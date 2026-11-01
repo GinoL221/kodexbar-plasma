@@ -25,7 +25,7 @@ Item {
             testMode: true
         })
         controller.requestRefresh()
-        assert(controller.activeSource === "'/tmp/cli dir/cli'\\''$(unsafe)' usage --provider all --format json --json-only",
+        assert(controller.activeSource === "'/tmp/cli dir/cli'\\''$(unsafe)' usage --format json --json-only",
                "command must quote only the configured path and append fixed arguments")
         assert(controller.commandLine() === controller.activeSource,
                "commandLine must use the validated effective path")

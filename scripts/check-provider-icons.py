@@ -92,21 +92,35 @@ def parse_known_providers(js_path):
     return re.findall(r'"([^"]+)"', match.group(1))
 
 
-def check_coverage(known_providers, svg_dir):
+def parse_icon_file_overrides(js_path):
+    """Parse the `iconFileOverrides` map out of ProviderIcons.js if present."""
+    text = js_path.read_text(encoding="utf-8")
+    match = re.search(r"iconFileOverrides\s*=\s*\{(.*?)\}", text, re.S)
+    if not match:
+        return {}
+    return dict(re.findall(r'"([^"]+)"\s*:\s*"([^"]+)"', match.group(1)))
+
+
+def check_coverage(known_providers, svg_dir, overrides=None):
     """Invariant 1: every known provider key has a matching SVG file."""
+    if overrides is None:
+        overrides = {}
     violations = []
     for name in known_providers:
-        if not (svg_dir / ("%s.svg" % name)).is_file():
+        target_name = overrides.get(name, name)
+        if not (svg_dir / ("%s.svg" % target_name)).is_file():
             violations.append(
                 "coverage: missing %s/%s.svg for known provider %r"
-                % (svg_dir, name, name)
+                % (svg_dir, target_name, name)
             )
     return violations
 
 
-def check_orphans(known_providers, svg_dir):
+def check_orphans(known_providers, svg_dir, overrides=None):
     """Invariant 2: every SVG file maps back to a known provider key."""
-    known = set(known_providers)
+    if overrides is None:
+        overrides = {}
+    known = (set(known_providers) - set(overrides.keys())) | set(overrides.values())
     violations = []
     for path in sorted(svg_dir.glob("*.svg")):
         if path.stem not in known:
@@ -215,10 +229,11 @@ def run_checks(repo_root):
     js_path = repo_root / "contents" / "code" / "ProviderIcons.js"
     svg_dir = repo_root / "contents" / "icons" / "providers"
     known_providers = parse_known_providers(js_path)
+    overrides = parse_icon_file_overrides(js_path)
     svg_paths = sorted(svg_dir.glob("*.svg"))
     violations = []
-    violations += check_coverage(known_providers, svg_dir)
-    violations += check_orphans(known_providers, svg_dir)
+    violations += check_coverage(known_providers, svg_dir, overrides)
+    violations += check_orphans(known_providers, svg_dir, overrides)
     violations += check_parseable(svg_paths)
     violations += check_banned_colors(svg_paths, LITERAL_COLOR_ALLOWLIST)
     violations += check_distinctness(svg_paths, SANCTIONED_DUPLICATES)

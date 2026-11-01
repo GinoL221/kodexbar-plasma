@@ -537,4 +537,43 @@ TestCase {
         compare(result.providers[0].provider, "grok")
         verify(result.providers[0].raw !== undefined, "usable providers still expose raw")
     }
+
+    function test_normalizesAntigravityExtraRateWindowsToSessionWeeklyArgonAndThirdParty() {
+        var result = UsageModel.normalize({
+            provider: "antigravity",
+            source: "auto",
+            usage: {
+                primary: { usedPercent: 99 },
+                secondary: { usedPercent: 88 },
+                extraRateWindows: [
+                    { id: "antigravity-quota-summary-3p-5h", title: "Claude/GPT 5-hour", window: { usedPercent: 10 } },
+                    { id: "antigravity-quota-summary-gemini-argon-wtu-weekly", title: "Gemini weekly", window: { usedPercent: 25 } },
+                    { id: "antigravity-quota-summary-gemini-weekly", title: "Gemini weekly", window: { usedPercent: 45 } },
+                    { id: "antigravity-quota-summary-gemini-5h", title: "Gemini 5-hour", window: { usedPercent: 65 } },
+                    { id: "antigravity-quota-summary-3p-weekly", title: "Claude/GPT weekly", window: { usedPercent: 50 } }
+                ]
+            }
+        })
+
+        compare(result.providers.length, 1)
+        var p = result.providers[0]
+        compare(p.windows.length, 5)
+        compare(p.windows[0].label, "Session")
+        compare(p.windows[0].usedPercent, 65)
+        compare(p.windows[1].label, "Weekly")
+        compare(p.windows[1].usedPercent, 45)
+        compare(p.windows[2].label, "Argon")
+        compare(p.windows[2].usedPercent, 25)
+        compare(p.windows[3].label, "Claude/GPT 5-hour")
+        compare(p.windows[3].usedPercent, 10)
+        compare(p.windows[4].label, "Claude/GPT weekly")
+        compare(p.windows[4].usedPercent, 50)
+
+        // Overview must select only Session, Weekly, and Argon
+        var overview = UsageModel.selectOverviewWindows(p.windows)
+        compare(overview.length, 3)
+        compare(overview[0].label, "Session")
+        compare(overview[1].label, "Weekly")
+        compare(overview[2].label, "Argon")
+    }
 }

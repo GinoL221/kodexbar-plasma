@@ -34,7 +34,7 @@ TestCase {
                         credits: { remaining: 12 },
                         usage: {
                             loginMethod: "synthetic-login",
-                            updatedAt: "2026-08-14T19:01:20Z",
+                            updatedAt: new Date(Date.now() - 120000).toISOString(),
                             identity: { accountEmail: "synthetic@example.invalid", accountOrganization: "Synthetic Labs Inc." },
                             codexResetCredits: {
                                 availableCount: 2,
@@ -297,10 +297,8 @@ TestCase {
         verify(!organization.visible)
         compare(organization.text, "Synthetic Labs Inc.")
         verify(updatedAt.visible)
-        verify(updatedAt.text !== "Updated: 2026-08-14T19:01:20Z",
+        verify(updatedAt.text.indexOf("Updated") === 0 && updatedAt.text.indexOf("ago") !== -1,
             "updatedAtLabel must render a relative label, not the raw ISO fallback, for a parseable stamp")
-        verify(updatedAt.text.indexOf("2026-08-14T19:01:20Z") === -1,
-            "updatedAtLabel must never leak the raw ISO stamp when relative formatting succeeds")
         verify(creditsRemaining.visible)
         verify(creditsRemaining.text.indexOf("12") !== -1)
         verify(resetAvailable.visible)

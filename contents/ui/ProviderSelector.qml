@@ -119,9 +119,9 @@ ColumnLayout {
     }
 
     function iconResolver(value) {
-        var key = ProviderIcons.key(value)
-        return key.length > 0
-            ? Qt.resolvedUrl("../icons/providers/" + key + ".svg") : "dialog-information"
+        var file = ProviderIcons.iconFile(value)
+        return file.length > 0
+            ? Qt.resolvedUrl("../icons/providers/" + file + ".svg") : "dialog-information"
     }
 
     function _providerText(provider) {

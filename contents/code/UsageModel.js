@@ -18,18 +18,43 @@ function rawValue(object, key) {
     return Object.prototype.hasOwnProperty.call(object, key) ? object[key] : null
 }
 
+function cleanResetDescription(desc) {
+    if (typeof desc !== "string") {
+        return desc
+    }
+    var match = desc.match(/refresh in ([^.]+)/i)
+    if (match) {
+        return "Resets in " + match[1].trim()
+    }
+    return desc
+}
+
 function normalizeWindow(definition, value) {
     if (!value || typeof value !== "object" || value instanceof Array) {
         return null
     }
 
+    var desc = rawValue(value, "resetDescription")
     return {
         key: definition.key,
         label: definition.label,
-        usedPercent: finiteNumber(value.usedPercent) ? value.usedPercent : null,
+        usedPercent: finiteNumber(value.usedPercent) ? Math.round(value.usedPercent) : null,
         resetsAt: rawValue(value, "resetsAt"),
-        resetDescription: rawValue(value, "resetDescription")
+        resetDescription: cleanResetDescription(desc)
     }
+}
+
+function findExtraWindow(extraRateWindows, idSubstring) {
+    if (!(extraRateWindows instanceof Array)) {
+        return null
+    }
+    for (var i = 0; i < extraRateWindows.length; i++) {
+        var extra = extraRateWindows[i]
+        if (extra && typeof extra.id === "string" && extra.id.indexOf(idSubstring) !== -1 && extra.window) {
+            return extra.window
+        }
+    }
+    return null
 }
 
 function normalizeProvider(entry) {
@@ -37,12 +62,48 @@ function normalizeProvider(entry) {
         ? entry.usage
         : {}
     var windows = []
+    var isAntigravity = entry.provider === "antigravity"
+    var extras = usage.extraRateWindows instanceof Array ? usage.extraRateWindows : []
 
-    for (var i = 0; i < windowDefinitions.length; i++) {
-        var definition = windowDefinitions[i]
-        var window = normalizeWindow(definition, usage[definition.key])
-        if (window !== null) {
-            windows.push(window)
+    if (isAntigravity && extras.length > 0) {
+        var geminiSession = findExtraWindow(extras, "gemini-5h") || usage.primary
+        var sessionWin = normalizeWindow({ key: "primary", label: "Session" }, geminiSession)
+        if (sessionWin !== null) {
+            windows.push(sessionWin)
+        }
+
+        var geminiWeekly = findExtraWindow(extras, "gemini-weekly") || usage.secondary
+        var weeklyWin = normalizeWindow({ key: "secondary", label: "Weekly" }, geminiWeekly)
+        if (weeklyWin !== null) {
+            windows.push(weeklyWin)
+        }
+
+        var geminiArgon = findExtraWindow(extras, "gemini-argon") || usage.tertiary
+        var argonWin = normalizeWindow({ key: "tertiary", label: "Argon" }, geminiArgon)
+        if (argonWin !== null) {
+            windows.push(argonWin)
+        }
+
+        for (var j = 0; j < extras.length; j++) {
+            var extra = extras[j]
+            if (extra && extra.window && typeof extra.id === "string") {
+                if (extra.id.indexOf("gemini-5h") === -1 &&
+                    extra.id.indexOf("gemini-weekly") === -1 &&
+                    extra.id.indexOf("gemini-argon") === -1) {
+                    var extraWin = normalizeWindow({ key: extra.id, label: extra.title || "Claude/GPT" }, extra.window)
+                    if (extraWin !== null) {
+                        windows.push(extraWin)
+                    }
+                }
+            }
+        }
+    } else {
+        for (var i = 0; i < windowDefinitions.length; i++) {
+            var definition = windowDefinitions[i]
+            var window = normalizeWindow(definition, usage[definition.key])
+            if (window !== null) {
+                windows.push(window)
+            }
         }
     }
 

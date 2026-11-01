@@ -124,7 +124,7 @@ ColumnLayout {
     Accessible.description: {
         var details = []
         if (root.hasFinitePercent) {
-            details.push(Translation.translate("%1% used", [root.windowData.usedPercent],
+            details.push(Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
                 typeof i18n === "function" ? i18n : null))
             if (root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED) {
                 details.push(Translation.translate("Quota exhausted", [],
@@ -205,7 +205,7 @@ ColumnLayout {
             Layout.alignment: Qt.AlignVCenter
             readonly property real value: root.hasFinitePercent ? root.windowData.usedPercent : 0
             Accessible.role: Accessible.ProgressBar
-            Accessible.name: Translation.translate("%1% used", [root.windowData.usedPercent],
+            Accessible.name: Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
                 typeof i18n === "function" ? i18n : null)
 
             Rectangle {
@@ -244,7 +244,7 @@ ColumnLayout {
             id: summaryPercentageLabel
             objectName: "summaryPercentageLabel"
             visible: root.summary && root.hasFinitePercent
-            text: visible ? Translation.translate("%1% used", [root.windowData.usedPercent],
+            text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
                 typeof i18n === "function" ? i18n : null) : ""
             color: Kirigami.Theme.disabledTextColor
             font.pointSize: Kirigami.Theme.smallFont.pointSize
@@ -284,7 +284,7 @@ ColumnLayout {
             anchors.fill: parent
             readonly property real value: root.hasFinitePercent ? root.windowData.usedPercent : 0
             Accessible.role: Accessible.ProgressBar
-            Accessible.name: Translation.translate("%1% used", [root.windowData.usedPercent],
+            Accessible.name: Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
                 typeof i18n === "function" ? i18n : null)
 
             Rectangle {
@@ -316,7 +316,7 @@ ColumnLayout {
             id: bandPercentageLabel
             objectName: "bandPercentageLabel"
             visible: root.hasFinitePercent && !root.summary
-            text: visible ? Translation.translate("%1% used", [root.windowData.usedPercent],
+            text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
                 typeof i18n === "function" ? i18n : null) : ""
             color: Kirigami.Theme.textColor
             font.pointSize: Kirigami.Theme.smallFont.pointSize

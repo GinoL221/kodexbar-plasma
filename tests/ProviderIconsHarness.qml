@@ -71,6 +71,12 @@ Item {
         assert(ProviderIcons.accent("claude").charAt(0) === "#",
                "mapped accents must be #rrggbb tokens")
 
+        // iconFile overrides (collide with system themes)
+        assert(ProviderIcons.iconFile("claude") === "claude-mark", "claude maps to claude-mark")
+        assert(ProviderIcons.iconFile("antigravity") === "antigravity-mark", "antigravity maps to antigravity-mark")
+        assert(ProviderIcons.iconFile("codex") === "codex", "codex defaults to codex")
+        assert(ProviderIcons.iconFile("not-a-provider") === "", "unknown provider iconFile is empty")
+
         finish()
     }
 }

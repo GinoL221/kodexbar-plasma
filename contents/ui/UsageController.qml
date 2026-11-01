@@ -36,7 +36,7 @@ Item {
     signal pathDiscovered(string path)
 
     function commandLine() {
-        return PathResolver.shellQuote(effectiveCommandPath) + " usage --provider all --format json --json-only"
+        return PathResolver.shellQuote(effectiveCommandPath) + " usage --format json --json-only"
     }
 
     function pathCheckCommand() {
