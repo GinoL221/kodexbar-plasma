@@ -2,6 +2,7 @@ import QtQuick
 import org.kde.plasma.plasma5support as Plasma5Support
 
 import "../code/UsageModel.js" as UsageModel
+import "../code/RateLimitPolicy.js" as RateLimitPolicy
 import "../code/CodexBarPathResolver.js" as PathResolver
 
 Item {
@@ -23,6 +24,13 @@ Item {
     property var committedProviders: []
     property var committedErrors: []
     property int committedGeneration: 0
+    // Consecutive responses that carried a rate-limit error stretch the next
+    // poll via retryDelayMs(); any response without one resets the counter.
+    property int consecutiveRateLimits: 0
+    // Configured refresh interval, injected by main.qml, so the retry copy
+    // and the timer agree on the real wait.
+    property int baseRefreshMs: 0
+    readonly property bool rateLimited: consecutiveRateLimits > 0
     property int generation: 0
     property bool refreshQueued: false
     property bool followUpScheduled: false
@@ -45,6 +53,11 @@ Item {
 
     function validatePath(path) {
         return PathResolver.validateAbsolutePath(path)
+    }
+
+    function retryDelayMs(baseMs) {
+        var base = baseMs === undefined || baseMs === null ? baseRefreshMs : baseMs
+        return RateLimitPolicy.nextDelayMs(base, consecutiveRateLimits, "")
     }
 
     function requestRefresh() {
@@ -242,14 +255,29 @@ Item {
         }
 
         var normalized = UsageModel.normalize(payload)
-        committedProviders = normalized.providers
+
+        // Anthropic throttles the Claude usage endpoint with HTTP 429 for
+        // minutes at a time, and the CLI reports it next to unrelated
+        // provider errors. Fresh data is always committed; a throttled
+        // provider keeps its last good entry instead of blanking the popup,
+        // and the backoff delays the next poll.
+        var rateLimited = RateLimitPolicy.hasRateLimitError(normalized.errors)
+        var providers = rateLimited
+            ? RateLimitPolicy.mergeRateLimitedProviders(normalized.providers, committedProviders, normalized.errors)
+            : normalized.providers
+        consecutiveRateLimits = rateLimited ? consecutiveRateLimits + 1 : 0
+        committedProviders = providers
         committedErrors = normalized.errors
         committedGeneration = requestGeneration
-        phase = normalized.providers.length > 0 ? "ready"
+        phase = providers.length > 0 ? "ready"
             : (normalized.errors.length > 0 ? "error" : "noData")
-        errorMessage = normalized.errors.length > 0 && normalized.providers.length === 0
-            ? "CodexBar returned provider errors."
-            : ""
+        // Provider-neutral copy: the payload does not say which provider the
+        // user is looking at, and the wait must match the timer.
+        errorMessage = providers.length > 0 ? ""
+            : (rateLimited
+                ? "Usage is rate limited right now. Retrying in "
+                    + RateLimitPolicy.retryMinutes(retryDelayMs()) + " minutes."
+                : (normalized.errors.length > 0 ? "CodexBar returned provider errors." : ""))
         releaseGeneration(true)
     }
 
