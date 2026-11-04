@@ -576,4 +576,50 @@ TestCase {
         compare(overview[1].label, "Weekly")
         compare(overview[2].label, "Argon")
     }
+
+    function test_rateWindowLabelsOverrideDefaultLabels() {
+        var result = UsageModel.normalize({
+            provider: "custom",
+            rateWindowLabels: { primary: "DeepSeek V4 Flash", secondary: "GLM 5.3 Flash" },
+            usage: {
+                primary: { usedPercent: 27 },
+                secondary: { usedPercent: 8 }
+            }
+        })
+
+        compare(result.providers[0].windows[0].key, "primary")
+        compare(result.providers[0].windows[0].label, "DeepSeek V4 Flash")
+        compare(result.providers[0].windows[1].key, "secondary")
+        compare(result.providers[0].windows[1].label, "GLM 5.3 Flash")
+    }
+
+    function test_rateWindowLabelsApplyPerKeyAndFallBackToDefaults() {
+        var result = UsageModel.normalize({
+            provider: "partial",
+            rateWindowLabels: { primary: "  Custom  ", secondary: "", tertiary: 5 },
+            usage: {
+                primary: { usedPercent: 1 },
+                secondary: { usedPercent: 2 },
+                tertiary: { usedPercent: 3 }
+            }
+        })
+
+        compare(result.providers[0].windows[0].label, "Custom")
+        compare(result.providers[0].windows[1].label, "Weekly")
+        compare(result.providers[0].windows[2].label, "Monthly")
+    }
+
+    function test_invalidRateWindowLabelsContainersKeepDefaults() {
+        var shapes = [undefined, null, "Session", 7, ["A", "B"]]
+
+        for (var i = 0; i < shapes.length; i++) {
+            var result = UsageModel.normalize({
+                provider: "shape" + i,
+                rateWindowLabels: shapes[i],
+                usage: { primary: { usedPercent: 10 } }
+            })
+
+            compare(result.providers[0].windows[0].label, "Session")
+        }
+    }
 }

@@ -57,6 +57,17 @@ function findExtraWindow(extraRateWindows, idSubstring) {
     return null
 }
 
+function customWindowLabel(rateWindowLabels, key) {
+    if (!rateWindowLabels || typeof rateWindowLabels !== "object" || rateWindowLabels instanceof Array) {
+        return null
+    }
+    var label = rateWindowLabels[key]
+    if (typeof label !== "string" || label.trim().length === 0) {
+        return null
+    }
+    return label.trim()
+}
+
 function normalizeProvider(entry) {
     var usage = entry.usage && typeof entry.usage === "object" && !(entry.usage instanceof Array)
         ? entry.usage
@@ -100,6 +111,10 @@ function normalizeProvider(entry) {
     } else {
         for (var i = 0; i < windowDefinitions.length; i++) {
             var definition = windowDefinitions[i]
+            var customLabel = customWindowLabel(entry.rateWindowLabels, definition.key)
+            if (customLabel !== null) {
+                definition = { key: definition.key, label: customLabel }
+            }
             var window = normalizeWindow(definition, usage[definition.key])
             if (window !== null) {
                 windows.push(window)
