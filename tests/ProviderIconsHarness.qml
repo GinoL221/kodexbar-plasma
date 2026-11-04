@@ -37,6 +37,8 @@ Item {
         assert(ProviderIcons.displayName("opencode") === "OpenCode", "opencode brand spelling")
         assert(ProviderIcons.displayName("openrouter") === "OpenRouter", "openrouter brand spelling")
         assert(ProviderIcons.displayName("azureopenai") === "Azure OpenAI", "azureopenai brand spelling")
+        assert(ProviderIcons.displayName("nan") === "NaN Cloud", "nan brand spelling")
+        assert(ProviderIcons.key("nan") === "", "nan has no bundled icon and uses the theme fallback")
         assert(ProviderIcons.displayName("vertexai") === "Vertex AI", "vertexai brand spelling")
         assert(ProviderIcons.displayName("alibabatokenplan") === "Alibaba Token Plan",
                "alibabatokenplan brand spelling")

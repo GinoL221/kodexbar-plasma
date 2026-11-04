@@ -24,6 +24,7 @@ var displayNames = {
     "commandcode": "Command Code",
     "kimik2": "Kimi K2",
     "llmproxy": "LLM Proxy",
+    "nan": "NaN Cloud",
     "openai": "OpenAI",
     "opencode": "OpenCode",
     "opencodego": "OpenCode Go",
