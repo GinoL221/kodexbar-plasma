@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""Wrap the codexbar CLI and add a NaN Cloud usage entry to `usage` JSON output.
+
+Point the plasmoid's "CodexBar command" setting at this script. Every other
+invocation is passed through to the real codexbar untouched.
+
+The NaN entry follows the codexbar usage contract (provider/source/usage windows),
+so the plasmoid renders it like any other provider. See docs/nan-adapter.md.
+"""
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import threading
+import urllib.error
+import urllib.request
+from datetime import datetime, timedelta, timezone
+
+DEFAULT_BASE_URL = "https://api.nan.builders"
+DEFAULT_RENEWAL_DAY = 3
+DEFAULT_MODELS = [
+    {"id": "deepseek-v4-flash", "label": "DeepSeek V4 Flash", "quota": 1_000_000_000},
+    {"id": "glm5.3-flash", "label": "GLM 5.3 Flash", "quota": 500_000_000},
+]
+WINDOW_KEYS = ("primary", "secondary", "tertiary")
+MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+class NanError(Exception):
+    def __init__(self, kind, message):
+        super().__init__(message)
+        self.kind = kind
+        self.message = message
+
+
+def config_dir():
+    return os.path.join(os.path.expanduser("~"), ".config", "codexbar")
+
+
+def utc_now():
+    override = os.environ.get("NAN_NOW")
+    if override:
+        return datetime.strptime(override, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc)
+
+
+def shift_month(year, month, delta):
+    index = year * 12 + (month - 1) + delta
+    return index // 12, index % 12 + 1
+
+
+def renewal_moment(year, month, day):
+    last_day = (datetime(*shift_month(year, month, 1), 1, tzinfo=timezone.utc) - timedelta(days=1)).day
+    return datetime(year, month, min(day, last_day), tzinfo=timezone.utc)
+
+
+def billing_period(now, renewal_day):
+    this_month = renewal_moment(now.year, now.month, renewal_day)
+    if now >= this_month:
+        start = this_month
+        end = renewal_moment(*shift_month(now.year, now.month, 1), renewal_day)
+    else:
+        start = renewal_moment(*shift_month(now.year, now.month, -1), renewal_day)
+        end = this_month
+    return start, end
+
+
+def load_models_config():
+    path = os.path.join(config_dir(), "nan.json")
+    if not os.path.exists(path):
+        return DEFAULT_MODELS, DEFAULT_RENEWAL_DAY
+    try:
+        with open(path, encoding="utf-8") as handle:
+            raw = json.load(handle)
+        day = raw.get("renewalDay", DEFAULT_RENEWAL_DAY)
+        models = raw.get("models", DEFAULT_MODELS)
+        if isinstance(day, bool) or not isinstance(day, int) or not 1 <= day <= 31:
+            raise ValueError("renewalDay must be an integer from 1 to 31")
+        if not isinstance(models, list) or not 1 <= len(models) <= len(WINDOW_KEYS):
+            raise ValueError("models must list 1 to 3 entries")
+        for model in models:
+            quota = model.get("quota") if isinstance(model, dict) else None
+            if not isinstance(model.get("id"), str) or not isinstance(model.get("label"), str):
+                raise ValueError("each model needs string id and label")
+            if isinstance(quota, bool) or not isinstance(quota, int) or quota <= 0:
+                raise ValueError("each model needs a positive integer quota")
+    except (OSError, ValueError, AttributeError, TypeError) as error:
+        raise NanError("config", "Invalid %s: %s" % (path, error))
+    return models, day
+
+
+def resolve_api_key():
+    key = os.environ.get("NAN_API_KEY", "").strip()
+    if key:
+        return key
+    path = os.environ.get("NAN_API_KEY_FILE") or os.path.join(config_dir(), "nan-api-key")
+    try:
+        mode = os.stat(path).st_mode
+    except OSError:
+        raise NanError("config", "NAN_API_KEY is not set and no key file was found at %s" % path)
+    if mode & 0o077:
+        raise NanError("config", "Key file %s is readable by other users; run chmod 600 on it" % path)
+    with open(path, encoding="utf-8") as handle:
+        key = handle.read().strip()
+    if not key:
+        raise NanError("config", "Key file %s is empty" % path)
+    return key
+
+
+def fetch_usage(key, start):
+    base_url = os.environ.get("NAN_API_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+    url = "%s/v1/usage?start_date=%s" % (base_url, start.strftime("%Y-%m-%d"))
+    request = urllib.request.Request(url, headers={"Authorization": "Bearer " + key})
+    timeout = float(os.environ.get("NAN_TIMEOUT", "8"))
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        raise NanError("provider", "NaN Cloud API returned HTTP %d" % error.code)
+    except (urllib.error.URLError, OSError) as error:
+        raise NanError("runtime", "Could not reach NaN Cloud: %s" % getattr(error, "reason", error))
+    except ValueError:
+        raise NanError("runtime", "NaN Cloud returned an invalid usage report")
+
+
+def build_entry(report, models, start, end, now):
+    start_day = start.strftime("%Y-%m-%d")
+    end_day = end.strftime("%Y-%m-%d")
+    tokens = {model["id"]: 0 for model in models}
+    rows = report.get("data") if isinstance(report, dict) else None
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        used = row.get("total_tokens")
+        if row.get("model") in tokens and isinstance(used, int) and start_day <= str(row.get("date")) < end_day:
+            tokens[row["model"]] += used
+
+    window_minutes = int((end - start).total_seconds() // 60)
+    usage = {
+        "identity": {"providerID": "nan", "loginMethod": "Gentle"},
+        "updatedAt": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    labels = {}
+    for key, model in zip(WINDOW_KEYS, models):
+        labels[key] = model["label"]
+        usage[key] = {
+            "usedPercent": round(tokens[model["id"]] / model["quota"] * 100, 2),
+            "windowMinutes": window_minutes,
+            "resetsAt": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "resetDescription": "%s %d" % (MONTHS[end.month - 1], end.day),
+        }
+    return {"provider": "nan", "source": "api", "rateWindowLabels": labels, "usage": usage}
+
+
+def error_entry(error):
+    return {
+        "provider": "nan",
+        "source": "api",
+        "error": {"kind": error.kind, "code": 1, "message": error.message},
+    }
+
+
+def collect_nan_entry():
+    try:
+        models, renewal_day = load_models_config()
+        key = resolve_api_key()
+        now = utc_now()
+        start, end = billing_period(now, renewal_day)
+        return build_entry(fetch_usage(key, start), models, start, end, now)
+    except NanError as error:
+        return error_entry(error)
+    except Exception as error:  # never let NaN break the other providers
+        return error_entry(NanError("runtime", "NaN adapter failed: %s" % error))
+
+
+def find_real_codexbar():
+    override = os.environ.get("CODEXBAR_REAL")
+    if override:
+        return override
+    me = os.path.realpath(__file__)
+    candidates = [shutil.which("codexbar")] + [
+        os.path.join(os.path.expanduser("~"), ".local", "bin", "codexbar"),
+        "/usr/local/bin/codexbar",
+        "/usr/bin/codexbar",
+    ]
+    for candidate in candidates:
+        if candidate and os.access(candidate, os.X_OK) and os.path.realpath(candidate) != me:
+            return candidate
+    return None
+
+
+def option_value(args, name):
+    for index, arg in enumerate(args):
+        if arg == name and index + 1 < len(args):
+            return args[index + 1]
+        if arg.startswith(name + "="):
+            return arg.split("=", 1)[1]
+    return None
+
+
+def wants_json(args):
+    return "--json" in args or "--json-only" in args or option_value(args, "--format") == "json"
+
+
+def main(args):
+    real = find_real_codexbar()
+    if real is None:
+        sys.stderr.write("codexbar-nan: the codexbar CLI was not found; set CODEXBAR_REAL\n")
+        return 127
+
+    provider = option_value(args, "--provider")
+    merges = bool(args) and args[0] == "usage" and wants_json(args) and provider in (None, "all", "nan")
+    if not merges:
+        os.execv(real, [real] + args)
+
+    holder = {}
+    worker = threading.Thread(target=lambda: holder.update(entry=collect_nan_entry()))
+    worker.start()
+
+    if provider == "nan":
+        worker.join()
+        entry = holder["entry"]
+        print(json.dumps([entry]))
+        return 1 if "error" in entry else 0
+
+    result = subprocess.run([real] + args, stdout=subprocess.PIPE, text=True)
+    worker.join()
+    try:
+        entries = json.loads(result.stdout)
+    except ValueError:
+        entries = None
+    if not isinstance(entries, list):
+        sys.stdout.write(result.stdout)
+        return result.returncode
+    entries.append(holder["entry"])
+    print(json.dumps(entries))
+    return result.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
