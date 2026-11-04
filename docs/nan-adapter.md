@@ -6,7 +6,7 @@ The entry is built from `GET https://api.nan.builders/v1/usage` (token counts pe
 
 ## What you see
 
-One provider, **NaN Cloud**, with one bar per model. Bars are labeled with the model name (via the CLI contract's `rateWindowLabels`) and reset on the plan's renewal day. Default labels are short on purpose: the All overview sizes its label column for "Monthly" and elides anything longer, so "DeepSeek V4 Flash" would read "DeepS…". Change them in `nan.json` if you prefer longer ones.
+One provider, **NaN Cloud**, with one bar per model. Bars are labeled with the model name (via the CLI contract's `rateWindowLabels`) and reset on the plan's renewal day. Default labels are short on purpose: the All overview sizes its label column for "Monthly" and elides anything longer, so "DeepSeek" reads "DeepS…". Change them in `nan.json` if you prefer longer ones.
 
 | Behavior | Detail |
 | --- | --- |
@@ -44,7 +44,7 @@ Defaults match the **Gentle** plan (DeepSeek V4 Flash 1,000M tokens, GLM 5.3 Fla
 {
   "renewalDay": 3,
   "models": [
-    { "id": "deepseek-v4-flash", "label": "DeepSeek", "quota": 1000000000 },
+    { "id": "deepseek-v4-flash", "label": "DS V4", "quota": 1000000000 },
     { "id": "glm5.3-flash", "label": "GLM", "quota": 500000000 }
   ]
 }
