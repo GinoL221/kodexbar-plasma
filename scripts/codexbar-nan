@@ -21,8 +21,8 @@ from datetime import datetime, timedelta, timezone
 DEFAULT_BASE_URL = "https://api.nan.builders"
 DEFAULT_RENEWAL_DAY = 3
 DEFAULT_MODELS = [
-    {"id": "deepseek-v4-flash", "label": "DeepSeek V4 Flash", "quota": 1_000_000_000},
-    {"id": "glm5.3-flash", "label": "GLM 5.3 Flash", "quota": 500_000_000},
+    {"id": "deepseek-v4-flash", "label": "DeepSeek", "quota": 1_000_000_000},
+    {"id": "glm5.3-flash", "label": "GLM", "quota": 500_000_000},
 ]
 WINDOW_KEYS = ("primary", "secondary", "tertiary")
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")

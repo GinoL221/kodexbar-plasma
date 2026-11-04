@@ -131,7 +131,7 @@ class UsageMergeTest(AdapterTestCase):
 
         nan = entries[1]
         self.assertEqual(nan["source"], "api")
-        self.assertEqual(nan["rateWindowLabels"], {"primary": "DeepSeek V4 Flash", "secondary": "GLM 5.3 Flash"})
+        self.assertEqual(nan["rateWindowLabels"], {"primary": "DeepSeek", "secondary": "GLM"})
         self.assertAlmostEqual(nan["usage"]["primary"]["usedPercent"], 25.0)
         self.assertAlmostEqual(nan["usage"]["secondary"]["usedPercent"], 10.0)
         self.assertEqual(nan["usage"]["primary"]["resetsAt"], "2026-12-03T00:00:00Z")
