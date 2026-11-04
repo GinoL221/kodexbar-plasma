@@ -109,6 +109,10 @@ This is an optional per-instance setup step; it does not rewrite package identit
 - Use the refresh button in the popup to query the CLI immediately.
 - Open widget settings to configure the absolute CLI path, refresh interval, and request timeout.
 
+### Claude rate-limit backoff
+
+Anthropic rate-limits the Claude usage endpoint (HTTP 429), so the widget backs off before retrying: 2 minutes after the first throttled response, doubling to at most 30 minutes. The last known usage figures stay visible during backoff. A very small refresh interval will keep hitting this limit.
+
 Provider selection is presentation-only and resets when the popup is reopened. The first response-ordered provider with usable windows opens by default; select `All` for a compact, response-ordered summary of usable providers. Individual provider detail preserves the current Session, Weekly, Monthly, and raw reset data returned by the CLI, plus the selected-provider-only enrichment described below. `All` stays compact and never shows that enrichment.
 
 The popup renders supported CLI fields:
