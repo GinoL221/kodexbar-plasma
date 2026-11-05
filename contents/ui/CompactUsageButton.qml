@@ -8,6 +8,25 @@ QQC2.ToolButton {
 
     property string usageText: ""
 
+    signal scrolled(int delta)
+
+    function simulateScroll(delta) {
+        root.scrolled(delta)
+    }
+
+    WheelHandler {
+        id: wheelHandler
+        target: root
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        onWheel: function(event) {
+            if (event.angleDelta.y > 0) {
+                root.scrolled(-1)
+            } else if (event.angleDelta.y < 0) {
+                root.scrolled(1)
+            }
+        }
+    }
+
     text: ""
     icon.name: ""
     display: QQC2.AbstractButton.TextBesideIcon
