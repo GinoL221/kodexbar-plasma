@@ -37,6 +37,7 @@ Item {
             { provider: "claude", windows: [{ key: "primary", label: "Session", usedPercent: 95, resetDescription: "in 1 hour" }] }
         ], [], 0, 0)
         assert(root.dispatchedList.length === 1, "escalation to 95% must dispatch 1 notification")
+        assert(root.dispatchedList[0].title.indexOf("KodexBar") === 0, "notification title must identify KodexBar")
         assert(root.dispatchedList[0].title.indexOf("Claude") !== -1, "notification must name Claude")
         assert(root.dispatchedList[0].title.indexOf("90%") !== -1, "notification must specify 90% threshold")
 
@@ -66,6 +67,19 @@ Item {
             { provider: "codex", windows: [{ key: "primary", label: "Session", usedPercent: 100 }] }
         ], [], 0, 0)
         assert(root.dispatchedList.length === 3, "disabled controller must emit no notifications")
+
+        // 7. Urgency mapping and notification preparation contract (no D-Bus calls)
+        assert(controller.urgencyNormal === 50, "urgencyNormal must be KF6 NormalUrgency (50)")
+        assert(controller.urgencyCritical === 90, "urgencyCritical must be KF6 CriticalUrgency (90)")
+
+        var mockNotif = { title: "", text: "", urgency: 0, iconName: "" }
+        var prepOk = controller.prepareNotification(mockNotif, { title: "Alert", text: "body", urgency: "critical" })
+        assert(prepOk === true, "prepareNotification must return true for valid item")
+        assert(mockNotif.urgency === 90, "prepareNotification must assign critical urgency 90")
+        assert(mockNotif.title === "KodexBar: Alert", "prepareNotification must prefix title with KodexBar")
+
+        controller.prepareNotification(mockNotif, { title: "Info", text: "body", urgency: "normal" })
+        assert(mockNotif.urgency === 50, "prepareNotification must assign normal urgency 50")
 
         finish()
     }

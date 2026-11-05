@@ -108,6 +108,13 @@ PlasmoidItem {
         onClicked: root.expanded = !root.expanded
     }
 
+    Connections {
+        target: root.controller
+        function onCommittedGenerationChanged() {
+            root.checkNotifications()
+        }
+    }
+
     fullRepresentation: Item {
         id: full
         property alias scrollView: usageScrollView
@@ -268,7 +275,6 @@ PlasmoidItem {
             target: root.controller
             function onCommittedGenerationChanged() {
                 root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
-                root.checkNotifications()
             }
         }
     }
