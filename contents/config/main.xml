@@ -21,5 +21,8 @@
     <entry name="preferredRepresentativeWindow" type="String">
       <default>automatic</default>
     </entry>
+    <entry name="enableQuotaNotifications" type="Bool">
+      <default>true</default>
+    </entry>
   </group>
 </kcfg>
