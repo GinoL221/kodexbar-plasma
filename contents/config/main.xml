@@ -9,7 +9,7 @@
       <default></default>
     </entry>
     <entry name="refreshInterval" type="Int">
-      <default>60</default>
+      <default>600</default>
       <min>1</min>
       <max>3600</max>
     </entry>

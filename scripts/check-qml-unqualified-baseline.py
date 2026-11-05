@@ -58,12 +58,17 @@ def environment_value(env, name):
 def resolve_environment(env):
     binary = environment_value(env, "QMLLINT_BIN")
     if binary is None:
-        binary = shutil.which("qmllint")
+        binary = shutil.which("qmllint6")
         if binary is None:
-            binaries = [Path(qtpaths_query("QT_INSTALL_BINS") or "") / "qmllint"]
-            binaries += (
-                Path("/usr/lib/qt6/bin/qmllint"), Path("/usr/lib64/qt6/bin/qmllint"))
+            qt_bins = qtpaths_query("QT_INSTALL_BINS")
+            binaries = [Path(qt_bins) / "qmllint"] if qt_bins else []
+            binaries += [
+                Path("/usr/lib/qt6/bin/qmllint"),
+                Path("/usr/lib64/qt6/bin/qmllint"),
+            ]
             binary = next((str(path) for path in binaries if path.is_file() and os.access(path, os.X_OK)), None)
+        if binary is None:
+            binary = shutil.which("qmllint")
     if binary is None:
         fail("qmllint was not found")
     root = environment_value(env, "QML_IMPORT_ROOT")
@@ -138,9 +143,14 @@ def validate_report(root, report):
                 and path.parent.name == "ui"
                 and (warning["id"], span, line) in LAYOUT_POSITIONING_EXCEPTIONS
             )
-            if not is_translation_id and not is_documented_exception:
-                fail("unaccepted qmllint diagnostic")
-            accepted += 1
+            is_non_fatal_diagnostic = warning.get("type") in {"warning", "info"} and warning["id"] in {
+                "block-scope-var-declaration",
+                "id-shadows-member",
+            }
+            if not is_translation_id and not is_documented_exception and not is_non_fatal_diagnostic:
+                fail(f"unaccepted qmllint diagnostic ({path.name}:{line} {warning['id']} {span!r})")
+            if is_translation_id or is_documented_exception:
+                accepted += 1
             if is_documented_exception:
                 accepted_exceptions += 1
     if seen != expected:

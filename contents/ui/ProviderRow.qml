@@ -72,8 +72,9 @@ ColumnLayout {
         Layout.preferredWidth: 0
         sourceComponent: overviewCardComponent
         onLoaded: {
-            if (item) {
-                item.width = Qt.binding(function() { return overviewLoader.width })
+            var loadedItem = item as Item
+            if (loadedItem) {
+                loadedItem.width = Qt.binding(function() { return overviewLoader.width })
             }
         }
     }
@@ -87,8 +88,9 @@ ColumnLayout {
         Layout.preferredWidth: 0
         sourceComponent: detailBodyComponent
         onLoaded: {
-            if (item) {
-                item.width = Qt.binding(function() { return detailLoader.width })
+            var loadedItem = item as Item
+            if (loadedItem) {
+                loadedItem.width = Qt.binding(function() { return detailLoader.width })
             }
         }
     }

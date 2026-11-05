@@ -62,7 +62,7 @@ class BaselineTest(unittest.TestCase):
             {"filename": "contents/ui/config/deeper/two.qml", "warnings": [], "success": True},
             {"filename": "contents/config/config.qml", "warnings": [], "success": True},
         )
-        self.assertEqual(self.checker.validate_report(self.root, report), 2)
+        self.assertEqual(self.checker.validate_report(self.root, report), (2, 0))
 
     def test_rejects_unaccepted_diagnostics_and_flat_schema(self):
         for token in ("root", "index", "i18nSuffix"):
