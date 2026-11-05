@@ -78,7 +78,15 @@ function evaluateTransitions(previousState, providers, rateLimitedIds, consecuti
     var providerList = Array.isArray(providers) ? providers : []
     var throttledIds = Array.isArray(rateLimitedIds) ? rateLimitedIds : []
     var i, j, providerObj, pId, pName, windows, win, key, prevLevel, currLevel, pct
-    var prevConsecutive, currConsecutive
+    var prevConsecutive, currConsecutive, stateKey
+
+    // Carry over previous tracking state so transient poll failures or missing windows
+    // do not erase baseline levels and trigger duplicate alerts on recovery.
+    for (stateKey in prev) {
+        if (Object.prototype.hasOwnProperty.call(prev, stateKey)) {
+            next[stateKey] = prev[stateKey]
+        }
+    }
 
     var getName = typeof displayNameFn === "function" ? displayNameFn : function(id) { return id }
 

@@ -116,6 +116,16 @@ Item {
         var eval6 = NotificationPolicy.evaluateTransitions(eval5.nextState, providers4, ["claude"], 2, 4, displayNameFn)
         assert(eval6.notifications.length === 0, "second strike of 429 must not spam notification")
 
+        // 7. Transient provider drop-out and recovery anti-spam
+        // Poll 7: Claude disappears (e.g. transient network/auth failure)
+        var eval7 = NotificationPolicy.evaluateTransitions(eval6.nextState, [], [], 0, 0, displayNameFn)
+        assert(eval7.notifications.length === 0, "empty poll must emit no notifications")
+        assert(eval7.nextState["claude:primary"] === "exhausted", "state must carry over across missing polls")
+
+        // Poll 8: Claude reappears at same 100% -> must NOT alert again
+        var eval8 = NotificationPolicy.evaluateTransitions(eval7.nextState, providers4, [], 0, 0, displayNameFn)
+        assert(eval8.notifications.length === 0, "reappearing at unchanged high level must not repeat alert")
+
         finish()
     }
 }

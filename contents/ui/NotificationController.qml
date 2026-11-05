@@ -29,6 +29,9 @@ Item {
         var iconName = item.iconName || "dialog-information"
         var urgency = item.urgency || "normal"
 
+        if (notificationHistory.length >= 50) {
+            notificationHistory.shift()
+        }
         notificationHistory.push(item)
         notificationDispatched(title, text, iconName, urgency)
 
@@ -37,8 +40,12 @@ Item {
         }
 
         try {
+            if (root.activeNotification && typeof root.activeNotification.destroy === "function") {
+                root.activeNotification.destroy()
+                root.activeNotification = null
+            }
             root.activeNotification = Qt.createQmlObject(
-                "import QtQuick; import org.kde.notification as KNotification; KNotification.Notification { componentName: \"org.kde.plasma.kodexbar.plasma\"; eventId: \"warning\" }",
+                "import QtQuick; import org.kde.notification as KNotification; KNotification.Notification { componentName: \"plasma_workspace\"; eventId: \"notification\" }",
                 root,
                 "dynamicNotification"
             )
