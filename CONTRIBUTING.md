@@ -61,6 +61,14 @@ Load `skills/plasma-kirigami-ui/SKILL.md` before editing QML. Use Plasma/Kirigam
 - Visual (supplemental): `./scripts/run-visual-tests.sh` or the Docker flow in `docs/visual-regression.md`.
 - Live Plasma remains manual; offscreen suites do not certify `PlasmoidItem` / panel integration.
 
+### QML harness conventions and qmllint
+
+`.qmllint.ini` enforces `MissingProperty=error` across `contents/` and `tests/`. Keep these conventions when writing or editing QML harnesses:
+
+- **Instance hoisting:** When creating test components with `component.createObject(root, {...})`, never assign the result to a local `var obj`. Static analysis infers `QObject*` and flags member access (`obj.phase`, `obj.refreshCalls`) as a missing-property error. Declare `property var obj: null` on the root `Item` and assign to that hoisted property instead.
+- **Loader item narrowing:** When binding geometry on a `Loader`'s loaded item (e.g. `item.width`), narrow the reference with `(item as Item)` so `qmllint` resolves `Item` layout properties rather than bare `QObject`.
+- **Pre-PR lint verification:** Always run `./scripts/lint-qml.sh` before submitting. The gate checks all QML under `contents/ui`, `contents/config`, and `tests/` against the translation/layout baseline.
+
 ## PR checklist
 
 The GitHub PR template mirrors the gates above. Fill it honestly; do not claim live Plasma coverage from offscreen-only runs.
