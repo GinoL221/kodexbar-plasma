@@ -8,6 +8,7 @@ Item {
     property bool assertionFailed: false
 
     property int activationCount: 0
+    property int scrollDeltaReceived: 0
 
     function assert(condition, message) {
         if (!condition) {
@@ -55,6 +56,16 @@ Item {
                "the compact icon must be centered without a trailing blank slot")
         button.click()
         assert(root.activationCount === 1, "the native button activation path must open details")
+
+        // Scroll signal contract
+        button.scrolled.connect(function(delta) {
+            root.scrollDeltaReceived = delta
+        })
+        button.simulateScroll(1)
+        assert(root.scrollDeltaReceived === 1, "simulateScroll forward must deliver delta 1")
+        button.simulateScroll(-1)
+        assert(root.scrollDeltaReceived === -1, "simulateScroll backward must deliver delta -1")
+
         finish()
     })
 }

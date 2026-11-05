@@ -13,6 +13,8 @@ import "../code/RequestTimeout.js" as RequestTimeout
 import "../code/PreferredWindow.js" as PreferredWindow
 import "../code/CostRequestPolicy.js" as CostRequestPolicy
 import "../code/RateLimitPolicy.js" as RateLimitPolicy
+import "../code/ProviderCycle.js" as ProviderCycle
+import "../code/ProviderIcons.js" as ProviderIcons
 
 PlasmoidItem {
     id: root
@@ -30,14 +32,40 @@ PlasmoidItem {
     property bool enableQuotaNotifications: plasmoidConfiguration.enableQuotaNotifications !== false
     property alias controller: controller
     readonly property var compactSelection: UsageModel.selectCompact(root.controller.committedProviders)
+    property int cycleIndex: 0
+    readonly property var cycleTargets: ProviderCycle.buildCycleTargets(root.controller.committedProviders, function(id) {
+        return ProviderIcons.displayName(id)
+    })
+    readonly property var cycledUsage: ProviderCycle.resolveCycledUsage(
+        root.cycleTargets,
+        root.cycleIndex,
+        root.preferredWindowKey,
+        UsageModel.selectCompact,
+        UsageModel.selectRepresentative
+    )
 
     preferredRepresentation: compactRepresentation
-    toolTipMainText: "KodexBar Plasma"
-    toolTipSubText: root.panelText()
+    toolTipMainText: root.cycledUsage.isAll ? "KodexBar Plasma" : "KodexBar — " + root.cycledUsage.targetName
+    toolTipSubText: root.panelTooltipSubText()
+
+    function panelTooltipSubText() {
+        var pct, winLabel, pName
+        if (root.cycledUsage.usedPercent !== null) {
+            pct = Math.round(root.cycledUsage.usedPercent) + "%"
+            winLabel = root.cycledUsage.label ? " (" + root.cycledUsage.label + ")" : ""
+            if (root.cycledUsage.isAll) {
+                pName = root.cycledUsage.providerName
+                return pName ? pName + winLabel + ": " + pct : pct
+            }
+            return root.cycledUsage.targetName + winLabel + ": " + pct
+        }
+        return root.controller.phase === "loading" || root.controller.phase === "idle"
+            ? i18n("Loading") : root.controller.phase === "error" ? i18n("Error") : i18n("No data")
+    }
 
     function panelText() {
-        if (compactSelection !== null) {
-            return Math.round(compactSelection.usedPercent) + "%"
+        if (root.cycledUsage.usedPercent !== null) {
+            return Math.round(root.cycledUsage.usedPercent) + "%"
         }
         return root.controller.phase === "loading" || root.controller.phase === "idle"
             ? i18n("Loading") : root.controller.phase === "error" ? i18n("Error") : i18n("No data")
@@ -106,6 +134,9 @@ PlasmoidItem {
     compactRepresentation: CompactUsageButton {
         usageText: root.panelText()
         onClicked: root.expanded = !root.expanded
+        onScrolled: function(delta) {
+            root.cycleIndex = ProviderCycle.nextIndex(root.cycleIndex, delta, root.cycleTargets.length)
+        }
     }
 
     Connections {

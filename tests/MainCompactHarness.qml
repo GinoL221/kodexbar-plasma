@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
 import "../contents/code/UsageModel.js" as UsageModel
+import "../contents/code/ProviderCycle.js" as ProviderCycle
 import "../contents/ui" as UsageUi
 
 Item {
@@ -70,6 +71,18 @@ Item {
         })
         assert(countProgressBars(firstSummary) === 2, "first summary row renders two bars when Session and Weekly are both finite (Overview D10)")
         assert(countProgressBars(secondSummary) === 2, "second summary row renders two bars when Session and Weekly are both finite (Overview D10)")
+
+        // Compact cycle verification
+        var cycleTargets = ProviderCycle.buildCycleTargets(controller.committedProviders, function(id) {
+            return id === "first" ? "First" : "Second"
+        })
+        assert(cycleTargets.length === 3, "must have All + 2 providers")
+        var cycled0 = ProviderCycle.resolveCycledUsage(cycleTargets, 0, "session", UsageModel.selectCompact, UsageModel.selectRepresentative)
+        assert(cycled0.isAll === true && cycled0.usedPercent === 90, "cycle index 0 must be All with global peak 90%")
+        var cycled1 = ProviderCycle.resolveCycledUsage(cycleTargets, 1, "session", UsageModel.selectCompact, UsageModel.selectRepresentative)
+        assert(cycled1.isAll === false && cycled1.targetId === "first" && cycled1.usedPercent === 75, "cycle index 1 must be first provider with 75%")
+        var cycled2 = ProviderCycle.resolveCycledUsage(cycleTargets, 2, "session", UsageModel.selectCompact, UsageModel.selectRepresentative)
+        assert(cycled2.isAll === false && cycled2.targetId === "second" && cycled2.usedPercent === 60, "cycle index 2 must be second provider with session 60%")
 
         controller.requestRefresh()
         controller.timeoutForTest(controller.generation)
