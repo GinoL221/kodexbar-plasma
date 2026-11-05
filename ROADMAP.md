@@ -4,6 +4,11 @@ Short post-parity backlog. Product behavior for usage, selected-provider enrichm
 
 ## Done (recent)
 
+- Native Plasma quota and rate-limit notifications (KF6 `KNotification`, 90%/100%/429, anti-spam)
+- Persistent local snapshot cache (`QtQuick.LocalStorage` hydration)
+- Claude rate-limit backoff resilience and Grok overview window deduplication
+- NaN Cloud provider adapter (`scripts/codexbar-nan`) and custom window labels
+- Compact UI density and layout refinement toward codexbar.app parity
 - All-provider usage lifecycle and compact/popup UI
 - Provider icons theme-adaptive gate
 - Selected-provider enrichment (pace, credits, reset inventory, identity header)
