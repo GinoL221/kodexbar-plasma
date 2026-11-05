@@ -226,7 +226,7 @@ function selectOverviewWindows(windows) {
     var result = []
     for (var i = 0; i < windowDefinitions.length; i++) {
         var window = preferredFiniteWindow(windows, windowDefinitions[i])
-        if (window !== null) {
+        if (window !== null && result.indexOf(window) === -1) {
             result.push(window)
         }
     }

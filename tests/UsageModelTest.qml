@@ -516,6 +516,25 @@ TestCase {
         compare(UsageModel.selectOverviewWindows([]), [])
     }
 
+    function test_selectOverviewWindowsDoesNotDuplicateWhenWindowMatchesKeyAndLabel() {
+        var provider = UsageModel.normalize({
+            provider: "grok",
+            rateWindowLabels: {
+                primary: "Weekly"
+            },
+            usage: {
+                primary: { usedPercent: 100 },
+                secondary: null,
+                tertiary: null
+            }
+        }).providers[0]
+
+        var result = UsageModel.selectOverviewWindows(provider.windows)
+        compare(result.length, 1)
+        compare(result[0].label, "Weekly")
+        compare(result[0].usedPercent, 100)
+    }
+
     function test_errorEntriesGainNoRawSibling() {
         var result = UsageModel.normalize([
             {
