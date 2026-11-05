@@ -69,8 +69,10 @@ RowLayout {
             id: providerLabel
             objectName: "providerLabel"
             text: root.providerText
-            font.weight: Font.DemiBold
-            font.pointSize: Kirigami.Theme.defaultFont.pointSize
+            font.weight: root.detailed ? Font.Bold : Font.DemiBold
+            font.pointSize: root.detailed
+                ? Math.round(Kirigami.Theme.defaultFont.pointSize * 1.3)
+                : Kirigami.Theme.defaultFont.pointSize
             elide: Text.ElideRight
             Layout.fillWidth: true
         }
