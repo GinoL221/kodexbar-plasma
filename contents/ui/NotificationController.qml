@@ -14,10 +14,42 @@ Item {
     property var trackingState: ({})
     property bool testMode: false
 
+    readonly property int urgencyNormal: 50
+    readonly property int urgencyCritical: 90
+
     signal notificationDispatched(string title, string text, string iconName, string urgency)
 
     function providerDisplayName(id) {
         return ProviderIcons.displayName(id)
+    }
+
+    function createNotification() {
+        return Qt.createQmlObject(
+            "import QtQuick; import org.kde.notification as KNotification; KNotification.Notification { componentName: \"plasma_workspace\"; eventId: \"notification\"; autoDelete: true }",
+            root,
+            "dynamicNotification"
+        )
+    }
+
+    function prepareNotification(notification, item) {
+        if (!notification || !item || typeof item !== "object") {
+            return false
+        }
+        var title = item.title || ""
+        if (title.indexOf("KodexBar") !== 0) {
+            title = "KodexBar: " + title
+        }
+        var iconName = item.iconName || "dialog-information"
+        var urgency = item.urgency || "normal"
+        notification.title = title
+        notification.text = item.text || ""
+        notification.urgency = urgency === "critical"
+            ? root.urgencyCritical
+            : root.urgencyNormal
+        if (iconName.length > 0) {
+            notification.iconName = iconName
+        }
+        return true
     }
 
     function dispatch(item) {
@@ -25,6 +57,9 @@ Item {
             return false
         }
         var title = item.title || ""
+        if (title.indexOf("KodexBar") !== 0) {
+            title = "KodexBar: " + title
+        }
         var text = item.text || ""
         var iconName = item.iconName || "dialog-information"
         var urgency = item.urgency || "normal"
@@ -40,18 +75,8 @@ Item {
         }
 
         try {
-            root.activeNotification = Qt.createQmlObject(
-                "import QtQuick; import org.kde.notification as KNotification; KNotification.Notification { componentName: \"plasma_workspace\"; eventId: \"notification\"; autoDelete: true }",
-                root,
-                "dynamicNotification"
-            )
-            if (root.activeNotification) {
-                root.activeNotification.title = title
-                root.activeNotification.text = text
-                root.activeNotification.urgency = urgency === "critical" ? 4 : 2
-                if (iconName.length > 0) {
-                    root.activeNotification.iconName = iconName
-                }
+            root.activeNotification = root.createNotification()
+            if (root.prepareNotification(root.activeNotification, item)) {
                 root.activeNotification.sendEvent()
                 return true
             }
