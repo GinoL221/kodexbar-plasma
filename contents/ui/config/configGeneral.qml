@@ -24,6 +24,8 @@ KCM.SimpleKCM {
     property string cfg_preferredRepresentativeWindowDefault
     property alias preferredWindowControl: preferredWindow
     property alias preferredWindowGuidance: preferredWindowGuidanceLabel
+    property alias cfg_enableQuotaNotifications: enableQuotaNotifications.checked
+    property bool cfg_enableQuotaNotificationsDefault
 
     readonly property var preferredWindowKeys: PreferredWindow.VALID_KEYS
 
@@ -164,6 +166,15 @@ KCM.SimpleKCM {
                     Component.onCompleted: currentIndex = page.preferredWindowIndex(selectedKey)
                 }
 
+                QQC2.CheckBox {
+                    id: enableQuotaNotifications
+                    objectName: "enableQuotaNotifications"
+                    Kirigami.FormData.label: i18n("Notifications:")
+                    text: i18n("Notify when quota reaches 90% or rate limit triggers")
+                    Accessible.name: i18n("Enable quota notifications")
+                    Accessible.description: i18n("Show native Plasma notifications when provider usage reaches critical (90%) or exhausted (100%) levels, or when rate limits trigger backoff.")
+                }
+
                 PlasmaComponents.Label {
                     id: codexbarSetupGuidance
                     objectName: "codexbarSetupGuidance"
@@ -193,6 +204,16 @@ KCM.SimpleKCM {
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                     Accessible.name: qsTr("Representative window guidance")
+                }
+
+                PlasmaComponents.Label {
+                    id: notificationsGuidanceLabel
+                    objectName: "notificationsGuidance"
+                    text: i18n("Dispatches native system notifications when any provider crosses 90% or 100% quota thresholds, or when queries are paused due to rate limits.")
+                    color: Kirigami.Theme.disabledTextColor
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                    Accessible.name: i18n("Notifications guidance")
                 }
 
                 PlasmaComponents.Label {

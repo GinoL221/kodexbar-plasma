@@ -12,6 +12,7 @@ import "../code/RefreshInterval.js" as RefreshInterval
 import "../code/RequestTimeout.js" as RequestTimeout
 import "../code/PreferredWindow.js" as PreferredWindow
 import "../code/CostRequestPolicy.js" as CostRequestPolicy
+import "../code/RateLimitPolicy.js" as RateLimitPolicy
 
 PlasmoidItem {
     id: root
@@ -26,6 +27,7 @@ PlasmoidItem {
     property int effectiveRefreshSeconds: Math.max(refreshSeconds, Math.ceil(controller.retryDelayMs() / 1000))
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(plasmoidConfiguration.requestTimeout)
     property string preferredWindowKey: PreferredWindow.keyOrDefault(plasmoidConfiguration.preferredRepresentativeWindow)
+    property bool enableQuotaNotifications: plasmoidConfiguration.enableQuotaNotifications !== false
     property alias controller: controller
     readonly property var compactSelection: UsageModel.selectCompact(root.controller.committedProviders)
 
@@ -61,6 +63,22 @@ PlasmoidItem {
     CostController {
         id: costController
         commandPath: root.codexbarCommand
+    }
+
+    NotificationController {
+        id: notificationController
+        notificationsEnabled: root.enableQuotaNotifications
+    }
+
+    function checkNotifications() {
+        var throttledIds = RateLimitPolicy.rateLimitedProviderIds(root.controller.committedErrors)
+        var retryMinutes = RateLimitPolicy.retryMinutes(root.controller.retryDelayMs())
+        notificationController.checkAndNotify(
+            root.controller.committedProviders,
+            throttledIds,
+            root.controller.consecutiveRateLimits,
+            retryMinutes
+        )
     }
 
     // Requests cost only for a supported selected provider missing its
@@ -250,6 +268,7 @@ PlasmoidItem {
             target: root.controller
             function onCommittedGenerationChanged() {
                 root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+                root.checkNotifications()
             }
         }
     }
