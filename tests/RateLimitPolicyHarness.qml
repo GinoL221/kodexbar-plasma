@@ -36,6 +36,10 @@ Item {
             "rate limit detection must accept hyphenated messages")
         assert(RateLimitPolicy.isRateLimitError({ provider: "claude", error: { kind: "api_error", message: "HTTP 429 received" } }),
             "a 429 message must be detected")
+        assert(!RateLimitPolicy.isRateLimitError({ provider: "claude", error: { kind: "api_error", message: "Context length exceeded: 4290 tokens" } }),
+            "a message with 4290 tokens must not match rate limit")
+        assert(!RateLimitPolicy.isRateLimitError({ provider: "claude", error: { kind: "api_error", message: "Prompt size 1429 bytes" } }),
+            "a message with 1429 bytes must not match rate limit")
         assert(!RateLimitPolicy.isRateLimitError({ provider: "claude" }),
             "an entry without an error must not be a rate limit")
         assert(!RateLimitPolicy.isRateLimitError(null), "a null entry must not be a rate limit")

@@ -20,7 +20,7 @@ function isRateLimitError(errorEntry) {
         return true
     }
     var message = typeof error.message === "string" ? error.message : ""
-    return /rate[ _-]?limit/i.test(message) || /429/.test(message)
+    return /rate[ _-]?limit/i.test(message) || /\b429\b/.test(message)
 }
 
 function hasRateLimitError(errors) {
@@ -101,6 +101,11 @@ function backoffDelayMs(consecutive) {
     return Math.min(delay, MAX_DELAY_MS)
 }
 
+// Note: parseRetryAfterMs is maintained as a pure policy helper for
+// environments or future CLI contract revisions that propagate HTTP retry
+// headers. In current runtime, CodexBar CLI does not expose HTTP response
+// headers in its JSON output (and Anthropic sends an unhelpful `retry-after: 0`),
+// so UsageController passes an empty string into nextDelayMs().
 function parseRetryAfterMs(value) {
     var trimmed, seconds, date, remainingMs
     if (typeof value === "number") {

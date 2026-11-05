@@ -256,7 +256,9 @@ PlasmoidItem {
 
     onRefreshSecondsChanged: {
         refreshTimer.restart()
-        refresh()
+        if (!controller.rateLimited) {
+            refresh()
+        }
     }
 
     onCodexbarCommandChanged: {
