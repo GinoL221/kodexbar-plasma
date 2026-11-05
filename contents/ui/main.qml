@@ -15,6 +15,7 @@ import "../code/CostRequestPolicy.js" as CostRequestPolicy
 import "../code/RateLimitPolicy.js" as RateLimitPolicy
 import "../code/ProviderCycle.js" as ProviderCycle
 import "../code/ProviderIcons.js" as ProviderIcons
+import "../code/ProviderFilterPolicy.js" as ProviderFilterPolicy
 
 PlasmoidItem {
     id: root
@@ -30,10 +31,12 @@ PlasmoidItem {
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(plasmoidConfiguration.requestTimeout)
     property string preferredWindowKey: PreferredWindow.keyOrDefault(plasmoidConfiguration.preferredRepresentativeWindow)
     property bool enableQuotaNotifications: plasmoidConfiguration.enableQuotaNotifications !== false
+    property string excludedProviders: plasmoidConfiguration.excludedProviders || ""
     property alias controller: controller
-    readonly property var compactSelection: UsageModel.selectCompact(root.controller.committedProviders)
+    readonly property var visibleProviders: ProviderFilterPolicy.filterProviders(root.controller.committedProviders, root.excludedProviders)
+    readonly property var compactSelection: UsageModel.selectCompact(root.visibleProviders)
     property int cycleIndex: 0
-    readonly property var cycleTargets: ProviderCycle.buildCycleTargets(root.controller.committedProviders, function(id) {
+    readonly property var cycleTargets: ProviderCycle.buildCycleTargets(root.visibleProviders, function(id) {
         return ProviderIcons.displayName(id)
     })
     readonly property var cycledUsage: ProviderCycle.resolveCycledUsage(
@@ -214,7 +217,7 @@ PlasmoidItem {
 
                     ProviderSelector {
                         id: providerSelector
-                        providers: root.controller.committedProviders
+                        providers: root.visibleProviders
                         phase: root.controller.phase
                         popupOpen: root.expanded
                         preferredWindowKey: root.preferredWindowKey

@@ -223,4 +223,10 @@ TestCase {
         compare(settings.cfg_requestTimeout, 180)
         compare(preset.currentIndex, 2)
     }
+
+    function test_excludedProvidersSettingsEditing() {
+        compare(settings.cfg_excludedProviders, "")
+        settings.cfg_excludedProviders = "grok, synthetic"
+        compare(settings.cfg_excludedProviders, "grok, synthetic")
+    }
 }
