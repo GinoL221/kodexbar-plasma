@@ -16,15 +16,16 @@ import "../code/CostRequestPolicy.js" as CostRequestPolicy
 PlasmoidItem {
     id: root
 
-    property string codexbarCommand: Plasmoid.configuration.codexbarCommand || ""
+    readonly property var plasmoidConfiguration: Plasmoid.configuration
+    property string codexbarCommand: plasmoidConfiguration.codexbarCommand || ""
     property bool suppressNextCommandRefresh: false
-    property int refreshSeconds: RefreshInterval.valueOrDefault(Plasmoid.configuration.refreshInterval, 600)
+    property int refreshSeconds: RefreshInterval.valueOrDefault(plasmoidConfiguration.refreshInterval, 600)
     // Rate-limit backoff: consecutive throttled responses stretch the poll
     // from 2 minutes up to 30 minutes (RateLimitPolicy.js), never shrinking
     // the configured interval.
     property int effectiveRefreshSeconds: Math.max(refreshSeconds, Math.ceil(controller.retryDelayMs() / 1000))
-    property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(Plasmoid.configuration.requestTimeout)
-    property string preferredWindowKey: PreferredWindow.keyOrDefault(Plasmoid.configuration.preferredRepresentativeWindow)
+    property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(plasmoidConfiguration.requestTimeout)
+    property string preferredWindowKey: PreferredWindow.keyOrDefault(plasmoidConfiguration.preferredRepresentativeWindow)
     property alias controller: controller
     readonly property var compactSelection: UsageModel.selectCompact(root.controller.committedProviders)
 
@@ -50,7 +51,7 @@ PlasmoidItem {
                 return
             }
             root.suppressNextCommandRefresh = true
-            Plasmoid.configuration.codexbarCommand = path
+            root.plasmoidConfiguration.codexbarCommand = path
         }
     }
 

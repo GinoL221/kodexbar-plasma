@@ -3,6 +3,7 @@ import QtQuick
 Item {
     id: root
     property bool assertionFailed: false
+    property var sched: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -55,7 +56,7 @@ Item {
     Component.onCompleted: {
         // 1. Initial startup: Component.onCompleted triggers exactly one refresh.
         // With triggeredOnStart: false, the running Timer must not emit an extra poll.
-        var sched = schedulerComponent.createObject(root)
+        sched = schedulerComponent.createObject(root)
         assert(sched.refreshCalls === 1,
             "startup must issue exactly one poll via Component.onCompleted (got: " + sched.refreshCalls + ")")
 

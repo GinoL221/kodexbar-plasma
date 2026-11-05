@@ -5,6 +5,10 @@ Item {
     id: root
     property bool assertionFailed: false
     property var controller: null
+    property var fresh: null
+    property var mixed: null
+    property var noSnapshot: null
+    property var copy: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -62,7 +66,7 @@ Item {
             && controller.committedProviders[0].raw.usage.primary.usedPercent === 55,
             "a successful response must replace the preserved snapshot with the new data")
 
-        var fresh = controllerComponent.createObject(root, {
+        fresh = controllerComponent.createObject(root, {
             commandPath: "/tmp/codexbar",
             testMode: true
         })
@@ -78,7 +82,7 @@ Item {
         // Mixed payload mirroring the real `codexbar usage --provider all`
         // output: fresh data for providers that answered, a claude rate
         // limit, and unrelated provider noise in the same response.
-        var mixed = controllerComponent.createObject(root, {
+        mixed = controllerComponent.createObject(root, {
             commandPath: "/tmp/codexbar",
             testMode: true
         })
@@ -113,7 +117,7 @@ Item {
 
         // A rate-limited provider without a previous snapshot must not be
         // fabricated; only the providers that answered are committed.
-        var noSnapshot = controllerComponent.createObject(root, {
+        noSnapshot = controllerComponent.createObject(root, {
             commandPath: "/tmp/codexbar",
             testMode: true
         })
@@ -140,7 +144,7 @@ Item {
 
         // The retry copy must agree with the timer: with a 10 minute base
         // refresh and strike 1, the next poll is 10 minutes away, not 2.
-        var copy = controllerComponent.createObject(root, {
+        copy = controllerComponent.createObject(root, {
             commandPath: "/tmp/codexbar",
             testMode: true,
             baseRefreshMs: 600000
