@@ -40,18 +40,15 @@ Item {
         }
 
         try {
-            if (root.activeNotification && typeof root.activeNotification.destroy === "function") {
-                root.activeNotification.destroy()
-                root.activeNotification = null
-            }
             root.activeNotification = Qt.createQmlObject(
-                "import QtQuick; import org.kde.notification as KNotification; KNotification.Notification { componentName: \"plasma_workspace\"; eventId: \"notification\" }",
+                "import QtQuick; import org.kde.notification as KNotification; KNotification.Notification { componentName: \"plasma_workspace\"; eventId: \"notification\"; autoDelete: true }",
                 root,
                 "dynamicNotification"
             )
             if (root.activeNotification) {
                 root.activeNotification.title = title
                 root.activeNotification.text = text
+                root.activeNotification.urgency = urgency === "critical" ? 4 : 2
                 if (iconName.length > 0) {
                     root.activeNotification.iconName = iconName
                 }
