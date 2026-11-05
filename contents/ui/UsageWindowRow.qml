@@ -53,7 +53,7 @@ ColumnLayout {
 
     readonly property int barHeight: root.summary
         ? Math.max(4, Math.round(Kirigami.Units.smallSpacing * 0.75))
-        : Math.max(8, Math.round(Kirigami.Units.smallSpacing * 1.1))
+        : Math.max(6, Math.round(Kirigami.Units.smallSpacing * 0.8))
 
     readonly property color barFillColor: root.accentColor.length > 0
         ? root.accentColor
@@ -274,8 +274,8 @@ ColumnLayout {
         Layout.preferredHeight: visible ? root.barHeight : 0
         Layout.minimumHeight: visible ? root.barHeight : 0
         Layout.maximumHeight: visible ? root.barHeight : 0
-        Layout.topMargin: Kirigami.Units.smallSpacing
-        Layout.bottomMargin: Kirigami.Units.smallSpacing
+        Layout.topMargin: Math.max(2, Math.round(Kirigami.Units.smallSpacing * 0.6))
+        Layout.bottomMargin: Math.max(2, Math.round(Kirigami.Units.smallSpacing * 0.6))
         implicitHeight: root.barHeight
 
         Item {

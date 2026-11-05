@@ -35,6 +35,10 @@ ColumnLayout {
     property int _requestedIndex: 0
     property int _delegateCapacity: 0
 
+    readonly property int tabChipWidth: Kirigami.Units.gridUnit * 4
+    readonly property int tabChipRadius: Math.max(Kirigami.Units.cornerRadius, Kirigami.Units.smallSpacing + 2)
+    readonly property int tabUnderlineHeight: Math.max(3, Math.round(Kirigami.Units.smallSpacing * 0.5))
+
     readonly property bool tabsOverflow: tabFlick.contentWidth > tabFlick.width + 1
     readonly property bool canScrollLeft: tabFlick.contentX > 1
     readonly property bool canScrollRight: tabFlick.contentX + tabFlick.width < tabFlick.contentWidth - 1
@@ -368,7 +372,7 @@ ColumnLayout {
                         checked: tabBar.currentIndex === 0
                         focusPolicy: Qt.StrongFocus
                         activeFocusOnTab: true
-                        width: Kirigami.Units.gridUnit * 5
+                        width: root.tabChipWidth
                         implicitWidth: width
                         padding: Kirigami.Units.smallSpacing
                         text: Translation.translate("Overview", [], typeof i18n === "function" ? i18n : null)
@@ -391,8 +395,8 @@ ColumnLayout {
                                 color: overviewTab.checked
                                     ? Kirigami.Theme.highlightedTextColor
                                     : Kirigami.Theme.textColor
-                                implicitWidth: Kirigami.Units.iconSizes.medium
-                                implicitHeight: Kirigami.Units.iconSizes.medium
+                                implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                                implicitHeight: Kirigami.Units.iconSizes.smallMedium
                                 Layout.alignment: Qt.AlignHCenter
                             }
 
@@ -414,12 +418,12 @@ ColumnLayout {
                                 Layout.leftMargin: Kirigami.Units.smallSpacing
                                 Layout.rightMargin: Kirigami.Units.smallSpacing
                                 Layout.topMargin: Math.max(2, Math.round(Kirigami.Units.smallSpacing / 3))
-                                Layout.preferredHeight: Math.max(4, Math.round(Kirigami.Units.smallSpacing * 0.7))
+                                Layout.preferredHeight: root.tabUnderlineHeight
                             }
                         }
 
                         background: Rectangle {
-                            radius: Kirigami.Units.cornerRadius
+                            radius: root.tabChipRadius
                             color: overviewTab.checked
                                 ? Kirigami.Theme.highlightColor
                                 : (overviewTab.hovered ? Kirigami.Theme.alternateBackgroundColor : "transparent")
@@ -454,7 +458,7 @@ ColumnLayout {
                             checked: tabBar.currentIndex === index + 1
                             focusPolicy: Qt.StrongFocus
                             activeFocusOnTab: visible
-                            width: Kirigami.Units.gridUnit * 5
+                            width: root.tabChipWidth
                             implicitWidth: width
                             padding: Kirigami.Units.smallSpacing
                             Accessible.role: Accessible.PageTab
@@ -520,7 +524,7 @@ ColumnLayout {
                                     Layout.leftMargin: sideInset
                                     Layout.rightMargin: sideInset
                                     Layout.topMargin: nameGap
-                                    Layout.preferredHeight: Math.max(4, Math.round(Kirigami.Units.smallSpacing * 0.7))
+                                    Layout.preferredHeight: root.tabUnderlineHeight
                                     readonly property real value: providerTab.hasFinitePercent ? providerTab.percentValue : 0
                                     readonly property real ratio: Math.max(0, Math.min(1, value / 100))
 
@@ -551,12 +555,12 @@ ColumnLayout {
                                     Layout.leftMargin: Kirigami.Units.smallSpacing
                                     Layout.rightMargin: Kirigami.Units.smallSpacing
                                     Layout.topMargin: Math.max(2, Math.round(Kirigami.Units.smallSpacing / 3))
-                                    Layout.preferredHeight: Math.max(4, Math.round(Kirigami.Units.smallSpacing * 0.7))
+                                    Layout.preferredHeight: root.tabUnderlineHeight
                                 }
                             }
 
                             background: Rectangle {
-                                radius: Kirigami.Units.cornerRadius
+                                radius: root.tabChipRadius
                                 color: providerTab.checked
                                     ? Kirigami.Theme.highlightColor
                                     : (providerTab.hovered ? Kirigami.Theme.alternateBackgroundColor : "transparent")
