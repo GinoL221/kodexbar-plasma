@@ -24,5 +24,8 @@
     <entry name="enableQuotaNotifications" type="Bool">
       <default>true</default>
     </entry>
+    <entry name="excludedProviders" type="String">
+      <default></default>
+    </entry>
   </group>
 </kcfg>

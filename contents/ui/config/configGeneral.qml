@@ -26,6 +26,8 @@ KCM.SimpleKCM {
     property alias preferredWindowGuidance: preferredWindowGuidanceLabel
     property alias cfg_enableQuotaNotifications: enableQuotaNotifications.checked
     property bool cfg_enableQuotaNotificationsDefault
+    property alias cfg_excludedProviders: excludedProviders.text
+    property string cfg_excludedProvidersDefault
 
     readonly property var preferredWindowKeys: PreferredWindow.VALID_KEYS
 
@@ -175,6 +177,16 @@ KCM.SimpleKCM {
                     Accessible.description: i18n("Show native Plasma notifications when provider usage reaches critical (90%) or exhausted (100%) levels, or when rate limits trigger backoff.")
                 }
 
+                QQC2.TextField {
+                    id: excludedProviders
+                    objectName: "excludedProviders"
+                    Kirigami.FormData.label: i18n("Hide providers:")
+                    placeholderText: i18n("e.g. grok, synthetic (comma-separated)")
+                    Accessible.name: i18n("Excluded provider IDs")
+                    Accessible.description: i18n("Comma-separated list of provider IDs to hide from the panel summary and popup list.")
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 24
+                }
+
                 PlasmaComponents.Label {
                     id: codexbarSetupGuidance
                     objectName: "codexbarSetupGuidance"
@@ -214,6 +226,16 @@ KCM.SimpleKCM {
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                     Accessible.name: i18n("Notifications guidance")
+                }
+
+                PlasmaComponents.Label {
+                    id: excludedProvidersGuidanceLabel
+                    objectName: "excludedProvidersGuidance"
+                    text: i18n("Enter provider IDs separated by commas to hide them from the compact panel icon and popup list. Leave empty to show all providers.")
+                    color: Kirigami.Theme.disabledTextColor
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                    Accessible.name: i18n("Excluded providers guidance")
                 }
 
                 PlasmaComponents.Label {
