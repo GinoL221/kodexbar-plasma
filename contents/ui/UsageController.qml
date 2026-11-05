@@ -1,9 +1,11 @@
 import QtQuick
+import QtQuick.LocalStorage as LocalStorage
 import org.kde.plasma.plasma5support as Plasma5Support
 
 import "../code/UsageModel.js" as UsageModel
 import "../code/RateLimitPolicy.js" as RateLimitPolicy
 import "../code/CodexBarPathResolver.js" as PathResolver
+import "../code/SnapshotStorage.js" as SnapshotStorage
 
 Item {
     id: root
@@ -12,6 +14,8 @@ Item {
     property int timeoutMs: 15000
     property int activeTimeoutMs: timeoutMs
     property bool testMode: false
+    property bool cacheEnabled: false
+    property string storageDbName: ""
     property bool pathExecutableForTest: true
     property string discoveryOutputForTest: ""
     property string discoveredPathForTest: ""
@@ -42,6 +46,27 @@ Item {
     readonly property int activeRequestCount: requestActive ? 1 : 0
 
     signal pathDiscovered(string path)
+
+    Component.onCompleted: {
+        if (cacheEnabled && committedProviders.length === 0) {
+            hydrateFromCache()
+        }
+    }
+
+    function hydrateFromCache() {
+        var cached = SnapshotStorage.load(LocalStorage.LocalStorage, storageDbName)
+        if (Array.isArray(cached) && cached.length > 0) {
+            committedProviders = cached
+            phase = "ready"
+        }
+    }
+
+    function saveToCache(providers) {
+        if (!cacheEnabled || !Array.isArray(providers) || providers.length === 0) {
+            return
+        }
+        SnapshotStorage.save(LocalStorage.LocalStorage, providers, storageDbName)
+    }
 
     function commandLine() {
         return PathResolver.shellQuote(effectiveCommandPath) + " usage --format json --json-only"
@@ -278,6 +303,9 @@ Item {
                 ? "Usage is rate limited right now. Retrying in "
                     + RateLimitPolicy.retryMinutes(retryDelayMs()) + " minutes."
                 : (normalized.errors.length > 0 ? "CodexBar returned provider errors." : ""))
+        if (providers.length > 0) {
+            saveToCache(providers)
+        }
         releaseGeneration(true)
     }
 
