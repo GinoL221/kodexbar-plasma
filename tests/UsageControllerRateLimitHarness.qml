@@ -9,6 +9,8 @@ Item {
     property var mixed: null
     property var noSnapshot: null
     property var copy: null
+    property var cachedController: null
+    property var coldController: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -154,6 +156,47 @@ Item {
         ]), 0)
         assert(copy.errorMessage.indexOf("10 minutes") !== -1,
             "the retry message must report the real 10 minute wait, not the 2 minute backoff step")
+
+        // Cold-start cache hydration: proves that even if the very first poll
+        // after a restart returns HTTP 429 for Claude, the hydrated snapshot
+        // is preserved and Claude never vanishes from the popup.
+        var cacheTestDb = "KodexBarColdStartTest_" + Date.now()
+        cachedController = controllerComponent.createObject(root, {
+            commandPath: "/tmp/codexbar",
+            testMode: true,
+            cacheEnabled: true,
+            storageDbName: cacheTestDb
+        })
+        complete(cachedController, JSON.stringify([
+            { provider: "claude", usage: { primary: { usedPercent: 15 }, secondary: { usedPercent: 25 } } }
+        ]), 0)
+        assert(cachedController.committedProviders.length === 1, "seed provider must be committed")
+
+        // Simulate a new plasmashell process: cold controller auto-hydrates from cache on completion.
+        coldController = controllerComponent.createObject(root, {
+            commandPath: "/tmp/codexbar",
+            testMode: true,
+            cacheEnabled: true,
+            storageDbName: cacheTestDb
+        })
+        assert(coldController.committedProviders.length === 1, "cold controller must auto-hydrate snapshot from cache")
+        assert(coldController.committedProviders[0].provider === "claude", "hydrated provider must be claude")
+        assert(coldController.phase === "ready", "hydrated controller must be ready immediately")
+
+        // First poll returns HTTP 429 rate limit error.
+        complete(coldController, JSON.stringify([
+            { provider: "codex", usage: { primary: { usedPercent: 10 } } },
+            { provider: "claude", error: { kind: "provider", code: 3, message: "rate_limit_error: throttled" } }
+        ]), 0)
+        assert(coldController.committedProviders.length === 2,
+            "cold-started controller under 429 must keep hydrated claude alongside fresh codex")
+        assert(coldController.committedProviders[0].provider === "codex", "fresh codex comes first")
+        assert(coldController.committedProviders[1].provider === "claude", "hydrated claude is preserved")
+        assert(coldController.committedProviders[1].windows[0].usedPercent === 15,
+            "claude preserves the hydrated 15% figure across the cold-start 429")
+        assert(coldController.consecutiveRateLimits === 1, "rate limit strike must be counted")
+        assert(coldController.phase === "ready", "phase stays ready")
+
         finish()
     }
 
