@@ -149,6 +149,20 @@ For a selected provider that CodexBar's `cost` subcommand supports (`codex` or `
 
 CodexBar has no NaN provider. The optional wrapper `scripts/codexbar-nan` adds one as a regular CLI-shaped entry while the widget stays a pure CLI consumer. Setup, key handling, and quota configuration: [docs/nan-adapter.md](docs/nan-adapter.md).
 
+### Persistent snapshot cache
+
+The widget stores the most recent valid usage snapshot locally using SQLite via `QtQuick.LocalStorage`. When Plasma starts or reloads, the widget hydrates this snapshot immediately so the panel and popup display current numbers without waiting for a cold CLI poll. Fresh committed responses update the cache automatically.
+
+### Native Plasma quota notifications
+
+KodexBar Plasma integrates directly with KDE Frameworks 6 (`KNotification`) to alert you when provider quotas run low:
+
+- **Escalation alerts:** Dispatched when any provider window crosses into critical (`>= 90%`) or exhausted (`100%`) usage. Exhausted quotas are delivered with KDE `CriticalUrgency`.
+- **Rate-limit alerts:** Dispatched on the first strike when a provider enters HTTP 429 backoff, displaying the backoff retry delay.
+- **Strict anti-spam:** Alerts fire only on upward level transitions and carry over tracking state across transient network dropouts, avoiding repeated popups on consecutive polls.
+- **Autonomous background delivery:** Notification evaluation runs at the root applet level, firing alerts even if the popup has never been opened.
+- **Configurable:** Can be enabled or disabled at any time from widget settings.
+
 ## MVP exclusions
 
 KodexBar Plasma deliberately does not implement provider implementations, authentication or cookie automation, fallback probing, reset or account actions, provider or source switching, calculated reset durations, or charts. Use CodexBar and provider tools for those responsibilities.
@@ -162,6 +176,8 @@ This widget never computes, estimates, or fabricates pace, credits, resets, iden
 | CLI path | Executable absolute path. Empty enables the bounded first-run discovery above; a saved valid path remains authoritative. |
 | Refresh interval | Positive polling interval from 1 to 3600 seconds. |
 | Request timeout | All-provider watchdog: presets 60, 120, or 180 seconds, or a custom whole number from 30 to 600. Missing or invalid values use 60 seconds and do not change refresh. |
+| Representative window | Preferred window displayed in compact mode: Automatic (greatest used percentage), Session, Weekly, or Monthly. |
+| Quota notifications | Toggle native KDE Plasma notifications when usage reaches 90%, 100%, or enters rate limit backoff. |
 
 ## Run QtTest
 
