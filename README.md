@@ -141,6 +141,10 @@ For a selected provider that CodexBar's `cost` subcommand supports (`codex` or `
 - Fail-closed: an empty, malformed, non-matching, failed, or timed-out (60s) cost result simply hides the Cost section; it never hides, delays, or otherwise affects Usage, and never surfaces raw diagnostics.
 - Reported, not calculated: the widget never prices, estimates, or computes cost or tokens in QML — the numbers shown are exactly what the CLI reports.
 
+### Optional: NaN Cloud usage
+
+CodexBar has no NaN provider. The optional wrapper `scripts/codexbar-nan` adds one as a regular CLI-shaped entry while the widget stays a pure CLI consumer. Setup, key handling, and quota configuration: [docs/nan-adapter.md](docs/nan-adapter.md).
+
 ## MVP exclusions
 
 KodexBar Plasma deliberately does not implement provider implementations, authentication or cookie automation, fallback probing, reset or account actions, provider or source switching, calculated reset durations, or charts. Use CodexBar and provider tools for those responsibilities.

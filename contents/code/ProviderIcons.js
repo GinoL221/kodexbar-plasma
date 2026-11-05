@@ -6,7 +6,7 @@ var knownProviders = [
     "copilot", "crof", "cursor", "deepgram", "deepseek", "devin", "doubao",
     "elevenlabs", "factory", "gemini", "grok", "groq", "jetbrains", "kilo",
     "kimi", "kimik2", "kiro", "llmproxy", "manus", "mimo", "minimax", "mistral",
-    "moonshot", "ollama", "openai", "opencode", "opencodego", "openrouter",
+    "moonshot", "nan", "ollama", "openai", "opencode", "opencodego", "openrouter",
     "perplexity", "stepfun", "synthetic", "t3chat", "venice", "vertexai", "warp",
     "windsurf", "zai"
 ]
@@ -24,6 +24,7 @@ var displayNames = {
     "commandcode": "Command Code",
     "kimik2": "Kimi K2",
     "llmproxy": "LLM Proxy",
+    "nan": "NaN Cloud",
     "openai": "OpenAI",
     "opencode": "OpenCode",
     "opencodego": "OpenCode Go",
