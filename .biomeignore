@@ -1,0 +1,2 @@
+# QML JavaScript modules (.pragma library) are verified exclusively by qmllint
+contents/code/**
