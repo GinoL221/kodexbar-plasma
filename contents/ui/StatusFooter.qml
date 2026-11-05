@@ -18,6 +18,7 @@ ColumnLayout {
     id: root
 
     property string phase: "idle"
+    property bool showSeparator: true
 
     readonly property string statusText: {
         switch (root.phase) {
@@ -38,6 +39,7 @@ ColumnLayout {
     spacing: Kirigami.Units.smallSpacing
 
     Kirigami.Separator {
+        visible: root.showSeparator
         Layout.fillWidth: true
     }
 
@@ -46,6 +48,7 @@ ColumnLayout {
         objectName: "footerStatusLabel"
         text: root.statusText
         color: Kirigami.Theme.disabledTextColor
+        font.pointSize: Kirigami.Theme.smallFont.pointSize
         elide: Text.ElideRight
         Layout.fillWidth: true
         Layout.minimumWidth: 0

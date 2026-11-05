@@ -102,8 +102,7 @@ PlasmoidItem {
         readonly property int minPopupHeight: Kirigami.Units.gridUnit * 16
         readonly property int contentPreferredHeight: {
             var body = usageColumn.implicitHeight
-            var chrome = refreshButton.implicitHeight + statusFooter.implicitHeight
-                + mainColumn.spacing * 2
+            var chrome = bottomChromeRow.implicitHeight + mainColumn.spacing * 2
             return body + chrome + full.popupMargin * 2
         }
 
@@ -213,21 +212,36 @@ PlasmoidItem {
                 }
             }
 
-            // Chrome below the scroll body: Refresh (text+icon), then status.
-            // Settings/About stay deferred — not part of this change.
-            QQC2.ToolButton {
-                id: refreshButton
-                icon.name: "view-refresh"
-                display: QQC2.AbstractButton.TextBesideIcon
-                text: i18n("Refresh")
-                Layout.alignment: Qt.AlignLeft
-                onClicked: root.controller.requestRefresh()
+            Kirigami.Separator {
+                Layout.fillWidth: true
             }
 
-            StatusFooter {
-                id: statusFooter
-                phase: root.controller.phase
+            RowLayout {
+                id: bottomChromeRow
                 Layout.fillWidth: true
+                spacing: Kirigami.Units.smallSpacing
+
+                QQC2.ToolButton {
+                    id: refreshButton
+                    icon.name: "view-refresh"
+                    display: QQC2.AbstractButton.TextBesideIcon
+                    text: i18n("Refresh")
+                    flat: true
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    onClicked: root.controller.requestRefresh()
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
+
+                StatusFooter {
+                    id: statusFooter
+                    phase: root.controller.phase
+                    showSeparator: false
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                }
             }
         }
 
