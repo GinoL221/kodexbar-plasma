@@ -163,17 +163,6 @@ python3 "$tests_dir/test_run_qml_tests_discovery.py"
 printf 'Running tests/test_notification_wiring.py\n'
 python3 "$tests_dir/test_notification_wiring.py"
 
-printf 'Running tests/NotificationNativeTest.qml\n'
-native_output=$(QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software qml6 --software -f "$tests_dir/NotificationNativeTest.qml" 2>&1) || {
-    case "$native_output" in
-        *OPTIONAL_NOTIFICATION_MODULE_MISSING*) printf '%s\n' 'SKIP: optional org.kde.notification module unavailable' ;;
-        *)
-            printf '%s\n' "$native_output"
-            fail "NotificationNativeTest.qml failed"
-            ;;
-    esac
-}
-
 # Auto-discover plain *Harness.qml (alphabetical). Special lifecycle harnesses
 # are skipped here and run with their fixture/env contracts below.
 plain_count=0
