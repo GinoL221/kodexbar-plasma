@@ -16,24 +16,30 @@ Item {
         ? root.accentColor
         : Kirigami.Theme.highlightColor
 
+    // Determine scale unit homogeneously across the entire series to avoid mixing
+    // dollar and token magnitudes in the same chart (R3-mixed-histogram-units).
+    readonly property bool isCostMode: {
+        for (var i = 0; i < root.validDaily.length; i++) {
+            var entry = root.validDaily[i]
+            if (entry && typeof entry === "object" && typeof entry.totalCost === "number" && entry.totalCost > 0) {
+                return true
+            }
+        }
+        return false
+    }
+
     readonly property real maxMetric: {
-        var maxCost = 0
-        var maxTokens = 0
+        var max = 0
         for (var i = 0; i < root.validDaily.length; i++) {
             var entry = root.validDaily[i]
             if (entry && typeof entry === "object") {
-                if (typeof entry.totalCost === "number" && entry.totalCost > maxCost) {
-                    maxCost = entry.totalCost
-                }
-                if (typeof entry.totalTokens === "number" && entry.totalTokens > maxTokens) {
-                    maxTokens = entry.totalTokens
+                var val = root.isCostMode ? entry.totalCost : entry.totalTokens
+                if (typeof val === "number" && val > max) {
+                    max = val
                 }
             }
         }
-        if (maxCost > 0) {
-            return maxCost
-        }
-        return maxTokens > 0 ? maxTokens : 1
+        return max > 0 ? max : 1
     }
 
     objectName: "costHistogram"
@@ -55,11 +61,11 @@ Item {
 
                 readonly property real metricValue: {
                     if (barDelegate.modelData && typeof barDelegate.modelData === "object") {
-                        if (typeof barDelegate.modelData.totalCost === "number" && barDelegate.modelData.totalCost > 0) {
-                            return barDelegate.modelData.totalCost
-                        }
-                        if (typeof barDelegate.modelData.totalTokens === "number" && barDelegate.modelData.totalTokens > 0) {
-                            return barDelegate.modelData.totalTokens
+                        var val = root.isCostMode
+                            ? barDelegate.modelData.totalCost
+                            : barDelegate.modelData.totalTokens
+                        if (typeof val === "number" && val > 0) {
+                            return val
                         }
                     }
                     return 0
