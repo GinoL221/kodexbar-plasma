@@ -28,6 +28,8 @@ KCM.SimpleKCM {
     property bool cfg_enableQuotaNotificationsDefault
     property alias cfg_excludedProviders: excludedProviders.text
     property string cfg_excludedProvidersDefault
+    property alias cfg_language: languageControl.selectedKey
+    property string cfg_languageDefault
 
     readonly property var preferredWindowKeys: PreferredWindow.VALID_KEYS
 
@@ -185,6 +187,30 @@ KCM.SimpleKCM {
                     Accessible.name: i18n("Excluded provider IDs")
                     Accessible.description: i18n("Comma-separated list of provider IDs to hide from the panel summary and popup list.")
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 24
+                }
+
+                QQC2.ComboBox {
+                    id: languageControl
+                    objectName: "languageControl"
+                    property string selectedKey: "auto"
+                    Kirigami.FormData.label: i18n("Language / Idioma:")
+                    model: [
+                        i18n("Automatic (system / sistema)"),
+                        "Español",
+                        "English"
+                    ]
+                    Accessible.name: i18n("Interface language")
+                    Accessible.description: i18n("Select interface language: Automatic, Español, or English.")
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                    onActivated: {
+                        selectedKey = currentIndex === 1 ? "es" : currentIndex === 2 ? "en" : "auto"
+                    }
+                    onSelectedKeyChanged: {
+                        currentIndex = selectedKey === "es" ? 1 : selectedKey === "en" ? 2 : 0
+                    }
+                    Component.onCompleted: {
+                        currentIndex = selectedKey === "es" ? 1 : selectedKey === "en" ? 2 : 0
+                    }
                 }
 
                 PlasmaComponents.Label {

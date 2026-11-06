@@ -18,12 +18,13 @@ ColumnLayout {
 
     property var providerData: ({})
     property bool expanded: false
+    property string languagePreference: "auto"
 
     readonly property var resetCredits: ProviderDetailsLogic.validResetCredits(root.providerData)
     readonly property alias disclosureButton: disclosure
 
     function translate(text) {
-        return typeof i18n === "function" ? i18n(text) : text
+        return Translation.translate(text, [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     }
 
     visible: root.resetCredits !== null
@@ -36,7 +37,7 @@ ColumnLayout {
         visible: root.resetCredits !== null
         text: root.resetCredits !== null
             ? Translation.translate("Reset credits available: %1", [root.resetCredits.availableCount],
-                typeof i18n === "function" ? i18n : null)
+                typeof i18n === "function" ? i18n : null, root.languagePreference)
             : ""
         color: Kirigami.Theme.disabledTextColor
         wrapMode: Text.WordWrap

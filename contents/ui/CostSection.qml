@@ -14,6 +14,7 @@ ColumnLayout {
     id: root
 
     property var snapshot: null
+    property string languagePreference: "auto"
 
     readonly property bool hasSnapshot: root.snapshot !== null && root.snapshot !== undefined
 
@@ -69,7 +70,7 @@ ColumnLayout {
         id: costLabel
         objectName: "costLabel"
         visible: root.hasSnapshot
-        text: Translation.translate("Cost", [], typeof i18n === "function" ? i18n : null)
+        text: Translation.translate("Cost", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
         font.weight: Font.Medium
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
@@ -82,7 +83,7 @@ ColumnLayout {
         spacing: Kirigami.Units.smallSpacing
 
         PlasmaComponents.Label {
-            text: Translation.translate("Today", [], typeof i18n === "function" ? i18n : null)
+            text: Translation.translate("Today", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
             color: Kirigami.Theme.disabledTextColor
         }
 
@@ -113,7 +114,7 @@ ColumnLayout {
         spacing: Kirigami.Units.smallSpacing
 
         PlasmaComponents.Label {
-            text: Translation.translate("Last 30 days", [], typeof i18n === "function" ? i18n : null)
+            text: Translation.translate("Last 30 days", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
             color: Kirigami.Theme.disabledTextColor
         }
 
@@ -143,7 +144,7 @@ ColumnLayout {
         objectName: "costLocalEstimateLabel"
         visible: root.hasSnapshot && root.snapshot.source === "local"
         text: visible
-            ? Translation.translate("Local token-cost estimate", [], typeof i18n === "function" ? i18n : null)
+            ? Translation.translate("Local token-cost estimate", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
             : ""
         color: Kirigami.Theme.disabledTextColor
         font.pointSize: Kirigami.Theme.smallFont.pointSize

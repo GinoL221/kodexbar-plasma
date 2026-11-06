@@ -32,6 +32,7 @@ PlasmoidItem {
     property string preferredWindowKey: PreferredWindow.keyOrDefault(plasmoidConfiguration.preferredRepresentativeWindow)
     property bool enableQuotaNotifications: plasmoidConfiguration.enableQuotaNotifications !== false
     property string excludedProviders: plasmoidConfiguration.excludedProviders || ""
+    property string languagePreference: plasmoidConfiguration.language || "auto"
     property alias controller: controller
     readonly property var visibleProviders: ProviderFilterPolicy.filterProviders(root.controller.committedProviders, root.excludedProviders)
     readonly property var compactSelection: UsageModel.selectCompact(root.visibleProviders)
@@ -226,6 +227,7 @@ PlasmoidItem {
                         phase: root.controller.phase
                         popupOpen: root.expanded
                         preferredWindowKey: root.preferredWindowKey
+                        languagePreference: root.languagePreference
                         Layout.fillWidth: true
                         Layout.leftMargin: full.bodyInset
                         Layout.rightMargin: full.bodyInset
@@ -252,6 +254,7 @@ PlasmoidItem {
 
                                 providerData: modelData
                                 summary: true
+                                languagePreference: root.languagePreference
                                 iconResolver: providerSelector.iconResolver
                                 Layout.fillWidth: true
                             }
@@ -261,6 +264,7 @@ PlasmoidItem {
                             visible: !providerSelector.allSelected && providerSelector.selectedProvider !== null
                             providerData: providerSelector.selectedProvider || ({})
                             compact: false
+                            languagePreference: root.languagePreference
                             iconResolver: providerSelector.iconResolver
                             // "All" is never bound here: selectedProvider is null
                             // whenever allSelected, so no cost record is ever read.

@@ -20,10 +20,11 @@ ColumnLayout {
     property string paceSummary: ""
     // Optional brand accent (#rrggbb). Empty → Kirigami.Theme.highlightColor.
     property string accentColor: ""
+    property string languagePreference: "auto"
 
     readonly property bool hasFinitePercent: typeof root.windowData.usedPercent === "number" && isFinite(root.windowData.usedPercent)
     readonly property string resetText: root.windowData.resetsAt !== null && root.windowData.resetsAt !== undefined ? String(root.windowData.resetsAt) : ""
-    readonly property string resetDescriptionText: root.windowData.resetDescription !== null && root.windowData.resetDescription !== undefined ? String(root.windowData.resetDescription) : ""
+    readonly property string resetDescriptionText: root.windowData.resetDescription !== null && root.windowData.resetDescription !== undefined ? Translation.translateReset(String(root.windowData.resetDescription), root.languagePreference) : ""
     readonly property bool showBar: root.hasFinitePercent && !root.compact
     readonly property real barRatio: {
         if (!root.hasFinitePercent) {
@@ -170,7 +171,7 @@ ColumnLayout {
 
         PlasmaComponents.Label {
             id: windowLabel
-            text: root.valueText(root.windowData.label)
+            text: Translation.translate(root.valueText(root.windowData.label), [], typeof i18n === "function" ? i18n : null, root.languagePreference)
             font.weight: root.summary ? Font.Normal : Font.Medium
             font.pointSize: root.summary
                 ? Kirigami.Theme.smallFont.pointSize
@@ -245,7 +246,7 @@ ColumnLayout {
             objectName: "summaryPercentageLabel"
             visible: root.summary && root.hasFinitePercent
             text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
-                typeof i18n === "function" ? i18n : null) : ""
+                typeof i18n === "function" ? i18n : null, root.languagePreference) : ""
             color: Kirigami.Theme.disabledTextColor
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             font.weight: Font.Normal
@@ -317,7 +318,7 @@ ColumnLayout {
             objectName: "bandPercentageLabel"
             visible: root.hasFinitePercent && !root.summary
             text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
-                typeof i18n === "function" ? i18n : null) : ""
+                typeof i18n === "function" ? i18n : null, root.languagePreference) : ""
             color: Kirigami.Theme.textColor
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             Layout.minimumWidth: implicitWidth
@@ -369,7 +370,7 @@ ColumnLayout {
         id: paceSummaryLabel
         objectName: "paceSummaryLabel"
         visible: root.paceSummary.length > 0 && !root.summary
-        text: visible ? root.paceSummary : ""
+        text: visible ? Translation.translateReset(root.paceSummary, root.languagePreference) : ""
         color: Kirigami.Theme.disabledTextColor
         font.pointSize: Kirigami.Theme.smallFont.pointSize
         elide: Text.ElideRight
