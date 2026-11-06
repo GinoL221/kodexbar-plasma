@@ -18,6 +18,67 @@ function singleEntry(payload) {
     return null
 }
 
+function validDailyEntry(day) {
+    return day && typeof day === "object" && !(day instanceof Array)
+        && typeof day.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(day.date)
+        && isFiniteNonNegative(day.totalCost)
+        && (day.totalTokens === undefined || isFiniteNonNegative(day.totalTokens))
+}
+
+function normalizeDaily(daily) {
+    if (!(daily instanceof Array)) {
+        return []
+    }
+    var result = []
+    for (var i = 0; i < daily.length; ++i) {
+        var day = daily[i]
+        if (validDailyEntry(day)) {
+            result.push({ date: day.date, totalCost: day.totalCost,
+                          totalTokens: day.totalTokens === undefined ? 0 : day.totalTokens })
+        }
+    }
+    result.sort(function(a, b) { return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0) })
+    return result.slice(-30)
+}
+
+function extractPrimaryModel(daily) {
+    if (!(daily instanceof Array)) {
+        return ""
+    }
+    var totals = Object.create(null)
+    var names = []
+    for (var i = 0; i < daily.length; ++i) {
+        var day = daily[i]
+        if (!validDailyEntry(day) || !(day.modelBreakdowns instanceof Array)) {
+            continue
+        }
+        for (var j = 0; j < day.modelBreakdowns.length; ++j) {
+            var model = day.modelBreakdowns[j]
+            if (!model || typeof model.modelName !== "string" || model.modelName.length === 0
+                || !isFiniteNonNegative(model.cost)
+                || (model.totalTokens !== undefined && !isFiniteNonNegative(model.totalTokens))) {
+                continue
+            }
+            var name = model.modelName
+            if (!totals[name]) {
+                totals[name] = { cost: 0, tokens: 0 }
+                names.push(name)
+            }
+            totals[name].cost += model.cost
+            totals[name].tokens += model.totalTokens === undefined ? 0 : model.totalTokens
+        }
+    }
+    var best = ""
+    for (var k = 0; k < names.length; ++k) {
+        var candidate = names[k]
+        if (!best || totals[candidate].cost > totals[best].cost
+            || (totals[candidate].cost === totals[best].cost && totals[candidate].tokens > totals[best].tokens)) {
+            best = candidate
+        }
+    }
+    return best
+}
+
 // Normalizes exactly one `cost --provider {provider} --format json --json-only`
 // response for the given expected provider. Returns a copied, validated
 // snapshot on success, or null when the payload is empty, malformed,
@@ -58,6 +119,8 @@ function normalize(payload, expectedProvider) {
         sessionCostUSD: sessionCostUSD,
         sessionTokens: sessionTokens,
         last30DaysCostUSD: last30DaysCostUSD,
-        last30DaysTokens: last30DaysTokens
+        last30DaysTokens: last30DaysTokens,
+        daily: normalizeDaily(entry.daily),
+        primaryModel: extractPrimaryModel(entry.daily)
     }
 }
