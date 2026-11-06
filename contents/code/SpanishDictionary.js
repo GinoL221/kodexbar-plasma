@@ -25,8 +25,12 @@ var DICTIONARY = {
     "Elevated usage": "Uso elevado",
     "No usage data available": "No hay datos de uso disponibles",
     "Loading": "Cargando",
+    "Loading usage…": "Cargando uso…",
+    "Idle": "Inactivo",
+    "Ready": "Listo",
     "Error": "Error",
     "No data": "Sin datos",
+    "Provider": "Proveedor",
 
     // Pace & status
     "runs until reset": "Dura hasta el reinicio",
@@ -73,7 +77,11 @@ var DICTIONARY = {
     "Configure...": "Configurar...",
     "Configure": "Configurar",
     "Refresh usage": "Actualizar uso",
-    "Open details": "Abrir detalles"
+    "Open details": "Abrir detalles",
+    "Ready": "Listo",
+    "Updating...": "Actualizando...",
+    "Refreshing...": "Actualizando...",
+    "Timed out": "Tiempo agotado"
 }
 
 function translateTerm(term) {
@@ -84,7 +92,7 @@ function translateTerm(term) {
 }
 
 /**
- * Translates dynamic duration strings such as "Resets in 2h 53m" or "5d 4h"
+ * Translates dynamic duration strings such as "Resets in 2h 53m", "2 hours, 20 minutes", "tomorrow, 12:45 AM"
  */
 function translateDuration(text) {
     if (typeof text !== "string" || text.length === 0) {
@@ -93,13 +101,45 @@ function translateDuration(text) {
     var result = text
     // Replace "Resets in " or "refresh in "
     result = result.replace(/^(Resets in|refresh in)\s+/i, "Se reinicia en ")
+    result = result.replace(/^Reset:\s+/i, "Reinicio: ")
     // Translate "runs until reset"
     result = result.replace(/runs until reset/i, "Dura hasta el reinicio")
     // Translate "on track"
     result = result.replace(/on track/i, "A buen ritmo")
+    // Words
+    result = result.replace(/\bhours\b/g, "horas")
+    result = result.replace(/\bhour\b/g, "hora")
+    result = result.replace(/\bminutes\b/g, "minutos")
+    result = result.replace(/\bminute\b/g, "minuto")
+    result = result.replace(/\bdays\b/g, "días")
+    result = result.replace(/\bday\b/g, "día")
+    result = result.replace(/\btomorrow\b/gi, "mañana")
+    result = result.replace(/\s+at\s+/g, " a las ")
+    // Months
+    result = result.replace(/\bJan\b/g, "Ene")
+    result = result.replace(/\bApr\b/g, "Abr")
+    result = result.replace(/\bAug\b/g, "Ago")
+    result = result.replace(/\bDec\b/g, "Dic")
     // Format duration units: "2h 53m" -> "2 h 53 min", "5d 4h" -> "5 d 4 h"
     result = result.replace(/(\d+)\s*d\b/g, "$1 d")
     result = result.replace(/(\d+)\s*h\b/g, "$1 h")
     result = result.replace(/(\d+)\s*m\b/g, "$1 min")
+    return result
+}
+
+/**
+ * Translates pace summary text such as "43% in reserve | Expected 75% used | Lasts until reset"
+ */
+function translatePace(text) {
+    if (typeof text !== "string" || text.length === 0) {
+        return text
+    }
+    var result = text
+    result = result.replace(/\bin reserve\b/gi, "en reserva")
+    result = result.replace(/\bin deficit\b/gi, "en déficit")
+    result = result.replace(/Expected\s+(\d+)%\s+used/gi, "Uso esperado $1%")
+    result = result.replace(/\bLasts until reset\b/gi, "Dura hasta el reinicio")
+    result = result.replace(/\bOn pace\b/gi, "A buen ritmo")
+    result = result.replace(/\bheadroom\b/gi, "margen")
     return result
 }

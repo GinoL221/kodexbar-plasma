@@ -3,7 +3,23 @@
 .import "SpanishDictionary.js" as SpanishDictionary
 
 function isSpanishActive(languagePreference) {
-    return languagePreference === "es"
+    if (languagePreference === "es") {
+        return true
+    }
+    if (languagePreference === "en") {
+        return false
+    }
+    if (languagePreference === "auto") {
+        try {
+            if (typeof Qt !== "undefined" && typeof Qt.locale === "function") {
+                var loc = Qt.locale()
+                if (loc && typeof loc.name === "string" && loc.name.toLowerCase().indexOf("es") === 0) {
+                    return true
+                }
+            }
+        } catch (_ignored) {}
+    }
+    return false
 }
 
 function substitute(text, argumentsList) {
@@ -29,6 +45,13 @@ function translate(text, argumentsList, translator, languagePreference) {
 function translateReset(text, languagePreference) {
     if (isSpanishActive(languagePreference)) {
         return SpanishDictionary.translateDuration(text)
+    }
+    return text
+}
+
+function translatePace(text, languagePreference) {
+    if (isSpanishActive(languagePreference)) {
+        return SpanishDictionary.translatePace(text)
     }
     return text
 }

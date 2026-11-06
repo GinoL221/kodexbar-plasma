@@ -41,6 +41,19 @@ Item {
         assert(Translation.translate("Updated just now", [], null, "es") === "Actualizado ahora", "Updated just now in Spanish")
         assert(Translation.translate("Updated 1 hour ago", [], null, "es") === "Actualizado hace 1 hora", "Updated 1 hour ago in Spanish")
 
+        // 5. Pace summary translations
+        var pace = "43% in reserve | Expected 75% used | Lasts until reset | 1.5x headroom"
+        var translatedPace = Translation.translatePace(pace, "es")
+        assert(translatedPace.indexOf("en reserva") !== -1, "pace translates in reserve")
+        assert(translatedPace.indexOf("Uso esperado 75%") !== -1, "pace translates Expected used")
+        assert(translatedPace.indexOf("Dura hasta el reinicio") !== -1, "pace translates Lasts until reset")
+        assert(translatedPace.indexOf("margen") !== -1, "pace translates headroom")
+
+        // 6. Chrome and footer status
+        assert(Translation.translate("Refresh", [], null, "es") === "Actualizar", "Refresh translates to Actualizar")
+        assert(Translation.translate("Ready", [], null, "es") === "Listo", "Ready translates to Listo")
+        assert(Translation.translate("Loading usage…", [], null, "es") === "Cargando uso…", "Loading usage translates to Cargando uso…")
+
         finish()
     }
 }
