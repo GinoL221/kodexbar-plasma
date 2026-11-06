@@ -44,7 +44,10 @@ PlasmoidItem {
         root.cycleIndex,
         root.preferredWindowKey,
         UsageModel.selectCompact,
-        UsageModel.selectRepresentative
+        UsageModel.selectRepresentative,
+        function(id) {
+            return ProviderIcons.displayName(id)
+        }
     )
 
     preferredRepresentation: compactRepresentation
@@ -52,15 +55,17 @@ PlasmoidItem {
     toolTipSubText: root.panelTooltipSubText()
 
     function panelTooltipSubText() {
-        var pct, winLabel, pName
-        if (root.cycledUsage.usedPercent !== null) {
-            pct = Math.round(root.cycledUsage.usedPercent) + "%"
-            winLabel = root.cycledUsage.label ? " (" + root.cycledUsage.label + ")" : ""
-            if (root.cycledUsage.isAll) {
-                pName = root.cycledUsage.providerName
-                return pName ? pName + winLabel + ": " + pct : pct
+        var pct, winLabel
+        if (root.cycledUsage.isAll) {
+            if (root.cycledUsage.allSummaryText && root.cycledUsage.allSummaryText.length > 0) {
+                return root.cycledUsage.allSummaryText
             }
-            return root.cycledUsage.targetName + winLabel + ": " + pct
+        } else {
+            if (root.cycledUsage.usedPercent !== null) {
+                pct = Math.round(root.cycledUsage.usedPercent) + "%"
+                winLabel = root.cycledUsage.label ? " (" + root.cycledUsage.label + ")" : ""
+                return root.cycledUsage.targetName + winLabel + ": " + pct
+            }
         }
         return root.controller.phase === "loading" || root.controller.phase === "idle"
             ? i18n("Loading") : root.controller.phase === "error" ? i18n("Error") : i18n("No data")

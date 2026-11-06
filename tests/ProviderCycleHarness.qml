@@ -40,14 +40,19 @@ Item {
         assert(targets[1].id === "claude" && targets[1].name === "Claude", "target 1 must be Claude")
         assert(targets[2].id === "codex" && targets[2].name === "Codex", "target 2 must be Codex")
 
-        // 3. Resolving cycled usage for 'All' (index 0)
+        // 3. Resolving cycled usage for 'All' (index 0) with all-providers summary tooltip
+        var displayNameFn = function(id) { return id === "claude" ? "Claude" : "Codex" }
         var allResolved = ProviderCycle.resolveCycledUsage(
             targets, 0, "session",
             UsageModel.selectCompact,
-            UsageModel.selectRepresentative
+            UsageModel.selectRepresentative,
+            displayNameFn
         )
         assert(allResolved.isAll === true, "index 0 must report isAll true")
         assert(allResolved.usedPercent === 75, "allResolved must reflect global max (Claude 75%)")
+        assert(allResolved.allSummaryText.indexOf("Claude: 75% (Session)") !== -1, "allSummaryText must list Claude")
+        assert(allResolved.allSummaryText.indexOf("Codex: 40% (Session)") !== -1, "allSummaryText must list Codex")
+        assert(allResolved.allSummaryText.indexOf("\n") !== -1, "allSummaryText must be multi-line")
 
         // 4. Resolving cycled usage for Claude (index 1)
         var claudeResolved = ProviderCycle.resolveCycledUsage(
