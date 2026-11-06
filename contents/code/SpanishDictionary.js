@@ -128,6 +128,17 @@ function translateDuration(text) {
 }
 
 /**
+ * Normalizes compact CLI duration units: "1h 57m" -> "1 h 57 min", "3d 22h" -> "3 d 22 h"
+ */
+function formatDurationUnits(duration) {
+    var normalized = duration
+    normalized = normalized.replace(/(\d+)\s*d\b/g, "$1 d")
+    normalized = normalized.replace(/(\d+)\s*h\b/g, "$1 h")
+    normalized = normalized.replace(/(\d+)\s*m\b/g, "$1 min")
+    return normalized
+}
+
+/**
  * Translates pace summary text such as "43% in reserve | Expected 75% used | Lasts until reset"
  */
 function translatePace(text) {
@@ -141,5 +152,12 @@ function translatePace(text) {
     result = result.replace(/\bLasts until reset\b/gi, "Dura hasta el reinicio")
     result = result.replace(/\bOn pace\b/gi, "A buen ritmo")
     result = result.replace(/\bheadroom\b/gi, "margen")
+    result = result.replace(/Projected empty in\s+([^|]+)/gi, function (match, duration) {
+        return "Se agota en " + formatDurationUnits(duration.replace(/\s+$/, ""))
+    })
+    result = result.replace(/Runs out in\s+([^|]+)/gi, function (match, duration) {
+        return "Se agota en " + formatDurationUnits(duration.replace(/\s+$/, ""))
+    })
+    result = result.replace(/\bRuns out tomorrow\b/gi, "Se agota mañana")
     return result
 }

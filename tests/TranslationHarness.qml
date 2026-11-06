@@ -49,6 +49,27 @@ Item {
         assert(translatedPace.indexOf("Dura hasta el reinicio") !== -1, "pace translates Lasts until reset")
         assert(translatedPace.indexOf("margen") !== -1, "pace translates headroom")
 
+        // 5b. Remaining English pace fragments
+        var paceProjected = Translation.translatePace("A buen ritmo | Uso esperado 58% | Projected empty in 1h 57m", "es")
+        assert(paceProjected.indexOf("Se agota en 1 h 57 min") !== -1, "pace translates Projected empty in")
+        assert(paceProjected.indexOf("Projected empty") === -1, "no Projected empty remains in Spanish pace")
+        assert(paceProjected.indexOf("Runs out") === -1, "no Runs out remains in Spanish pace")
+
+        var paceRunsOut = Translation.translatePace("A buen ritmo | Uso esperado 41% | Runs out in 3d 22h", "es")
+        assert(paceRunsOut.indexOf("Se agota en 3 d 22 h") !== -1, "pace translates Runs out in")
+        assert(paceRunsOut.indexOf("Runs out") === -1, "no Runs out remains in Runs out pace")
+
+        var paceTomorrow = Translation.translatePace("Runs out tomorrow", "es")
+        assert(paceTomorrow === "Se agota mañana", "pace translates Runs out tomorrow")
+
+        // English mode preserves originals
+        var paceEnProjected = Translation.translatePace("A buen ritmo | Uso esperado 58% | Projected empty in 1h 57m", "en")
+        assert(paceEnProjected === "A buen ritmo | Uso esperado 58% | Projected empty in 1h 57m", "English pace preserves Projected empty")
+        var paceEnRunsOut = Translation.translatePace("A buen ritmo | Uso esperado 41% | Runs out in 3d 22h", "en")
+        assert(paceEnRunsOut === "A buen ritmo | Uso esperado 41% | Runs out in 3d 22h", "English pace preserves Runs out")
+        var paceEnTomorrow = Translation.translatePace("Runs out tomorrow", "en")
+        assert(paceEnTomorrow === "Runs out tomorrow", "English pace preserves Runs out tomorrow")
+
         // 6. Chrome and footer status
         assert(Translation.translate("Refresh", [], null, "es") === "Actualizar", "Refresh translates to Actualizar")
         assert(Translation.translate("Ready", [], null, "es") === "Listo", "Ready translates to Listo")
