@@ -29,11 +29,8 @@ Single-line layout:
 ### Detail (`summary: false`)
 Header row above full-width progress bar:
 - **Header row**:
-  - `windowLabel` on the left with `Layout.fillWidth: true` and `Layout.minimumWidth: 0`.
-  - Detail-only trailing container with `visible: !root.summary` holding:
-    - Reset countdown label
-    - `detailThresholdMarkerLoader`
-    - `% used` label on the right
+  - `windowLabel` on the left with `Layout.fillWidth: true` and `Layout.minimumWidth: root.summary ? 0 : Kirigami.Units.gridUnit`.
+  - `detailResetContainer` (`visible: !root.summary`) holds `resetsAtLabel` and `resetDescriptionLabel`, while `bandPercentageLabel` and `detailThresholdMarkerLoader` are direct children of `titleRow`.
 - **Progress bar**:
   - Full-width `detailBarHost` positioned below the header row.
 - **Pace line**:
@@ -51,7 +48,7 @@ All provider reset timestamps (`resetsAt` ISO-8601) and English descriptions (`R
 - **`pragma ComponentBehavior: Bound`**:
   `contents/ui/UsageWindowRow.qml` uses bound component behavior.
 - **`LAYOUT_POSITIONING_EXCEPTIONS`**:
-  Line-number pin in `scripts/check-qml-unqualified-baseline.py` must be updated whenever `contents/ui/UsageWindowRow.qml` line numbers shift.
+  `UsageWindowRow.qml` exposes `width: root.width` at line 167 (pinned in `scripts/check-qml-unqualified-baseline.py`).
 - **`tests/ProviderRowHarness.qml` Invariants**:
   - `summaryWindowRow.resetsAtLabel.parent.visible === false` in summary mode.
   - `constrainedWindowRow` (`width: 120`): Requires `Layout.minimumWidth: 0` on `windowLabel` and bounded trailing labels so `percentageLabel.paintedWidth <= percentageLabel.width` and `percentageLabel.x + percentageLabel.width <= row.width`.

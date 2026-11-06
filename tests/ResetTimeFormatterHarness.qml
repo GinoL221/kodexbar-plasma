@@ -85,7 +85,14 @@ Item {
         assert(ResetTimeFormatter.formatResetText(null, "Dec 3", localNowMs, "es") === "Se reinicia en 26 d 12 h",
                "Dec 3 relative to local noon in es")
 
-        // 4. Fallback preservation for non-temporal notes and past ISO timestamps
+        // 4. Fallback preservation for non-temporal notes, past ISO timestamps, and invalid date/clock overflows
+        assert(ResetTimeFormatter.formatResetText(null, "Feb 31", fixedIsoNow, "en") === "Feb 31",
+               "calendar overflow Feb 31 falls back to raw string")
+        assert(ResetTimeFormatter.formatResetText(null, "tomorrow, 25:99", fixedIsoNow, "en") === "tomorrow, 25:99",
+               "clock overflow tomorrow, 25:99 falls back to raw string")
+        assert(ResetTimeFormatter.formatResetText(null, "Nov 10 at 13:45 PM", fixedIsoNow, "en") === "Nov 10 at 13:45 PM",
+               "clock overflow Nov 10 at 13:45 PM falls back to raw string")
+
         assert(ResetTimeFormatter.formatResetText("2026-08-09T12:00:00Z", "Exact reset note", fixedIsoNow, "en") === "Exact reset note",
                "Exact reset note preserved in en")
         assert(ResetTimeFormatter.formatResetText("2026-08-09T13:00:00Z", "NaN reset", fixedIsoNow, "en") === "NaN reset",

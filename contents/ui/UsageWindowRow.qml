@@ -15,18 +15,18 @@ ColumnLayout {
     property var windowData: ({})
     property bool compact: false
     property bool summary: false
-    // Selected-provider-only pace summary text (e.g. "42% in deficit |
-    // Expected 18% used"), attached by the caller when this window's label
-    // matches a valid CLI-supplied pace.primary/secondary/tertiary entry.
+    // Selected-provider-only pace summary text (e.g. "42% in deficit | Expected 18% used"),
+    // attached by the caller when this window's label matches a valid pace entry.
     property string paceSummary: ""
     // Optional brand accent (#rrggbb). Empty → Kirigami.Theme.highlightColor.
     property string accentColor: ""
     property string languagePreference: "en"
+    property real nowMs: Date.now()
 
     readonly property bool hasFinitePercent: typeof root.windowData.usedPercent === "number" && isFinite(root.windowData.usedPercent)
     readonly property string resetText: root.windowData.resetsAt !== null && root.windowData.resetsAt !== undefined ? String(root.windowData.resetsAt) : ""
     readonly property string resetDescriptionText: root.windowData.resetDescription !== null && root.windowData.resetDescription !== undefined && String(root.windowData.resetDescription).length > 0
-        ? ResetTimeFormatter.formatResetText(root.windowData.resetsAt, String(root.windowData.resetDescription), Date.now(), root.languagePreference)
+        ? ResetTimeFormatter.formatResetText(root.windowData.resetsAt, String(root.windowData.resetDescription), root.nowMs, root.languagePreference)
         : ""
     readonly property bool showBar: root.hasFinitePercent && !root.compact
     readonly property real barRatio: {
@@ -37,9 +37,7 @@ ColumnLayout {
     }
     readonly property string thresholdLevel: UsageThreshold.level(root.windowData.usedPercent)
 
-    // Summary uses the in-line bar; detail uses the full-width bar below the title.
-    // Always point at a real Item (never null) for harness geometry handles.
-    // Geometry handle: summary mid-row bar, or detail host (Layout-sized).
+    // Geometry handle: summary mid-row bar or detail host (always non-null Item).
     property var progressBar: root.summary ? summaryBar : detailBarHost
     property alias windowLabel: windowLabel
     property var percentageLabel: root.summary ? summaryPercentageLabel : bandPercentageLabel
@@ -154,8 +152,7 @@ ColumnLayout {
         return details.join(", ")
     }
 
-    // Overview (summary): single line — label | bar | percent.
-    // Detail: title on the left; reset countdown, percent, and marker on the right.
+    // Overview: single line (label|bar|percent). Detail: title left, countdown/percent/marker right.
     RowLayout {
         id: titleRow
         // Explicit width tracks the window row so summary bars grow when the
@@ -274,7 +271,7 @@ ColumnLayout {
             PlasmaComponents.Label {
                 id: resetsAtLabel
                 visible: root.resetText.length > 0 && root.resetDescriptionText.length === 0 && !root.summary
-                text: visible ? ResetTimeFormatter.formatResetText(root.resetText, null, Date.now(), root.languagePreference) : ""
+                text: visible ? ResetTimeFormatter.formatResetText(root.resetText, null, root.nowMs, root.languagePreference) : ""
                 color: Kirigami.Theme.disabledTextColor
                 font.pointSize: Kirigami.Theme.smallFont.pointSize
                 elide: Text.ElideRight
@@ -377,5 +374,13 @@ ColumnLayout {
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
         Layout.topMargin: Math.round(Kirigami.Units.smallSpacing / 2)
+    }
+
+    Timer {
+        id: countdownRefreshTimer
+        interval: 60000
+        repeat: true
+        running: !root.summary && root.visible && (root.resetText.length > 0 || root.resetDescriptionText.length > 0)
+        onTriggered: root.nowMs = Date.now()
     }
 }

@@ -70,10 +70,22 @@ function parseDate(text, nowMs) {
         var h = parseInt(tomorrowMatch[1], 10)
         var m = parseInt(tomorrowMatch[2], 10)
         var ampm = tomorrowMatch[3] ? tomorrowMatch[3].toLowerCase() : null
-        if (ampm === "pm" && h < 12) {
-            h += 12
-        } else if (ampm === "am" && h === 12) {
-            h = 0
+        if (ampm) {
+            if (h < 1 || h > 12) {
+                return NaN
+            }
+            if (ampm === "pm" && h < 12) {
+                h += 12
+            } else if (ampm === "am" && h === 12) {
+                h = 0
+            }
+        } else {
+            if (h < 0 || h > 23) {
+                return NaN
+            }
+        }
+        if (m < 0 || m > 59) {
+            return NaN
         }
         var targetTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, h, m, 0, 0)
         return targetTomorrow.getTime()
@@ -85,6 +97,9 @@ function parseDate(text, nowMs) {
         if (Object.prototype.hasOwnProperty.call(MONTH_MAP, monthKey)) {
             var month = MONTH_MAP[monthKey]
             var day = parseInt(dateMatch[2], 10)
+            if (day < 1 || day > 31) {
+                return NaN
+            }
             var year = dateMatch[3] ? parseInt(dateMatch[3], 10) : now.getFullYear()
             var hours = 0
             var minutes = 0
@@ -92,15 +107,33 @@ function parseDate(text, nowMs) {
                 hours = parseInt(dateMatch[4], 10)
                 minutes = parseInt(dateMatch[5], 10)
                 var ampm2 = dateMatch[6] ? dateMatch[6].toLowerCase() : null
-                if (ampm2 === "pm" && hours < 12) {
-                    hours += 12
-                } else if (ampm2 === "am" && hours === 12) {
-                    hours = 0
+                if (ampm2) {
+                    if (hours < 1 || hours > 12) {
+                        return NaN
+                    }
+                    if (ampm2 === "pm" && hours < 12) {
+                        hours += 12
+                    } else if (ampm2 === "am" && hours === 12) {
+                        hours = 0
+                    }
+                } else {
+                    if (hours < 0 || hours > 23) {
+                        return NaN
+                    }
+                }
+                if (minutes < 0 || minutes > 59) {
+                    return NaN
                 }
             }
             var target = new Date(year, month, day, hours, minutes, 0, 0)
+            if (target.getMonth() !== month || target.getDate() !== day) {
+                return NaN
+            }
             if (!dateMatch[3] && target.getTime() < nowMs) {
                 target = new Date(year + 1, month, day, hours, minutes, 0, 0)
+                if (target.getMonth() !== month || target.getDate() !== day) {
+                    return NaN
+                }
             }
             return target.getTime()
         }
@@ -168,7 +201,7 @@ function formatResetText(resetsAt, resetDescription, nowMs, languagePreference) 
             }
 
             var dateMs = parseDate(desc, effectiveNowMs)
-            if (dateMs !== null && dateMs > effectiveNowMs) {
+            if (dateMs !== null && !isNaN(dateMs) && dateMs > effectiveNowMs) {
                 return formatCountdownFromDiff(dateMs - effectiveNowMs, isSpanish)
             }
 
