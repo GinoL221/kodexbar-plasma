@@ -1,0 +1,60 @@
+# Popup and Layout Invariants
+
+Reference guide for Plasma 6 QML popup information hierarchy, `UsageWindowRow` anatomy, standardized reset countdowns, and QML/test invariants.
+
+## 1. Popup Information Order
+
+When extending the full representation, preserve this selected-provider order unless an SDD change explicitly revises it:
+
+1. Provider tabs (`All` + usable providers)
+2. Header (name, updated, plan/login, account email, human-readable org only)
+3. Usage windows with optional pace lines
+4. Credits remaining (when valid)
+5. Reset-credit inventory only when `availableCount` > 0 (count + expandable expirations; no redeem)
+6. Cost section only for selected supported providers with a valid CLI cost snapshot
+7. Collapsed-by-default `usage.details[]`
+8. Global error summary
+9. Plasma-native chrome (refresh / configure) — no Auth, Add Account, or Quit
+
+`All` stays a compact summary: no email, org, pace, credits, reset inventory, or cost.
+
+## 2. UsageWindowRow Anatomy
+
+`UsageWindowRow` renders either an overview summary or a detailed window view based on `root.summary`:
+
+### Overview (`summary: true`)
+Single-line layout:
+`windowLabel | summaryBar | thresholdMarker | % used`
+
+### Detail (`summary: false`)
+Header row above full-width progress bar:
+- **Header row**:
+  - `windowLabel` on the left with `Layout.fillWidth: true` and `Layout.minimumWidth: 0`.
+  - Detail-only trailing container with `visible: !root.summary` holding:
+    - Reset countdown label
+    - `detailThresholdMarkerLoader`
+    - `% used` label on the right
+- **Progress bar**:
+  - Full-width `detailBarHost` positioned below the header row.
+- **Pace line**:
+  - Optional `paceSummaryLabel` below the progress bar.
+
+## 3. Standardized Reset Countdowns (`ResetTimeFormatter.js`)
+
+All provider reset timestamps (`resetsAt` ISO-8601) and English descriptions (`Resets in 4h 56m`, `2 hours, 20 minutes`, `tomorrow, 12:45 AM`, `Nov 10 at 5:24 PM`, `Dec 3`) normalize into a consistent countdown when parseable:
+- **English**: `Resets in Xd Yh` or `Resets in Xh Ym`
+- **Spanish**: `Se reinicia en X d Y h` or `Se reinicia en X h Y min`
+- **Fallback**: Safely display the raw description as-is when unparseable.
+
+## 4. QML & Test Invariants
+
+- **`pragma ComponentBehavior: Bound`**:
+  `contents/ui/UsageWindowRow.qml` uses bound component behavior.
+- **`LAYOUT_POSITIONING_EXCEPTIONS`**:
+  Line-number pin in `scripts/check-qml-unqualified-baseline.py` must be updated whenever `contents/ui/UsageWindowRow.qml` line numbers shift.
+- **`tests/ProviderRowHarness.qml` Invariants**:
+  - `summaryWindowRow.resetsAtLabel.parent.visible === false` in summary mode.
+  - `constrainedWindowRow` (`width: 120`): Requires `Layout.minimumWidth: 0` on `windowLabel` and bounded trailing labels so `percentageLabel.paintedWidth <= percentageLabel.width` and `percentageLabel.x + percentageLabel.width <= row.width`.
+  - Detail percentage sits above `progressBar` (`percentPos.y < barPos.y`).
+- **Offscreen Visual Regression Goldens**:
+  `tests/visual/goldens/*.png` must be regenerated via `UPDATE_GOLDENS=1 ./scripts/run-visual-tests.sh` inside the visual Docker container whenever detail-row geometry changes.
