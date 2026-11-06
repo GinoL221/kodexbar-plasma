@@ -70,7 +70,13 @@ Item {
         var paceEnTomorrow = Translation.translatePace("Runs out tomorrow", "en")
         assert(paceEnTomorrow === "Runs out tomorrow", "English pace preserves Runs out tomorrow")
 
-        // 6. Chrome and footer status
+        // 6. Cost metrics & primary model
+        assert(Translation.translate("Last 30 days cost", [], null, "es") === "Costo de los últimos 30 días", "Last 30 days cost in Spanish")
+        assert(Translation.translate("Last 30 days tokens", [], null, "es") === "Tokens de los últimos 30 días", "Last 30 days tokens in Spanish")
+        assert(Translation.translate("Recent tokens", [], null, "es") === "Tokens más recientes", "Recent tokens in Spanish")
+        assert(Translation.translate("Primary model: %1", ["gpt-5"], null, "es") === "Modelo principal: gpt-5", "Primary model in Spanish")
+
+        // 7. Chrome and footer status
         assert(Translation.translate("Refresh", [], null, "es") === "Actualizar", "Refresh translates to Actualizar")
         assert(Translation.translate("Ready", [], null, "es") === "Listo", "Ready translates to Listo")
         assert(Translation.translate("Loading usage…", [], null, "es") === "Cargando uso…", "Loading usage translates to Cargando uso…")
