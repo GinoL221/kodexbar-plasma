@@ -200,45 +200,57 @@ QQC2.ApplicationWindow {
             QQC2.ScrollBar.horizontal.policy: QQC2.ScrollBar.AlwaysOff
             QQC2.ScrollBar.vertical.policy: QQC2.ScrollBar.AsNeeded
 
-            ColumnLayout {
-                id: fixtureColumn
-                width: fixtureViewport.availableWidth
-                spacing: Kirigami.Units.smallSpacing
+            Flickable {
+                id: fixtureScroll
+                contentWidth: fixtureViewport.availableWidth
+                contentHeight: fixtureColumn.implicitHeight
 
-                UsageUi.ProviderRow {
-                    id: providerRow
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    providerData: ({
-                        provider: "fixture-provider",
-                        source: "fixture-source",
-                        windows: [
-                            { label: "Session", usedPercent: 42, resetDescription: "Resets tomorrow" },
-                            { label: "Weekly", usedPercent: 13 },
-                            { label: "Monthly", usedPercent: 94 }
-                        ],
-                        raw: {
-                            version: "fixture-version",
-                            pace: { primary: { summary: "On pace" } },
-                            credits: { remaining: 12 },
-                            usage: {
-                                loginMethod: "fixture-login",
-                                updatedAt: "2026-08-15T12:00:00Z",
-                                identity: {
-                                    accountEmail: "fixture@example.invalid",
-                                    accountOrganization: "Fixture Labs"
+                ColumnLayout {
+                    id: fixtureColumn
+                    width: fixtureViewport.availableWidth
+                    spacing: Kirigami.Units.smallSpacing
+
+                    UsageUi.ProviderRow {
+                        id: providerRow
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        providerData: ({
+                            provider: "fixture-provider",
+                            source: "fixture-source",
+                            windows: [
+                                { label: "Session", usedPercent: 42, resetDescription: "Resets tomorrow" },
+                                { label: "Weekly", usedPercent: 13 },
+                                { label: "Monthly", usedPercent: 94 }
+                            ],
+                            raw: {
+                                version: "fixture-version",
+                                pace: { primary: { summary: "On pace" } },
+                                credits: { remaining: 12 },
+                                usage: {
+                                    loginMethod: "fixture-login",
+                                    updatedAt: "2026-08-15T12:00:00Z",
+                                    identity: {
+                                        accountEmail: "fixture@example.invalid",
+                                        accountOrganization: "Fixture Labs"
+                                    }
                                 }
                             }
-                        }
-                    })
-                    costSnapshot: root.costPresent ? ({
-                        provider: "fixture-provider",
-                        source: "local",
-                        sessionCostUSD: 1.5,
-                        sessionTokens: 1000,
-                        last30DaysCostUSD: 12,
-                        last30DaysTokens: 50000
-                    }) : null
+                        })
+                        costSnapshot: root.costPresent ? ({
+                            provider: "fixture-provider",
+                            source: "local",
+                            sessionCostUSD: 1.5,
+                            sessionTokens: 1000,
+                            last30DaysCostUSD: 12,
+                            last30DaysTokens: 50000,
+                            daily: [
+                                { date: "2026-08-12", totalCost: 1, totalTokens: 4000 },
+                                { date: "2026-08-13", totalCost: 3, totalTokens: 12000 },
+                                { date: "2026-08-14", totalCost: 2, totalTokens: 8000 }
+                            ],
+                            primaryModel: "fixture-model"
+                        }) : null
+                    }
                 }
             }
         }
@@ -265,6 +277,11 @@ QQC2.ApplicationWindow {
             var providerLabel = root.findObject(providerRow, "providerLabel")
             var sourceLabel = root.findObject(providerRow, "sourceLabel")
             var costLabel = root.findObject(providerRow, "costLabel")
+            var histogram = root.findObject(providerRow, "costHistogram")
+            var modelLabel = root.findObject(providerRow, "costPrimaryModelLabel")
+            if (root.costPresent)
+                fixtureScroll.contentY = Math.max(0,
+                    fixtureScroll.contentHeight - fixtureViewport.availableHeight)
 
             root.assert(root.expectedTheme.length > 0,
                 "unknown scenario must name a Breeze Light or Dark scenario")
@@ -291,6 +308,19 @@ QQC2.ApplicationWindow {
             root.assert(root.costPresent ? costLabel !== null && costLabel.visible
                 : costLabel === null || !costLabel.visible,
                 "cost visibility must match the scenario state")
+            if (root.costPresent) {
+                root.assert(histogram !== null && histogram.visible && histogram.hasBars
+                    && modelLabel !== null && modelLabel.visible
+                    && modelLabel.text.indexOf("fixture-model") !== -1,
+                    "cost fixture must show daily bars and the primary model")
+                if (histogram !== null && modelLabel !== null) {
+                    var histogramPosition = histogram.mapToItem(fixtureViewport, 0, 0)
+                    var modelPosition = modelLabel.mapToItem(fixtureViewport, 0, 0)
+                    root.assert(histogramPosition.y >= 0
+                        && modelPosition.y + modelLabel.height <= fixtureViewport.height,
+                        "daily bars and primary model must be inside the captured viewport")
+                }
+            }
 
             if (root.assertionFailed) {
                 Qt.exit(1)

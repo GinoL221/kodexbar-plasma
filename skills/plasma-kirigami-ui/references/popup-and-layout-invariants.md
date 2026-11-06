@@ -24,13 +24,13 @@ When extending the full representation, preserve this selected-provider order un
 
 ### Overview (`summary: true`)
 Single-line layout:
-`windowLabel | summaryBar | thresholdMarker | % used`
+`windowLabel | summaryBar | % used` (the percentage color reflects the usage threshold; there is no separate marker).
 
 ### Detail (`summary: false`)
 Header row above full-width progress bar:
 - **Header row**:
   - `windowLabel` on the left with `Layout.fillWidth: true` and `Layout.minimumWidth: root.summary ? 0 : Kirigami.Units.gridUnit`.
-  - `detailResetContainer` (`visible: !root.summary`) holds `resetsAtLabel` and `resetDescriptionLabel`, while `bandPercentageLabel` and `detailThresholdMarkerLoader` are direct children of `titleRow`.
+  - `detailResetContainer` (`visible: !root.summary`) holds `resetsAtLabel` and `resetDescriptionLabel`, while `bandPercentageLabel` is a direct child of `titleRow`.
 - **Progress bar**:
   - Full-width `detailBarHost` positioned below the header row.
 - **Pace line**:
@@ -38,20 +38,20 @@ Header row above full-width progress bar:
 
 ## 3. Standardized Reset Countdowns (`ResetTimeFormatter.js`)
 
-All provider reset timestamps (`resetsAt` ISO-8601) and English descriptions (`Resets in 4h 56m`, `2 hours, 20 minutes`, `tomorrow, 12:45 AM`, `Nov 10 at 5:24 PM`, `Dec 3`) normalize into a consistent countdown when parseable:
+A future parseable `resetsAt` takes precedence over English descriptions such as `Resets in 4h 56m`, `2 hours, 20 minutes`, `tomorrow, 12:45 AM`, `Nov 10 at 5:24 PM`, or `Dec 3`. Parseable descriptions are used when the timestamp is missing, past, or invalid. The detail row refreshes its clock every minute while visible. Countdown formats include:
 - **English**: `Resets in Xd Yh` or `Resets in Xh Ym`
 - **Spanish**: `Se reinicia en X d Y h` or `Se reinicia en X h Y min`
-- **Fallback**: Safely display the raw description as-is when unparseable.
+- **Fallback**: An unparseable description goes through reset translation; without a description, a past or invalid timestamp is displayed as `Reset: <value>`.
 
 ## 4. QML & Test Invariants
 
 - **`pragma ComponentBehavior: Bound`**:
   `contents/ui/UsageWindowRow.qml` uses bound component behavior.
 - **`LAYOUT_POSITIONING_EXCEPTIONS`**:
-  `UsageWindowRow.qml` exposes `width: root.width` at line 167 (pinned in `scripts/check-qml-unqualified-baseline.py`).
+  `UsageWindowRow.qml` binds the title row's `width: root.width` for synchronous resize behavior; the layout-positioning exception is tracked in `scripts/check-qml-unqualified-baseline.py`.
 - **`tests/ProviderRowHarness.qml` Invariants**:
   - `summaryWindowRow.resetsAtLabel.parent.visible === false` in summary mode.
   - `constrainedWindowRow` (`width: 120`): Requires `Layout.minimumWidth: 0` on `windowLabel` and bounded trailing labels so `percentageLabel.paintedWidth <= percentageLabel.width` and `percentageLabel.x + percentageLabel.width <= row.width`.
   - Detail percentage sits above `progressBar` (`percentPos.y < barPos.y`).
 - **Offscreen Visual Regression Goldens**:
-  `tests/visual/goldens/*.png` must be regenerated via `UPDATE_GOLDENS=1 ./scripts/run-visual-tests.sh` inside the visual Docker container whenever detail-row geometry changes.
+  Regenerate `tests/visual/goldens/*.png` via `UPDATE_GOLDENS=1 ./scripts/run-visual-tests.sh` in the canonical visual environment when captured output intentionally changes, then run `./scripts/run-visual-tests.sh` without the update flag. Cost-present captures include daily bars and the primary model; cost-absent captures omit the section.
