@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
+import "../code/ResetTimeFormatter.js" as ResetTimeFormatter
 import "../code/Translation.js" as Translation
 import "../code/UsageThreshold.js" as UsageThreshold
 
@@ -14,17 +15,19 @@ ColumnLayout {
     property var windowData: ({})
     property bool compact: false
     property bool summary: false
-    // Selected-provider-only pace summary text (e.g. "42% in deficit |
-    // Expected 18% used"), attached by the caller when this window's label
-    // matches a valid CLI-supplied pace.primary/secondary/tertiary entry.
+    // Selected-provider-only pace summary text (e.g. "42% in deficit | Expected 18% used"),
+    // attached by the caller when this window's label matches a valid pace entry.
     property string paceSummary: ""
     // Optional brand accent (#rrggbb). Empty → Kirigami.Theme.highlightColor.
     property string accentColor: ""
     property string languagePreference: "en"
+    property real nowMs: Date.now()
 
     readonly property bool hasFinitePercent: typeof root.windowData.usedPercent === "number" && isFinite(root.windowData.usedPercent)
     readonly property string resetText: root.windowData.resetsAt !== null && root.windowData.resetsAt !== undefined ? String(root.windowData.resetsAt) : ""
-    readonly property string resetDescriptionText: root.windowData.resetDescription !== null && root.windowData.resetDescription !== undefined ? Translation.translateReset(String(root.windowData.resetDescription), root.languagePreference) : ""
+    readonly property string resetDescriptionText: root.windowData.resetDescription !== null && root.windowData.resetDescription !== undefined && String(root.windowData.resetDescription).length > 0
+        ? ResetTimeFormatter.formatResetText(root.windowData.resetsAt, String(root.windowData.resetDescription), root.nowMs, root.languagePreference)
+        : ""
     readonly property bool showBar: root.hasFinitePercent && !root.compact
     readonly property real barRatio: {
         if (!root.hasFinitePercent) {
@@ -34,15 +37,24 @@ ColumnLayout {
     }
     readonly property string thresholdLevel: UsageThreshold.level(root.windowData.usedPercent)
 
-    // Summary uses the in-line bar; detail uses the full-width bar below the title.
-    // Always point at a real Item (never null) for harness geometry handles.
-    // Geometry handle: summary mid-row bar, or detail host (Layout-sized).
+    // Threshold-encoded `% used` label color: red for critical/exhausted,
+    // amber for warn, and a calm neutral otherwise -- detail mode uses the
+    // accent highlight, summary mode the dimmed disabled text.
+    readonly property color percentageColor: {
+        if (root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
+                || root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED) {
+            return Kirigami.Theme.negativeTextColor
+        }
+        if (root.thresholdLevel === UsageThreshold.LEVEL_WARN) {
+            return Kirigami.Theme.neutralTextColor
+        }
+        return root.summary ? Kirigami.Theme.disabledTextColor : Kirigami.Theme.highlightColor
+    }
+
+    // Geometry handle: summary mid-row bar or detail host (always non-null Item).
     property var progressBar: root.summary ? summaryBar : detailBarHost
     property alias windowLabel: windowLabel
     property var percentageLabel: root.summary ? summaryPercentageLabel : bandPercentageLabel
-    // Row-sibling marker handle (D25): the Loader is always active (D24),
-    // so this is never null -- only the loaded icon's opacity toggles.
-    property var thresholdMarker: root.summary ? summaryThresholdMarkerLoader.item : detailThresholdMarkerLoader.item
     property alias resetsAtLabel: resetsAtLabel
     property alias resetDescriptionLabel: resetDescriptionLabel
 
@@ -90,36 +102,6 @@ ColumnLayout {
         return value === null || value === undefined ? "" : String(value)
     }
 
-    // Shared threshold marker (D23-D26, D21): one inline Component
-    // instantiated by a Loader as a row sibling next to the percent label
-    // in each of the two layouts below (never overlaid on the bar), so
-    // summary and detail share a single geometry/color implementation and
-    // cannot drift. The Loader is always active and its layout slot is
-    // always reserved at a fixed width (D24) -- only the icon's opacity
-    // toggles between 0 (ok/no-level) and 1 (warn/critical), so bar track
-    // length never changes based on marker presence.
-    Component {
-        id: thresholdMarkerComponent
-        Kirigami.Icon {
-            objectName: "thresholdMarker"
-            implicitWidth: Kirigami.Units.iconSizes.small
-            implicitHeight: Kirigami.Units.iconSizes.small
-            isMask: true
-            opacity: UsageThreshold.isRisk(root.thresholdLevel) ? 1 : 0
-            source: root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED
-                ? Qt.resolvedUrl("../icons/threshold-exhausted.svg")
-                : root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
-                    ? Qt.resolvedUrl("../icons/threshold-critical.svg")
-                    : Qt.resolvedUrl("../icons/threshold-warning.svg")
-            color: root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED
-                || root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
-                ? Kirigami.Theme.negativeTextColor
-                : root.thresholdLevel === UsageThreshold.LEVEL_WARN
-                    ? Kirigami.Theme.neutralTextColor
-                    : "transparent"
-        }
-    }
-
     Accessible.name: Translation.translate("%1 window", [root.valueText(root.windowData.label)],
         typeof i18n === "function" ? i18n : null)
     Accessible.description: {
@@ -151,8 +133,7 @@ ColumnLayout {
         return details.join(", ")
     }
 
-    // Overview (summary): single line — label | bar | percent.
-    // Detail: title only on this row; bar and band follow below.
+    // Overview: single line (label|bar|percent). Detail: title left, countdown/percent right.
     RowLayout {
         id: titleRow
         // Explicit width tracks the window row so summary bars grow when the
@@ -182,7 +163,7 @@ ColumnLayout {
             // than label+bar+percent combined -- locking min==max here left
             // RowLayout unable to compress at constrained widths, overflowing
             // the row instead of shrinking (recursive-rearrange abort).
-            Layout.minimumWidth: 0
+            Layout.minimumWidth: root.summary ? 0 : Kirigami.Units.gridUnit
             Layout.maximumWidth: root.summary ? root.summaryLabelColumnWidth : -1
             // fillWidth (not just non-summary) so a non-fillWidth item isn't
             // pinned to preferredWidth by Qt Quick Layouts' Fixed size policy
@@ -191,7 +172,6 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.preferredWidth: root.summary ? root.summaryLabelColumnWidth : -1
             Layout.alignment: Qt.AlignVCenter
-            Layout.bottomMargin: root.summary ? 0 : Math.round(Kirigami.Units.smallSpacing / 2)
         }
 
         Item {
@@ -226,29 +206,14 @@ ColumnLayout {
             }
         }
 
-        Item {
-            visible: !root.summary
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
-            Layout.preferredHeight: 1
-        }
-
-        Loader {
-            id: summaryThresholdMarkerLoader
-            sourceComponent: thresholdMarkerComponent
-            Layout.preferredWidth: Kirigami.Units.iconSizes.small
-            Layout.preferredHeight: Kirigami.Units.iconSizes.small
-            Layout.alignment: Qt.AlignVCenter
-        }
-
         PlasmaComponents.Label {
             id: summaryPercentageLabel
             objectName: "summaryPercentageLabel"
             visible: root.summary && root.hasFinitePercent
             text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
                 typeof i18n === "function" ? i18n : null, root.languagePreference) : ""
-            color: Kirigami.Theme.disabledTextColor
-            font.pointSize: Kirigami.Theme.smallFont.pointSize
+            color: root.percentageColor
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize
             font.weight: Font.Normal
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignRight
@@ -260,6 +225,62 @@ ColumnLayout {
             Layout.minimumWidth: 0
             Layout.preferredWidth: root.summary ? root.summaryPercentColumnWidth : implicitWidth
             Layout.maximumWidth: root.summary ? root.summaryPercentColumnWidth : implicitWidth
+            Layout.alignment: Qt.AlignVCenter
+        }
+
+        RowLayout {
+            id: detailResetContainer
+            visible: !root.summary
+            spacing: Kirigami.Units.smallSpacing
+            Layout.alignment: Qt.AlignVCenter
+            Layout.minimumWidth: 0
+            Layout.preferredWidth: (resetsAtLabel.visible || resetDescriptionLabel.visible) ? implicitWidth : 0
+            Layout.maximumWidth: (resetsAtLabel.visible || resetDescriptionLabel.visible)
+                ? (root.width > 0 ? root.width * 0.55 : Kirigami.Units.gridUnit * 12)
+                : 0
+            Layout.fillWidth: true
+
+            PlasmaComponents.Label {
+                id: resetsAtLabel
+                visible: root.resetText.length > 0 && root.resetDescriptionText.length === 0 && !root.summary
+                text: visible ? ResetTimeFormatter.formatResetText(root.resetText, null, root.nowMs, root.languagePreference) : ""
+                color: Kirigami.Theme.disabledTextColor
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize
+                elide: Text.ElideRight
+                wrapMode: Text.NoWrap
+                Layout.minimumWidth: 0
+                Layout.fillWidth: true
+                Layout.maximumWidth: root.width > 0 ? root.width * 0.55 : Kirigami.Units.gridUnit * 12
+                horizontalAlignment: Text.AlignRight
+            }
+
+            PlasmaComponents.Label {
+                id: resetDescriptionLabel
+                visible: root.resetDescriptionText.length > 0 && !root.summary
+                text: visible ? root.resetDescriptionText : ""
+                color: Kirigami.Theme.disabledTextColor
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize
+                elide: Text.ElideRight
+                wrapMode: Text.NoWrap
+                Layout.minimumWidth: 0
+                Layout.fillWidth: true
+                Layout.maximumWidth: root.width > 0 ? root.width * 0.55 : Kirigami.Units.gridUnit * 12
+                horizontalAlignment: Text.AlignRight
+            }
+        }
+
+        PlasmaComponents.Label {
+            id: bandPercentageLabel
+            objectName: "bandPercentageLabel"
+            visible: root.hasFinitePercent && !root.summary
+            text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
+                typeof i18n === "function" ? i18n : null, root.languagePreference) : ""
+            color: root.percentageColor
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize
+            font.weight: Font.DemiBold
+            Layout.minimumWidth: implicitWidth
+            Layout.maximumWidth: implicitWidth
+            Layout.preferredWidth: implicitWidth
             Layout.alignment: Qt.AlignVCenter
         }
     }
@@ -306,66 +327,6 @@ ColumnLayout {
         }
     }
 
-    // Detail-only trailing band: percent left, reset right.
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: Kirigami.Units.smallSpacing
-        visible: !root.summary
-        Layout.topMargin: Math.round(Kirigami.Units.smallSpacing / 2)
-
-        PlasmaComponents.Label {
-            id: bandPercentageLabel
-            objectName: "bandPercentageLabel"
-            visible: root.hasFinitePercent && !root.summary
-            text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
-                typeof i18n === "function" ? i18n : null, root.languagePreference) : ""
-            color: Kirigami.Theme.textColor
-            font.pointSize: Kirigami.Theme.smallFont.pointSize
-            Layout.minimumWidth: implicitWidth
-            Layout.maximumWidth: implicitWidth
-        }
-
-        Loader {
-            id: detailThresholdMarkerLoader
-            sourceComponent: thresholdMarkerComponent
-            Layout.preferredWidth: Kirigami.Units.iconSizes.small
-            Layout.preferredHeight: Kirigami.Units.iconSizes.small
-            Layout.alignment: Qt.AlignVCenter
-        }
-
-        Item {
-            Layout.fillWidth: true
-            Layout.minimumWidth: 0
-            Layout.preferredHeight: 1
-        }
-
-        PlasmaComponents.Label {
-            id: resetsAtLabel
-            visible: root.resetText.length > 0 && root.resetDescriptionText.length === 0 && !root.summary
-            text: visible ? Translation.translateReset(Translation.translate("Reset: %1", [root.resetText], typeof i18n === "function" ? i18n : null, root.languagePreference), root.languagePreference) : ""
-            color: Kirigami.Theme.disabledTextColor
-            font.pointSize: Kirigami.Theme.smallFont.pointSize
-            elide: Text.ElideRight
-            wrapMode: Text.NoWrap
-            Layout.minimumWidth: 0
-            Layout.maximumWidth: root.width > 0 ? root.width * 0.55 : Kirigami.Units.gridUnit * 12
-            horizontalAlignment: Text.AlignRight
-        }
-
-        PlasmaComponents.Label {
-            id: resetDescriptionLabel
-            visible: root.resetDescriptionText.length > 0 && !root.summary
-            text: visible ? root.resetDescriptionText : ""
-            color: Kirigami.Theme.disabledTextColor
-            font.pointSize: Kirigami.Theme.smallFont.pointSize
-            elide: Text.ElideRight
-            wrapMode: Text.NoWrap
-            Layout.minimumWidth: 0
-            Layout.maximumWidth: root.width > 0 ? root.width * 0.55 : Kirigami.Units.gridUnit * 12
-            horizontalAlignment: Text.AlignRight
-        }
-    }
-
     PlasmaComponents.Label {
         id: paceSummaryLabel
         objectName: "paceSummaryLabel"
@@ -377,5 +338,13 @@ ColumnLayout {
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
         Layout.topMargin: Math.round(Kirigami.Units.smallSpacing / 2)
+    }
+
+    Timer {
+        id: countdownRefreshTimer
+        interval: 60000
+        repeat: true
+        running: !root.summary && root.visible && (root.resetText.length > 0 || root.resetDescriptionText.length > 0)
+        onTriggered: root.nowMs = Date.now()
     }
 }

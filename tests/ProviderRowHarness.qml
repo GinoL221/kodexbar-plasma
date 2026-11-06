@@ -160,13 +160,12 @@ Item {
                message + ": summary progress bar must share width with label and percent")
     }
 
-    // Detail-mode anti-regression: percent stays BELOW the full-width bar
-    // (macOS CodexBar hierarchy / Image 2).
-    function assertDetailPercentBelowBar(row, message) {
+    // Detail-mode anti-regression: percent stays ABOVE the full-width bar.
+    function assertDetailPercentAboveBar(row, message) {
         var percentPos = row.percentageLabel.mapToItem(row, 0, 0)
         var barPos = row.progressBar.mapToItem(row, 0, 0)
-        assert(percentPos.y > barPos.y,
-               message + ": detail-mode percentage must remain below the progress bar")
+        assert(percentPos.y < barPos.y,
+               message + ": detail-mode percentage must remain above the progress bar")
         assert(row.progressBar.visible && row.progressBar.height > 0,
                message + ": detail-mode progress bar must be visible with height")
         assert(row.progressBar.width > 0 && row.progressBar.width <= row.width + 1.0,
@@ -750,6 +749,11 @@ Item {
         assert(windowRow.resetDescriptionLabel.elide === Text.ElideRight && windowRow.resetDescriptionLabel.wrapMode === Text.NoWrap,
                "detail reset description must elide on one line (reference density)")
 
+        // Standardized countdown formatting in detail mode
+        windowRow.windowData = { label: "Session", usedPercent: 50, resetsAt: null, resetDescription: "Resets in 2 hours, 20 minutes" }
+        assert(windowRow.resetDescriptionLabel.visible === true && windowRow.resetDescriptionLabel.text === "Resets in 2h 20m",
+               "detail mode standardizes relative reset duration")
+
     }
 
     Timer {
@@ -767,7 +771,7 @@ Item {
                 root.assertResponsiveGeometry(constrainedWindowRow, 600, "direct constrained row")
                 root.assertResponsiveGeometry(constrainedSummaryWindowRow, 600, "summary constrained row")
                 root.assertSummaryInlineOrder(constrainedSummaryWindowRow, "summary constrained row inline order")
-                root.assertDetailPercentBelowBar(constrainedWindowRow, "direct constrained row detail lock")
+                root.assertDetailPercentAboveBar(constrainedWindowRow, "direct constrained row detail lock")
                 root.assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
                                             "narrow popup composition")
                 narrowBarWidth = providerWindowRow.progressBar.width
