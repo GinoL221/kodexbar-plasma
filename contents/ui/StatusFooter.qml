@@ -30,9 +30,9 @@ ColumnLayout {
         case "noData":
             return Translation.translate("No data", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
         case "ready":
-            return Translation.translate("Ready", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+            return ""
         default:
-            return Translation.translate("Idle", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+            return ""
         }
     }
 

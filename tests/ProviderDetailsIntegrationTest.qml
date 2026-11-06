@@ -488,13 +488,13 @@ TestCase {
     function test_footerShowsStatus() {
         var status = findByObjectName(statusFooterWithProvider, "footerStatusLabel")
         verify(status.visible)
-        compare(status.text, "Ready")
+        compare(status.text, "")
 
         // Status is shown the same way regardless of provider selection --
-        // the footer no longer carries a selectedProvider concept at all.
+        // in idle/ready phase the status label stays clean and empty.
         var overviewStatus = findByObjectName(statusFooterOverview, "footerStatusLabel")
         verify(overviewStatus.visible)
-        compare(overviewStatus.text, "Ready")
+        compare(overviewStatus.text, "")
     }
 
     function test_footerReflectsLoadingAndErrorPhases() {
