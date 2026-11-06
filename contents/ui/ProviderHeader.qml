@@ -18,6 +18,7 @@ RowLayout {
 
     property var providerData: ({})
     property bool detailed: false
+    property string languagePreference: "en"
     property var iconResolver: function(value) { return "dialog-information" }
 
     readonly property string providerValue: providerData && providerData.provider !== null
@@ -26,7 +27,7 @@ RowLayout {
         && providerData.source !== undefined ? String(providerData.source) : ""
     readonly property string providerText: providerValue.length > 0
         ? ProviderIcons.displayName(providerValue)
-        : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
+        : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     readonly property string headerVersion: ProviderDetailsLogic.validVersion(root.providerData)
     readonly property string headerLogin: ProviderDetailsLogic.validLoginMethod(root.providerData)
     readonly property string headerEmail: root.detailed ? ProviderDetailsLogic.validEmail(root.providerData) : ""
@@ -40,7 +41,7 @@ RowLayout {
             root.headerUpdatedAt,
             Date.now(),
             function(template, args) {
-                return Translation.translate(template, args, typeof i18n === "function" ? i18n : null)
+                return Translation.translate(template, args, typeof i18n === "function" ? i18n : null, root.languagePreference)
             })
         : ""
 

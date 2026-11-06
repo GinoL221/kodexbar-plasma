@@ -19,7 +19,7 @@ ColumnLayout {
     // Preferred window for the tab underline bar (Session/Weekly/Monthly/
     // Automatic). Never governs Overview body window selection.
     property string preferredWindowKey: "automatic"
-    property string languagePreference: "auto"
+    property string languagePreference: "en"
 
     readonly property var usableProviders: root._usable(root.providers)
     readonly property bool allSelected: root._isAllSelected(root.usableProviders)

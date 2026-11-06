@@ -20,7 +20,7 @@ ColumnLayout {
     property string paceSummary: ""
     // Optional brand accent (#rrggbb). Empty → Kirigami.Theme.highlightColor.
     property string accentColor: ""
-    property string languagePreference: "auto"
+    property string languagePreference: "en"
 
     readonly property bool hasFinitePercent: typeof root.windowData.usedPercent === "number" && isFinite(root.windowData.usedPercent)
     readonly property string resetText: root.windowData.resetsAt !== null && root.windowData.resetsAt !== undefined ? String(root.windowData.resetsAt) : ""
@@ -342,7 +342,7 @@ ColumnLayout {
         PlasmaComponents.Label {
             id: resetsAtLabel
             visible: root.resetText.length > 0 && root.resetDescriptionText.length === 0 && !root.summary
-            text: visible ? Translation.translate("Reset: %1", [root.resetText], typeof i18n === "function" ? i18n : null) : ""
+            text: visible ? Translation.translateReset(Translation.translate("Reset: %1", [root.resetText], typeof i18n === "function" ? i18n : null, root.languagePreference), root.languagePreference) : ""
             color: Kirigami.Theme.disabledTextColor
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             elide: Text.ElideRight
@@ -370,7 +370,7 @@ ColumnLayout {
         id: paceSummaryLabel
         objectName: "paceSummaryLabel"
         visible: root.paceSummary.length > 0 && !root.summary
-        text: visible ? Translation.translateReset(root.paceSummary, root.languagePreference) : ""
+        text: visible ? Translation.translatePace(root.paceSummary, root.languagePreference) : ""
         color: Kirigami.Theme.disabledTextColor
         font.pointSize: Kirigami.Theme.smallFont.pointSize
         elide: Text.ElideRight

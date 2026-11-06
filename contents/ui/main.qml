@@ -17,6 +17,7 @@ import "../code/ProviderCycle.js" as ProviderCycle
 import "../code/ProviderIcons.js" as ProviderIcons
 import "../code/ProviderFilterPolicy.js" as ProviderFilterPolicy
 import "../code/PlatformAction.js" as PlatformAction
+import "../code/Translation.js" as Translation
 
 PlasmoidItem {
     id: root
@@ -299,7 +300,7 @@ PlasmoidItem {
                     id: refreshButton
                     icon.name: "view-refresh"
                     display: QQC2.AbstractButton.TextBesideIcon
-                    text: i18n("Refresh")
+                    text: Translation.translate("Refresh", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
                     flat: true
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     onClicked: root.controller.requestRefresh()
@@ -310,7 +311,7 @@ PlasmoidItem {
                     objectName: "configureButton"
                     icon.name: "settings-configure"
                     display: QQC2.AbstractButton.IconOnly
-                    text: i18n("Configure...")
+                    text: Translation.translate("Configure...", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
                     flat: true
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     onClicked: root.openConfiguration()
@@ -324,6 +325,7 @@ PlasmoidItem {
                 StatusFooter {
                     id: statusFooter
                     phase: root.controller.phase
+                    languagePreference: root.languagePreference
                     showSeparator: false
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
                 }

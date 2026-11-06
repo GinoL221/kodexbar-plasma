@@ -21,7 +21,7 @@ ColumnLayout {
     // ever bound for the single selected-detail row; summary/All rows never
     // receive one, so CostSection never renders for them.
     property var costSnapshot: null
-    property string languagePreference: "auto"
+    property string languagePreference: "en"
     readonly property alias providerDetails: providerDetails
     readonly property alias resetCreditsSection: resetCreditsSection
 
@@ -193,6 +193,7 @@ ColumnLayout {
             ProviderHeader {
                 providerData: root.providerData
                 detailed: root.showHeaderDetails
+                languagePreference: root.languagePreference
                 iconResolver: root.iconResolver
                 Layout.fillWidth: true
             }

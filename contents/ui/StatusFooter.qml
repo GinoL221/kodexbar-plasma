@@ -19,19 +19,20 @@ ColumnLayout {
 
     property string phase: "idle"
     property bool showSeparator: true
+    property string languagePreference: "en"
 
     readonly property string statusText: {
         switch (root.phase) {
         case "loading":
-            return Translation.translate("Loading usage…", [], typeof i18n === "function" ? i18n : null)
+            return Translation.translate("Loading usage…", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
         case "error":
-            return Translation.translate("Error", [], typeof i18n === "function" ? i18n : null)
+            return Translation.translate("Error", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
         case "noData":
-            return Translation.translate("No data", [], typeof i18n === "function" ? i18n : null)
+            return Translation.translate("No data", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
         case "ready":
-            return Translation.translate("Ready", [], typeof i18n === "function" ? i18n : null)
+            return Translation.translate("Ready", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
         default:
-            return Translation.translate("Idle", [], typeof i18n === "function" ? i18n : null)
+            return Translation.translate("Idle", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
         }
     }
 
