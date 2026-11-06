@@ -31,6 +31,14 @@ QQC2.ToolButton {
     icon.name: ""
     display: QQC2.AbstractButton.TextBesideIcon
     focusPolicy: Qt.StrongFocus
+
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.RightButton
+        onPressed: function(mouse) {
+            mouse.accepted = false
+        }
+    }
     Accessible.name: typeof i18n === "function"
         ? i18n("KodexBar usage: %1. Open details.", usageText)
         : "KodexBar usage: " + usageText + ". Open details."
