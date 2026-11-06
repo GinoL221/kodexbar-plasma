@@ -97,13 +97,11 @@ Item {
         windowData: ({ label: "Session", usedPercent: null, resetsAt: null, resetDescription: null })
     }
 
-    // Reserved-slot invariant (D24, spec scenario "Bar track length is
-    // threshold-independent"): identical label text and identical
+    // Reserved-column fixtures: identical label text and identical
     // percent-text width (both fixed columns, D13), differing only in
-    // threshold level -- one renders no marker (ok), one renders a visible
-    // critical marker, one renders a visible exhausted marker. Their bar
-    // tracks (row.progressBar.width) must be pixel-equal because the
-    // marker's layout slot is always reserved.
+    // threshold level -- one calm, one critical, one exhausted. Their
+    // bar tracks (row.progressBar.width) must be pixel-equal because
+    // the label columns are fixed width.
     UsageUi.UsageWindowRow {
         id: reservedSlotOk
         width: 400
@@ -146,52 +144,47 @@ Item {
             for (var i = 0; i < fixtures.length; i++) {
                 var row = fixtures[i].row
                 var level = fixtures[i].level
-                // D25: direct handle, never null -- the Loader is always
-                // active (D24), only the loaded icon's opacity toggles.
-                var marker = row.thresholdMarker
-                root.assert(marker !== null,
-                    "thresholdMarker handle must never be null (level=" + level + ", summary=" + row.summary + ")")
 
-                var expectRisk = level === "warn" || level === "critical" || level === "exhausted"
-                var expectOpacity = expectRisk ? 1 : 0
-                root.assert(marker.opacity === expectOpacity,
-                    "thresholdMarker opacity mismatch (level=" + level + ", summary=" + row.summary + ")")
-
-                if (expectRisk) {
-                    var expectedColor = level === "critical" || level === "exhausted"
-                        ? Kirigami.Theme.negativeTextColor
-                        : Kirigami.Theme.neutralTextColor
-                    root.assert(Qt.colorEqual(marker.color, expectedColor),
-                        "thresholdMarker color mismatch (level=" + level + ", summary=" + row.summary + ")")
-
-                    var expectedSourceFragment = level === "exhausted"
-                        ? "threshold-exhausted"
-                        : level === "critical" ? "threshold-critical" : "threshold-warning"
-                    root.assert(String(marker.source).indexOf(expectedSourceFragment) !== -1,
-                        "thresholdMarker source must contain \"" + expectedSourceFragment
-                        + "\" (level=" + level + ", summary=" + row.summary + ")")
+                // Threshold color-coding: the percentage label text must
+                // carry the level's color in both modes. Detail mode uses
+                // the accent highlight for the calm (ok/none) level.
+                var expectedColor
+                if (level === "critical" || level === "exhausted") {
+                    expectedColor = Kirigami.Theme.negativeTextColor
+                } else if (level === "warn") {
+                    expectedColor = Kirigami.Theme.neutralTextColor
+                } else {
+                    expectedColor = row.summary
+                        ? Kirigami.Theme.disabledTextColor
+                        : Kirigami.Theme.highlightColor
                 }
+                root.assert(Qt.colorEqual(row.percentageLabel.color, expectedColor),
+                    "percentageLabel.color mismatch (level=" + level + ", summary=" + row.summary + ")")
 
                 var fill = root.fillRectFor(row)
                 root.assert(Qt.colorEqual(fill.color, row.barFillColor),
                     "bar fill color must remain threshold-independent (D9)")
             }
 
-            // Cross-mode identity: summary and detail must agree at the same percent.
-            var pairs = [[pct75Summary, pct75Detail], [pct95Summary, pct95Detail], [pct100Summary, pct100Detail]]
-            for (var p = 0; p < pairs.length; p++) {
-                var a = pairs[p][0].thresholdMarker
-                var b = pairs[p][1].thresholdMarker
-                root.assert(a.opacity === b.opacity, "cross-mode thresholdMarker opacity must agree")
-                root.assert(Qt.colorEqual(a.color, b.color), "cross-mode thresholdMarker color must agree")
+            // Cross-mode identity: at risk thresholds the percentage color
+            // must agree across summary and detail modes (same palette
+            // entry); at the calm level the two modes intentionally diverge
+            // (summary uses disabledTextColor, detail the accent highlight).
+            var riskPairs = [[pct75Summary, pct75Detail], [pct95Summary, pct95Detail], [pct100Summary, pct100Detail]]
+            for (var p = 0; p < riskPairs.length; p++) {
+                var a = riskPairs[p][0].percentageLabel
+                var b = riskPairs[p][1].percentageLabel
+                root.assert(Qt.colorEqual(a.color, b.color), "cross-mode warn/critical percentage color must agree")
             }
+            root.assert(!Qt.colorEqual(pct50Summary.percentageLabel.color, pct50Detail.percentageLabel.color),
+                "calm-level percentage color must differentiate summary (disabled) from detail (highlight) mode")
 
-            // D24/D26 reserved-slot invariant (spec scenario "Bar track
-            // length is threshold-independent"): same label text, same
-            // percent-text width, only the threshold level differs -- the
-            // marker's layout slot is always reserved, so the bar TRACK
-            // (row.progressBar.width, not the marker) must be pixel-equal
-            // whether or not a marker is visible.
+            // D13 fixed-column invariant (spec scenario "Bar track length is
+            // threshold-independent"): same label text, same percent-text
+            // width, only the threshold level differs -- the label columns
+            // are fixed-width, so the bar TRACK (row.progressBar.width) must
+            // be pixel-equal across threshold levels even though the marker
+            // icons are gone.
             root.assert(Math.abs(reservedSlotOk.progressBar.width - reservedSlotCritical.progressBar.width) < 0.01,
                 "bar track width must stay identical whether or not the row shows a threshold marker (reserved slot, D24): "
                 + reservedSlotOk.progressBar.width + " vs " + reservedSlotCritical.progressBar.width)

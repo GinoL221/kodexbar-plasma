@@ -37,13 +37,24 @@ ColumnLayout {
     }
     readonly property string thresholdLevel: UsageThreshold.level(root.windowData.usedPercent)
 
+    // Threshold-encoded `% used` label color: red for critical/exhausted,
+    // amber for warn, and a calm neutral otherwise -- detail mode uses the
+    // accent highlight, summary mode the dimmed disabled text.
+    readonly property color percentageColor: {
+        if (root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
+                || root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED) {
+            return Kirigami.Theme.negativeTextColor
+        }
+        if (root.thresholdLevel === UsageThreshold.LEVEL_WARN) {
+            return Kirigami.Theme.neutralTextColor
+        }
+        return root.summary ? Kirigami.Theme.disabledTextColor : Kirigami.Theme.highlightColor
+    }
+
     // Geometry handle: summary mid-row bar or detail host (always non-null Item).
     property var progressBar: root.summary ? summaryBar : detailBarHost
     property alias windowLabel: windowLabel
     property var percentageLabel: root.summary ? summaryPercentageLabel : bandPercentageLabel
-    // Row-sibling marker handle (D25): the Loader is always active (D24),
-    // so this is never null -- only the loaded icon's opacity toggles.
-    property var thresholdMarker: root.summary ? summaryThresholdMarkerLoader.item : detailThresholdMarkerLoader.item
     property alias resetsAtLabel: resetsAtLabel
     property alias resetDescriptionLabel: resetDescriptionLabel
 
@@ -91,36 +102,6 @@ ColumnLayout {
         return value === null || value === undefined ? "" : String(value)
     }
 
-    // Shared threshold marker (D23-D26, D21): one inline Component
-    // instantiated by a Loader as a row sibling next to the percent label
-    // in each of the two layouts below (never overlaid on the bar), so
-    // summary and detail share a single geometry/color implementation and
-    // cannot drift. The Loader is always active and its layout slot is
-    // always reserved at a fixed width (D24) -- only the icon's opacity
-    // toggles between 0 (ok/no-level) and 1 (warn/critical), so bar track
-    // length never changes based on marker presence.
-    Component {
-        id: thresholdMarkerComponent
-        Kirigami.Icon {
-            objectName: "thresholdMarker"
-            implicitWidth: Kirigami.Units.iconSizes.small
-            implicitHeight: Kirigami.Units.iconSizes.small
-            isMask: true
-            opacity: UsageThreshold.isRisk(root.thresholdLevel) ? 1 : 0
-            source: root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED
-                ? Qt.resolvedUrl("../icons/threshold-exhausted.svg")
-                : root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
-                    ? Qt.resolvedUrl("../icons/threshold-critical.svg")
-                    : Qt.resolvedUrl("../icons/threshold-warning.svg")
-            color: root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED
-                || root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
-                ? Kirigami.Theme.negativeTextColor
-                : root.thresholdLevel === UsageThreshold.LEVEL_WARN
-                    ? Kirigami.Theme.neutralTextColor
-                    : "transparent"
-        }
-    }
-
     Accessible.name: Translation.translate("%1 window", [root.valueText(root.windowData.label)],
         typeof i18n === "function" ? i18n : null)
     Accessible.description: {
@@ -152,7 +133,7 @@ ColumnLayout {
         return details.join(", ")
     }
 
-    // Overview: single line (label|bar|percent). Detail: title left, countdown/percent/marker right.
+    // Overview: single line (label|bar|percent). Detail: title left, countdown/percent right.
     RowLayout {
         id: titleRow
         // Explicit width tracks the window row so summary bars grow when the
@@ -225,23 +206,14 @@ ColumnLayout {
             }
         }
 
-        Loader {
-            id: summaryThresholdMarkerLoader
-            sourceComponent: thresholdMarkerComponent
-            visible: root.summary
-            Layout.preferredWidth: visible ? Kirigami.Units.iconSizes.small : 0
-            Layout.preferredHeight: visible ? Kirigami.Units.iconSizes.small : 0
-            Layout.alignment: Qt.AlignVCenter
-        }
-
         PlasmaComponents.Label {
             id: summaryPercentageLabel
             objectName: "summaryPercentageLabel"
             visible: root.summary && root.hasFinitePercent
             text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
                 typeof i18n === "function" ? i18n : null, root.languagePreference) : ""
-            color: Kirigami.Theme.disabledTextColor
-            font.pointSize: Kirigami.Theme.smallFont.pointSize
+            color: root.percentageColor
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize
             font.weight: Font.Normal
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignRight
@@ -273,7 +245,7 @@ ColumnLayout {
                 visible: root.resetText.length > 0 && root.resetDescriptionText.length === 0 && !root.summary
                 text: visible ? ResetTimeFormatter.formatResetText(root.resetText, null, root.nowMs, root.languagePreference) : ""
                 color: Kirigami.Theme.disabledTextColor
-                font.pointSize: Kirigami.Theme.smallFont.pointSize
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 elide: Text.ElideRight
                 wrapMode: Text.NoWrap
                 Layout.minimumWidth: 0
@@ -287,7 +259,7 @@ ColumnLayout {
                 visible: root.resetDescriptionText.length > 0 && !root.summary
                 text: visible ? root.resetDescriptionText : ""
                 color: Kirigami.Theme.disabledTextColor
-                font.pointSize: Kirigami.Theme.smallFont.pointSize
+                font.pointSize: Kirigami.Theme.defaultFont.pointSize
                 elide: Text.ElideRight
                 wrapMode: Text.NoWrap
                 Layout.minimumWidth: 0
@@ -303,20 +275,12 @@ ColumnLayout {
             visible: root.hasFinitePercent && !root.summary
             text: visible ? Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
                 typeof i18n === "function" ? i18n : null, root.languagePreference) : ""
-            color: root.barFillColor
-            font.pointSize: Kirigami.Theme.smallFont.pointSize
+            color: root.percentageColor
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize
+            font.weight: Font.DemiBold
             Layout.minimumWidth: implicitWidth
             Layout.maximumWidth: implicitWidth
             Layout.preferredWidth: implicitWidth
-            Layout.alignment: Qt.AlignVCenter
-        }
-
-        Loader {
-            id: detailThresholdMarkerLoader
-            sourceComponent: thresholdMarkerComponent
-            visible: !root.summary
-            Layout.preferredWidth: visible ? Kirigami.Units.iconSizes.small : 0
-            Layout.preferredHeight: visible ? Kirigami.Units.iconSizes.small : 0
             Layout.alignment: Qt.AlignVCenter
         }
     }
