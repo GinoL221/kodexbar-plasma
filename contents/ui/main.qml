@@ -16,6 +16,7 @@ import "../code/RateLimitPolicy.js" as RateLimitPolicy
 import "../code/ProviderCycle.js" as ProviderCycle
 import "../code/ProviderIcons.js" as ProviderIcons
 import "../code/ProviderFilterPolicy.js" as ProviderFilterPolicy
+import "../code/PlatformAction.js" as PlatformAction
 
 PlasmoidItem {
     id: root
@@ -138,6 +139,10 @@ PlasmoidItem {
 
     function refresh() {
         root.controller.requestRefresh()
+    }
+
+    function openConfiguration() {
+        PlatformAction.triggerConfigure(Plasmoid)
     }
 
     compactRepresentation: CompactUsageButton {
@@ -298,6 +303,17 @@ PlasmoidItem {
                     flat: true
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
                     onClicked: root.controller.requestRefresh()
+                }
+
+                QQC2.ToolButton {
+                    id: configureButton
+                    objectName: "configureButton"
+                    icon.name: "settings-configure"
+                    display: QQC2.AbstractButton.IconOnly
+                    text: i18n("Configure...")
+                    flat: true
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                    onClicked: root.openConfiguration()
                 }
 
                 Item {
