@@ -73,15 +73,18 @@ Item {
         assert(countProgressBars(secondSummary) === 2, "second summary row renders two bars when Session and Weekly are both finite (Overview D10)")
 
         // Compact cycle verification
-        var cycleTargets = ProviderCycle.buildCycleTargets(controller.committedProviders, function(id) {
+        var displayNameFn = function(id) {
             return id === "first" ? "First" : "Second"
-        })
+        }
+        var cycleTargets = ProviderCycle.buildCycleTargets(controller.committedProviders, displayNameFn)
         assert(cycleTargets.length === 3, "must have All + 2 providers")
-        var cycled0 = ProviderCycle.resolveCycledUsage(cycleTargets, 0, "session", UsageModel.selectCompact, UsageModel.selectRepresentative)
+        var cycled0 = ProviderCycle.resolveCycledUsage(cycleTargets, 0, "session", UsageModel.selectCompact, UsageModel.selectRepresentative, displayNameFn)
         assert(cycled0.isAll === true && cycled0.usedPercent === 90, "cycle index 0 must be All with global peak 90%")
-        var cycled1 = ProviderCycle.resolveCycledUsage(cycleTargets, 1, "session", UsageModel.selectCompact, UsageModel.selectRepresentative)
+        assert(cycled0.allSummaryText.indexOf("First: 75% (Session)") !== -1, "summary tooltip must list First")
+        assert(cycled0.allSummaryText.indexOf("Second: 60% (Session)") !== -1, "summary tooltip must list Second")
+        var cycled1 = ProviderCycle.resolveCycledUsage(cycleTargets, 1, "session", UsageModel.selectCompact, UsageModel.selectRepresentative, displayNameFn)
         assert(cycled1.isAll === false && cycled1.targetId === "first" && cycled1.usedPercent === 75, "cycle index 1 must be first provider with 75%")
-        var cycled2 = ProviderCycle.resolveCycledUsage(cycleTargets, 2, "session", UsageModel.selectCompact, UsageModel.selectRepresentative)
+        var cycled2 = ProviderCycle.resolveCycledUsage(cycleTargets, 2, "session", UsageModel.selectCompact, UsageModel.selectRepresentative, displayNameFn)
         assert(cycled2.isAll === false && cycled2.targetId === "second" && cycled2.usedPercent === 60, "cycle index 2 must be second provider with session 60%")
 
         controller.requestRefresh()
