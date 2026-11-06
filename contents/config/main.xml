@@ -27,5 +27,8 @@
     <entry name="excludedProviders" type="String">
       <default></default>
     </entry>
+    <entry name="language" type="String">
+      <default>auto</default>
+    </entry>
   </group>
 </kcfg>

@@ -19,6 +19,7 @@ ColumnLayout {
     // Preferred window for the tab underline bar (Session/Weekly/Monthly/
     // Automatic). Never governs Overview body window selection.
     property string preferredWindowKey: "automatic"
+    property string languagePreference: "auto"
 
     readonly property var usableProviders: root._usable(root.providers)
     readonly property bool allSelected: root._isAllSelected(root.usableProviders)
@@ -375,10 +376,10 @@ ColumnLayout {
                         width: root.tabChipWidth
                         implicitWidth: width
                         padding: Kirigami.Units.smallSpacing
-                        text: Translation.translate("Overview", [], typeof i18n === "function" ? i18n : null)
-                        Accessible.name: Translation.translate("Overview of all providers", [], typeof i18n === "function" ? i18n : null)
+                        text: Translation.translate("Overview", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+                        Accessible.name: Translation.translate("Overview of all providers", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
                         Accessible.description: Translation.translate("Show compact summary for all providers", [],
-                            typeof i18n === "function" ? i18n : null)
+                            typeof i18n === "function" ? i18n : null, root.languagePreference)
                         Accessible.role: Accessible.PageTab
                         icon.name: "view-grid"
                         onClicked: {

@@ -21,6 +21,7 @@ ColumnLayout {
     // ever bound for the single selected-detail row; summary/All rows never
     // receive one, so CostSection never renders for them.
     property var costSnapshot: null
+    property string languagePreference: "auto"
     readonly property alias providerDetails: providerDetails
     readonly property alias resetCreditsSection: resetCreditsSection
 
@@ -98,11 +99,13 @@ ColumnLayout {
     ResetCreditsSection {
         id: resetCreditsSection
         providerData: root.showHeaderDetails ? root.providerData : ({})
+        languagePreference: root.languagePreference
         Layout.fillWidth: true
     }
 
     CostSection {
         snapshot: root.showHeaderDetails ? root.costSnapshot : null
+        languagePreference: root.languagePreference
         Layout.fillWidth: true
     }
 
@@ -165,6 +168,7 @@ ColumnLayout {
                             windowData: modelData
                             compact: root.compact
                             summary: true
+                            languagePreference: root.languagePreference
                             paceSummary: ""
                             accentColor: root.providerAccent
                             Layout.fillWidth: true
@@ -223,6 +227,7 @@ ColumnLayout {
                         windowData: modelData
                         compact: root.compact
                         summary: false
+                        languagePreference: root.languagePreference
                         paceSummary: root.paceByLabel[modelData.label] || ""
                         accentColor: root.providerAccent
                         Layout.fillWidth: true
