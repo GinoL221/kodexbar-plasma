@@ -26,7 +26,8 @@ function pathCheckCommand(path) {
 
 function discoveryCommand() {
     return "if [ -n \"${HOME-}\" ] && [ \"${HOME#/}\" != \"$HOME\" ]; then "
-        + "candidate=\"$HOME/.local/bin/codexbar\"; if test -x \"$candidate\"; then printf '%s\\n' \"$candidate\"; exit 0; fi; fi; "
+        + "for candidate in \"$HOME/.local/bin/codexbar-nan\" \"$HOME/.local/bin/codexbar\"; do "
+        + "if test -x \"$candidate\"; then printf '%s\\n' \"$candidate\"; exit 0; fi; done; fi; "
         + "for candidate in /usr/local/bin/codexbar /usr/bin/codexbar; do "
         + "if test -x \"$candidate\"; then printf '%s\\n' \"$candidate\"; exit 0; fi; done; "
         + "if [ -n \"${HOMEBREW_PREFIX-}\" ] && [ \"${HOMEBREW_PREFIX#/}\" != \"$HOMEBREW_PREFIX\" ]; then "

@@ -61,6 +61,8 @@ Item {
                "invalid paths must not construct executable probes")
         assert(discovery.indexOf('"${HOME-}"') !== -1,
                "discovery must use the bounded HOME expansion")
+        assert(discovery.indexOf("codexbar-nan") !== -1 && discovery.indexOf("codexbar-nan") < discovery.lastIndexOf("$HOME/.local/bin/codexbar"),
+               "codexbar-nan must precede raw codexbar in user bin discovery")
         assert(discovery.indexOf("/usr/local/bin/codexbar") < discovery.indexOf("/usr/bin/codexbar"),
                "system candidates must remain in deterministic order")
         assert(discovery.indexOf("/usr/bin/codexbar") < discovery.indexOf('"${HOMEBREW_PREFIX-}"'),
