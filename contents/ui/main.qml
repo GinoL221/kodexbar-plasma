@@ -297,16 +297,6 @@ PlasmoidItem {
                 spacing: Kirigami.Units.smallSpacing
 
                 QQC2.ToolButton {
-                    id: refreshButton
-                    icon.name: "view-refresh"
-                    display: QQC2.AbstractButton.TextBesideIcon
-                    text: Translation.translate("Refresh", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
-                    flat: true
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    onClicked: root.controller.requestRefresh()
-                }
-
-                QQC2.ToolButton {
                     id: configureButton
                     objectName: "configureButton"
                     icon.name: "settings-configure"
@@ -317,17 +307,27 @@ PlasmoidItem {
                     onClicked: root.openConfiguration()
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                }
-
                 StatusFooter {
                     id: statusFooter
                     phase: root.controller.phase
                     languagePreference: root.languagePreference
                     showSeparator: false
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
+
+                QQC2.ToolButton {
+                    id: refreshButton
+                    icon.name: "view-refresh"
+                    display: QQC2.AbstractButton.TextBesideIcon
+                    text: Translation.translate("Refresh", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+                    flat: true
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                    onClicked: root.controller.requestRefresh()
                 }
             }
         }
