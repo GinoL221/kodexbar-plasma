@@ -85,6 +85,19 @@ Item {
         assert(ResetTimeFormatter.formatResetText(null, "Dec 3", localNowMs, "es") === "Se reinicia en 26 d 12 h",
                "Dec 3 relative to local noon in es")
 
+        // 3b. Elapsed yearless date from earlier the same day must NOT roll forward 364 days;
+        // it represents an already-elapsed session window and must report < 1m.
+        var localNightMs = new Date(2026, 10, 6, 22, 18, 0).getTime()
+        assert(ResetTimeFormatter.formatResetText(null, "Nov 6 at 8:00 PM", localNightMs, "es") === "Se reinicia en < 1 min",
+               "same-day elapsed yearless date must not roll over 364 days in es")
+        assert(ResetTimeFormatter.formatResetText(null, "Nov 6 at 8:00 PM", localNightMs, "en") === "Resets in < 1m",
+               "same-day elapsed yearless date must not roll over 364 days in en")
+
+        // Year-end boundary (Dec 28 -> Jan 2) without year must still roll into next year
+        var dec28NoonMs = new Date(2026, 11, 28, 12, 0, 0).getTime()
+        assert(ResetTimeFormatter.formatResetText(null, "Jan 2 at 12:00 PM", dec28NoonMs, "es") === "Se reinicia en 5 d 0 h",
+               "Dec-to-Jan yearless date rolls into next year in es")
+
         // 4. Fallback preservation for non-temporal notes, past ISO timestamps, and invalid date/clock overflows
         assert(ResetTimeFormatter.formatResetText(null, "Feb 31", fixedIsoNow, "en") === "Feb 31",
                "calendar overflow Feb 31 falls back to raw string")
