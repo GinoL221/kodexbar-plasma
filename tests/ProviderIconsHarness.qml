@@ -72,6 +72,8 @@ Item {
                "null/undefined accent must be empty")
         assert(ProviderIcons.accent("claude").charAt(0) === "#",
                "mapped accents must be #rrggbb tokens")
+        assert(ProviderIcons.accent("antigravity") === "#3186FF", "antigravity brand accent")
+        assert(ProviderIcons.accent("nan") === "#7D39EB", "nan brand accent")
 
         finish()
     }
