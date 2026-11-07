@@ -12,4 +12,3 @@ assert "root.maybeRequestCost(providerSelector.allSelected" in main[popup:], "co
 config_idx = main.index("id: configureButton")
 refresh_idx = main.index("id: refreshButton")
 assert config_idx < refresh_idx, "configureButton must precede refreshButton (bottom-left Configure, bottom-right Refresh)"
-
