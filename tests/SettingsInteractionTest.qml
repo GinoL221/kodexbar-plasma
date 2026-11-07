@@ -238,4 +238,13 @@ TestCase {
         settings.moveProvider("nan", -1)
         compare(settings.cfg_providerOrder, "claude, codex, antigravity, nan, grok")
     }
+
+    function test_tintPanelIconSettingsEditing() {
+        verify(settings.cfg_tintPanelIcon !== undefined, "cfg_tintPanelIcon must exist")
+        compare(settings.cfg_tintPanelIcon, true, "default tintPanelIcon must be true")
+        settings.cfg_tintPanelIcon = false
+        compare(settings.cfg_tintPanelIcon, false, "tintPanelIcon can be disabled")
+        settings.cfg_tintPanelIcon = true
+        compare(settings.cfg_tintPanelIcon, true, "tintPanelIcon can be enabled")
+    }
 }

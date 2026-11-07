@@ -85,7 +85,14 @@ var DICTIONARY = {
     "Ready": "Listo",
     "Updating...": "Actualizando...",
     "Refreshing...": "Actualizando...",
-    "Timed out": "Tiempo agotado"
+    "Timed out": "Tiempo agotado",
+
+    // Settings
+    "Panel icon:": "Icono del panel:",
+    "Colorize panel icon with provider accent": "Colorear icono del panel con el acento del proveedor",
+    "Provider order:": "Orden de proveedores:",
+    "Move up": "Subir",
+    "Move down": "Bajar"
 }
 
 function translateTerm(term) {

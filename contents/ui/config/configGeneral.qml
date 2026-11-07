@@ -30,6 +30,8 @@ KCM.SimpleKCM {
     property alias preferredWindowGuidance: preferredWindowGuidanceLabel
     property alias cfg_enableQuotaNotifications: enableQuotaNotifications.checked
     property bool cfg_enableQuotaNotificationsDefault
+    property alias cfg_tintPanelIcon: tintPanelIcon.checked
+    property bool cfg_tintPanelIconDefault: true
     property alias cfg_excludedProviders: excludedProviders.text
     property string cfg_excludedProvidersDefault
     property alias cfg_providerOrder: providerOrder.text
@@ -197,6 +199,16 @@ KCM.SimpleKCM {
                     text: i18n("Notify when quota reaches 90% or rate limit triggers")
                     Accessible.name: i18n("Enable quota notifications")
                     Accessible.description: i18n("Show native Plasma notifications when provider usage reaches critical (90%) or exhausted (100%) levels, or when rate limits trigger backoff.")
+                }
+
+                QQC2.CheckBox {
+                    id: tintPanelIcon
+                    objectName: "tintPanelIcon"
+                    checked: true
+                    Kirigami.FormData.label: i18n("Panel icon:")
+                    text: i18n("Colorize panel icon with provider accent")
+                    Accessible.name: i18n("Colorize panel icon with provider accent")
+                    Accessible.description: i18n("When cycling providers from the panel, tint the icon with the provider's brand color instead of monochrome text color.")
                 }
 
                 QQC2.TextField {
