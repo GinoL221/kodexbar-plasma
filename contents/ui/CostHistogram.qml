@@ -11,16 +11,18 @@ Item {
     property string accentColor: ""
 
     readonly property var validDaily: Array.isArray(root.daily) ? root.daily : []
-    readonly property bool hasBars: root.validDaily.length > 0
+    // Cap visible histogram to the last 7 days so bars remain consistent and readable.
+    readonly property var recentDaily: root.validDaily.slice(-7)
+    readonly property bool hasBars: root.recentDaily.length > 0
     readonly property color barFillColor: root.accentColor.length > 0
         ? root.accentColor
         : Kirigami.Theme.highlightColor
 
-    // Determine scale unit homogeneously across the entire series to avoid mixing
-    // dollar and token magnitudes in the same chart (R3-mixed-histogram-units).
+    // Determine scale unit homogeneously across the visible 7-day window
+    // to avoid mixing dollar and token magnitudes in the same chart (R3-mixed-histogram-units).
     readonly property bool isCostMode: {
-        for (var i = 0; i < root.validDaily.length; i++) {
-            var entry = root.validDaily[i]
+        for (var i = 0; i < root.recentDaily.length; i++) {
+            var entry = root.recentDaily[i]
             if (entry && typeof entry === "object" && typeof entry.totalCost === "number" && entry.totalCost > 0) {
                 return true
             }
@@ -30,8 +32,8 @@ Item {
 
     readonly property real maxMetric: {
         var max = 0
-        for (var i = 0; i < root.validDaily.length; i++) {
-            var entry = root.validDaily[i]
+        for (var i = 0; i < root.recentDaily.length; i++) {
+            var entry = root.recentDaily[i]
             if (entry && typeof entry === "object") {
                 var val = root.isCostMode ? entry.totalCost : entry.totalTokens
                 if (typeof val === "number" && val > max) {
@@ -50,10 +52,10 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        spacing: Math.max(2, Math.round(Kirigami.Units.smallSpacing / 2))
+        spacing: Math.max(4, Math.round(Kirigami.Units.smallSpacing))
 
         Repeater {
-            model: root.validDaily
+            model: root.recentDaily
 
             delegate: Item {
                 id: barDelegate
@@ -72,9 +74,11 @@ Item {
                 }
                 readonly property real ratio: Math.max(0, Math.min(1, barDelegate.metricValue / root.maxMetric))
 
-                Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.minimumWidth: 2
+                Layout.preferredWidth: 14
+                Layout.minimumWidth: 8
+                Layout.maximumWidth: 18
+                Layout.fillWidth: false
 
                 Rectangle {
                     objectName: "costHistogramBar"
@@ -89,6 +93,13 @@ Item {
                     opacity: barDelegate.ratio > 0 ? 0.85 : 0.28
                 }
             }
+        }
+
+        // Elastic spacer keeps bars at their fixed styled width rather than
+        // bloating across the whole popup width when few days are present.
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
         }
     }
 }
