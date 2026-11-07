@@ -63,10 +63,10 @@ QQC2.ToolButton {
         implicitWidth: Kirigami.Units.iconSizes.smallMedium
         implicitHeight: Kirigami.Units.iconSizes.smallMedium
 
-        Kirigami.Icon {
+        ProviderIcon {
             id: compactIcon
+            objectName: "compactProviderIcon"
             source: root.effectiveIconSource
-            isMask: true
             color: root.effectiveIconColor
             implicitWidth: Kirigami.Units.iconSizes.smallMedium
             implicitHeight: Kirigami.Units.iconSizes.smallMedium
