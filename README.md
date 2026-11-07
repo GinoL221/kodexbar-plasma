@@ -68,6 +68,24 @@ KodexBar Plasma never runs this command, configures credentials, or automates co
 
 ## Install
 
+### Quick install (recommended)
+
+Clone the repository and run the automated installer:
+
+```sh
+git clone https://github.com/GinoL221/kodexbar-plasma.git
+cd kodexbar-plasma
+./install.sh
+```
+
+The script automatically:
+1. Verifies system dependencies (`kpackagetool6`, `python3`, `codexbar`).
+2. Installs the NaN Cloud adapter to `~/.local/bin/codexbar-nan` and guides API key configuration.
+3. Installs or updates the Plasma applet.
+4. Optionally restarts `plasmashell` to apply changes immediately.
+
+### Manual install
+
 KodexBar has two independent Plasma package IDs during this transition:
 
 | Package ID | Status |

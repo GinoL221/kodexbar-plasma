@@ -17,11 +17,19 @@ One provider, **NaN Cloud**, with one bar per model. Bars are labeled with the m
 
 ## Install
 
+You can install the adapter automatically with the root installer:
+
+```sh
+./install.sh
+```
+
+Or install it manually:
+
 ```sh
 install -m 755 scripts/codexbar-nan ~/.local/bin/codexbar-nan
 ```
 
-Then set the widget's **CLI path** setting to the absolute path of `~/.local/bin/codexbar-nan`. The adapter finds the real CLI through `CODEXBAR_REAL`, then `codexbar` on `PATH`, then `~/.local/bin/codexbar`, `/usr/local/bin/codexbar`, `/usr/bin/codexbar`; it never calls itself.
+The widget automatically discovers `~/.local/bin/codexbar-nan` if the **CLI path** setting is empty. You can also set it explicitly in widget settings. The adapter finds the real CLI through `CODEXBAR_REAL`, then `codexbar` on `PATH`, then `~/.local/bin/codexbar`, `/usr/local/bin/codexbar`, `/usr/bin/codexbar`; it never calls itself.
 
 ## API key
 
