@@ -112,3 +112,94 @@ function clear(localStorageModule, dbName) {
         return false
     }
 }
+
+function saveCost(localStorageModule, provider, costRecord, dbName) {
+    if (!costRecord || typeof costRecord !== "object" || typeof provider !== "string" || provider.length === 0) {
+        return false
+    }
+    var db = openDatabase(localStorageModule, dbName)
+    if (!db) {
+        return false
+    }
+    var payload = JSON.stringify(costRecord)
+    var savedAt = Date.now()
+    var id = "cost:" + provider
+    try {
+        db.transaction(function(tx) {
+            tx.executeSql("CREATE TABLE IF NOT EXISTS snapshots (id TEXT PRIMARY KEY, payload TEXT, saved_at INTEGER)")
+            tx.executeSql("INSERT OR REPLACE INTO snapshots (id, payload, saved_at) VALUES (?, ?, ?)",
+                [id, payload, savedAt])
+        })
+        return true
+    } catch (saveError) {
+        return false
+    }
+}
+
+// Returns { record, savedAt } for the provider's stored cost, or null. The
+// save time lets several widget instances share one CLI scan.
+function loadCostEntry(localStorageModule, provider, dbName) {
+    if (typeof provider !== "string" || provider.length === 0) {
+        return null
+    }
+    var db = openDatabase(localStorageModule, dbName)
+    if (!db) {
+        return null
+    }
+    var id = "cost:" + provider
+    var result = null
+    var readFn = typeof db.readTransaction === "function" ? db.readTransaction : db.transaction
+    try {
+        readFn.call(db, function(tx) {
+            var rs = tx.executeSql("SELECT payload, saved_at FROM snapshots WHERE id = ?", [id])
+            if (rs && rs.rows && rs.rows.length > 0) {
+                var row = rs.rows.item(0)
+                if (typeof row.payload === "string" && row.payload.length > 0) {
+                    var parsed = JSON.parse(row.payload)
+                    if (parsed && typeof parsed === "object" && parsed.provider === provider) {
+                        result = { record: parsed, savedAt: Number(row.saved_at) }
+                    }
+                }
+            }
+        })
+    } catch (loadError) {
+        return null
+    }
+    return result
+}
+
+function loadCost(localStorageModule, provider, dbName) {
+    var entry = loadCostEntry(localStorageModule, provider, dbName)
+    return entry !== null ? entry.record : null
+}
+
+function loadAllCosts(localStorageModule, dbName) {
+    var db = openDatabase(localStorageModule, dbName)
+    if (!db) {
+        return {}
+    }
+    var costs = {}
+    var readFn = typeof db.readTransaction === "function" ? db.readTransaction : db.transaction
+    try {
+        readFn.call(db, function(tx) {
+            var rs = tx.executeSql("SELECT id, payload FROM snapshots WHERE id LIKE 'cost:%'")
+            if (rs && rs.rows) {
+                for (var i = 0; i < rs.rows.length; i++) {
+                    var item = rs.rows.item(i)
+                    if (item && typeof item.id === "string" && typeof item.payload === "string") {
+                        var prov = item.id.substring(5)
+                        try {
+                            var parsed = JSON.parse(item.payload)
+                            if (parsed && typeof parsed === "object" && parsed.provider === prov) {
+                                costs[prov] = parsed
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+        })
+    } catch (loadError) {
+        return {}
+    }
+    return costs
+}

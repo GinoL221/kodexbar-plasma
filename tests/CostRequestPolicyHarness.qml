@@ -42,6 +42,21 @@ Item {
         assert(CostRequestPolicy.shouldRequestCost(false, "codex", 3, true) === false,
                "an already-fresh snapshot must not request cost again")
 
+        // Prefetch targets follow what the instance can display.
+        var visible = ["claude", "codex", "antigravity", "grok", "nan"]
+        assert(JSON.stringify(CostRequestPolicy.prefetchTargets("", visible)) === JSON.stringify(["claude", "codex"]),
+               "an unpinned instance prefetches every visible supported provider")
+        assert(JSON.stringify(CostRequestPolicy.prefetchTargets("claude", visible)) === JSON.stringify(["claude"]),
+               "an instance pinned to a supported provider prefetches only that provider")
+        assert(CostRequestPolicy.prefetchTargets("antigravity", visible).length === 0,
+               "an instance pinned to an unsupported provider prefetches nothing")
+        assert(CostRequestPolicy.prefetchTargets("codex", ["claude", "grok"]).length === 0,
+               "a pinned provider absent from the visible list prefetches nothing")
+        assert(CostRequestPolicy.prefetchTargets("", ["grok", "nan"]).length === 0,
+               "no visible supported provider means no prefetch")
+        assert(CostRequestPolicy.prefetchTargets("", null).length === 0,
+               "an invalid visible list means no prefetch")
+
         finish()
     }
 }

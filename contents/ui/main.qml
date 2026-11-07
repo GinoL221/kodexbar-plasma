@@ -133,6 +133,10 @@ PlasmoidItem {
     CostController {
         id: costController
         commandPath: root.codexbarCommand
+        cacheEnabled: true
+        // Instances share one scan per cycle: a record another instance saved
+        // within 90% of the refresh interval is reused instead of rescanned.
+        sharedFreshnessMs: Math.floor(root.refreshSeconds * 900)
     }
 
     NotificationController {
@@ -151,6 +155,23 @@ PlasmoidItem {
         )
     }
 
+    function prefetchSupportedCosts() {
+        var gen = root.controller.committedGeneration
+        if (typeof gen !== "number" || gen <= 0) {
+            return
+        }
+        var visibleIds = []
+        for (var i = 0; i < root.visibleProviders.length; i++) {
+            if (root.visibleProviders[i] && typeof root.visibleProviders[i].provider === "string") {
+                visibleIds.push(root.visibleProviders[i].provider)
+            }
+        }
+        var targets = CostRequestPolicy.prefetchTargets(root.pinnedProvider, visibleIds)
+        for (var j = 0; j < targets.length; j++) {
+            costController.request(targets[j], gen, true)
+        }
+    }
+
     // Requests cost only for a supported selected provider missing its
     // current-generation snapshot; "All" and unsupported providers never
     // start cost work or read a cost record (CostRequestPolicy.js).
@@ -161,9 +182,9 @@ PlasmoidItem {
     function maybeRequestCost(isAllSelected, selected) {
         var provider = selected ? selected.provider : null
         var usageGeneration = root.controller.committedGeneration
-        var hasSnapshot = typeof provider === "string" && costController.snapshotFor(provider, usageGeneration) !== null
-        if (CostRequestPolicy.shouldRequestCost(isAllSelected, provider, usageGeneration, hasSnapshot)) {
-            costController.request(provider, usageGeneration)
+        var hasExactSnapshot = typeof provider === "string" && costController.exactSnapshotFor(provider, usageGeneration) !== null
+        if (CostRequestPolicy.shouldRequestCost(isAllSelected, provider, usageGeneration, hasExactSnapshot)) {
+            costController.request(provider, usageGeneration, false)
         }
     }
 
@@ -210,6 +231,7 @@ PlasmoidItem {
         target: root.controller
         function onCommittedGenerationChanged() {
             root.checkNotifications()
+            root.prefetchSupportedCosts()
         }
     }
 

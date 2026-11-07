@@ -116,6 +116,50 @@ Item {
         assert(Array.isArray(corruptLoaded) && corruptLoaded.length === 0,
             "corrupted payload in database must degrade cleanly to empty array")
 
+        // 9. Cost snapshot storage
+        assert(!SnapshotStorage.saveCost(null, "claude", { provider: "claude" }, testDbName),
+            "saveCost with null localStorage must return false")
+        assert(SnapshotStorage.loadCost(null, "claude", testDbName) === null,
+            "loadCost with null localStorage must return null")
+
+        var sampleCost = {
+            provider: "claude",
+            currencyCode: "USD",
+            isLocalEstimate: true,
+            sessionCostUSD: 4.13,
+            sessionTokens: 519350,
+            last30DaysCostUSD: 84.98,
+            last30DaysTokens: 140905922,
+            daily: [{ date: "2026-11-07", totalCost: 4.13, totalTokens: 519350 }],
+            primaryModel: "claude-opus-5-5"
+        }
+        var sampleCodexCost = {
+            provider: "codex",
+            currencyCode: "USD",
+            isLocalEstimate: true,
+            sessionCostUSD: 0.89,
+            sessionTokens: 7176207,
+            last30DaysCostUSD: 844.22,
+            last30DaysTokens: 5986070989,
+            daily: [{ date: "2026-11-07", totalCost: 0.89, totalTokens: 7176207 }],
+            primaryModel: "gpt-6.1-sol"
+        }
+
+        assert(SnapshotStorage.saveCost(LocalStorage.LocalStorage, "claude", sampleCost, testDbName),
+            "saveCost with valid claude record must return true")
+        assert(SnapshotStorage.saveCost(LocalStorage.LocalStorage, "codex", sampleCodexCost, testDbName),
+            "saveCost with valid codex record must return true")
+
+        var loadedCost = SnapshotStorage.loadCost(LocalStorage.LocalStorage, "claude", testDbName)
+        assert(loadedCost !== null && loadedCost.provider === "claude" && loadedCost.sessionCostUSD === 4.13,
+            "loadCost must return stored cost record for claude")
+
+        var allCosts = SnapshotStorage.loadAllCosts(LocalStorage.LocalStorage, testDbName)
+        assert(allCosts["claude"] !== undefined && allCosts["codex"] !== undefined,
+            "loadAllCosts must return both claude and codex cost records")
+        assert(allCosts["claude"].primaryModel === "claude-opus-5-5",
+            "loadAllCosts must preserve model information")
+
         finish()
     }
 }

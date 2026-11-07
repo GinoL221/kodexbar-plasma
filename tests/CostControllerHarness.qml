@@ -1,11 +1,16 @@
 import QtQuick
+import QtQuick.LocalStorage as LocalStorage
 import "../contents/ui" as UsageUi
+import "../contents/code/SnapshotStorage.js" as SnapshotStorage
 
 Item {
     id: root
     property bool assertionFailed: false
     property var controller: null
     property var usage: null
+    property var sharing: null
+    property var disabled: null
+    property var draining: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -134,6 +139,80 @@ Item {
         assert(controller.snapshotFor("codex", 200) === null, "a raced-out cost request must never publish")
         assert(controller.snapshotFor("codex", 202) === null, "a malformed cost payload must never publish")
         usage.destroy()
+
+        // Memory bound: only the newest generation per provider is retained.
+        controller.request("claude", 300)
+        controller.completeForTest(controller.activeSerial, payloadFor("claude", 5), 0)
+        controller.request("claude", 301)
+        controller.completeForTest(controller.activeSerial, payloadFor("claude", 6), 0)
+        controller.request("codex", 302)
+        controller.completeForTest(controller.activeSerial, payloadFor("codex", 7), 0)
+        assert(controller.exactSnapshotFor("claude", 300) === null,
+               "an older generation for the same provider must be pruned")
+        assert(controller.exactSnapshotFor("claude", 301) !== null,
+               "the newest generation for a provider must be retained")
+        assert(controller.exactSnapshotFor("codex", 302) !== null,
+               "pruning one provider must not drop another provider's snapshot")
+        assert(Object.keys(controller.snapshots).length === 2,
+               "the snapshot map must hold at most one entry per provider")
+
+        // Shared cache: a record another instance saved recently is reused
+        // without spawning a CLI scan, and reuse never refreshes its age.
+        var sharedDb = "KodexBarCostShare_" + Date.now()
+        var sharedRecord = { provider: "claude", sessionCostUSD: 4, sessionTokens: 4,
+                             last30DaysCostUSD: 4, last30DaysTokens: 4 }
+        assert(SnapshotStorage.saveCost(LocalStorage.LocalStorage, "claude", sharedRecord, sharedDb),
+               "seeding the shared cost cache must succeed")
+        var seeded = SnapshotStorage.loadCostEntry(LocalStorage.LocalStorage, "claude", sharedDb)
+        assert(seeded !== null && seeded.record.sessionCostUSD === 4 && typeof seeded.savedAt === "number",
+               "loadCostEntry must return the record with its save time")
+
+        sharing = controllerComponent.createObject(root, {
+            commandPath: "/tmp/codexbar", testMode: true, cacheEnabled: true,
+            storageDbName: sharedDb, sharedFreshnessMs: 60000
+        })
+        sharing.request("claude", 10, true)
+        assert(sharing.activeRequestCount === 0, "a fresh shared record must not spawn a CLI scan")
+        var reused = sharing.exactSnapshotFor("claude", 10)
+        assert(reused !== null && reused.sessionCostUSD === 4,
+               "a fresh shared record must commit as the current-generation snapshot")
+        var afterReuse = SnapshotStorage.loadCostEntry(LocalStorage.LocalStorage, "claude", sharedDb)
+        assert(afterReuse.savedAt === seeded.savedAt, "reusing a shared record must not rewrite its save time")
+
+        sharing.request("codex", 10, true)
+        assert(sharing.activeRequestCount === 1 && sharing.activeProvider === "codex",
+               "a provider with no shared record must still run its scan")
+        sharing.destroy()
+
+        disabled = controllerComponent.createObject(root, {
+            commandPath: "/tmp/codexbar", testMode: true, cacheEnabled: true,
+            storageDbName: sharedDb, sharedFreshnessMs: 0
+        })
+        disabled.request("claude", 11, true)
+        assert(disabled.activeRequestCount === 1, "shared reuse must be off when sharedFreshnessMs is 0")
+        disabled.destroy()
+
+        // Queue drain: a queued item resolved from the shared cache must not
+        // stall the items behind it.
+        var drainDb = "KodexBarCostDrain_" + Date.now()
+        draining = controllerComponent.createObject(root, {
+            commandPath: "/tmp/codexbar", testMode: true, cacheEnabled: true,
+            storageDbName: drainDb, sharedFreshnessMs: 60000
+        })
+        draining.request("codex", 20, true)
+        draining.request("claude", 21, true)
+        draining.request("codex", 22, true)
+        assert(draining.pendingQueue.length === 2, "prefetch while busy must queue")
+        // Another instance saves claude while this one is still busy.
+        assert(SnapshotStorage.saveCost(LocalStorage.LocalStorage, "claude", sharedRecord, drainDb),
+               "seeding the drain cache must succeed")
+        // A malformed result saves nothing, so codex 22 has no shared record.
+        draining.completeForTest(draining.activeSerial, "{malformed", 0)
+        assert(draining.exactSnapshotFor("claude", 21) !== null,
+               "the queued shared-cache item must resolve without a scan")
+        assert(draining.activeRequestCount === 1 && draining.activeGeneration === 22,
+               "the queue must continue past an item resolved from the shared cache")
+        draining.destroy()
 
         finish()
     }
