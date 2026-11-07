@@ -229,4 +229,13 @@ TestCase {
         settings.cfg_excludedProviders = "grok, synthetic"
         compare(settings.cfg_excludedProviders, "grok, synthetic")
     }
+
+    function test_providerOrderSettingsEditingAndReordering() {
+        settings.cfg_providerOrder = ""
+        compare(settings.cfg_providerOrder, "")
+        settings.moveProvider("claude", -1)
+        compare(settings.cfg_providerOrder, "claude, codex, antigravity, grok, nan")
+        settings.moveProvider("nan", -1)
+        compare(settings.cfg_providerOrder, "claude, codex, antigravity, nan, grok")
+    }
 }
