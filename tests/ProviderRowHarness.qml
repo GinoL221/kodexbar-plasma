@@ -164,6 +164,9 @@ Item {
     function assertDetailPercentAboveBar(row, message) {
         var percentPos = row.percentageLabel.mapToItem(row, 0, 0)
         var barPos = row.progressBar.mapToItem(row, 0, 0)
+        if (!(percentPos.y < barPos.y)) {
+            Qt.exit(50 + Math.min(50, Math.round(percentPos.y)))
+        }
         assert(percentPos.y < barPos.y,
                message + ": detail-mode percentage must remain above the progress bar")
         assert(row.progressBar.visible && row.progressBar.height > 0,
@@ -670,12 +673,14 @@ Item {
         // never scientific notation or a locale-dependent decimal separator.
         var largeCostSession = findObject(largeCostRow, "costSessionLabel")
         var largeCostLast30 = findObject(largeCostRow, "costLast30DaysLabel")
+        var largeCostSessionTokens = findObject(largeCostRow, "costSessionTokensLabel")
+        var largeCostLast30Tokens = findObject(largeCostRow, "costLast30DaysTokensLabel")
         assert(largeCostSession.text.indexOf("e+") === -1 && largeCostLast30.text.indexOf("e+") === -1,
                "large cost/token values must never render in scientific notation")
         assert(largeCostSession.text.indexOf("10,46") !== -1, "session cost must round to two decimals with comma-decimal format")
-        assert(largeCostSession.text.indexOf("139,8M") !== -1, "session tokens must abbreviate to one-decimal M with comma-decimal separator")
         assert(largeCostLast30.text.indexOf("245,60") !== -1, "last-30-days cost must round to two decimals with comma-decimal format")
-        assert(largeCostLast30.text.indexOf("987,7M") !== -1, "last-30-days tokens must abbreviate to one-decimal M with comma-decimal separator")
+        assert(largeCostSessionTokens.text.indexOf("139,8M") !== -1, "session tokens must abbreviate to one-decimal M with comma-decimal separator")
+        assert(largeCostLast30Tokens.text.indexOf("987,7M") !== -1, "last-30-days tokens must abbreviate to one-decimal M with comma-decimal separator")
 
         var providerLabel = findObject(row, "providerLabel")
         var sourceLabel = findObject(row, "sourceLabel")

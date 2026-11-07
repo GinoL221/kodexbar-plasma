@@ -43,6 +43,26 @@ Item {
         onClicked: root.activationCount += 1
     }
 
+    UsageUi.CompactUsageButton {
+        id: providerButton
+        providerId: "claude"
+        accentColor: "#D97757"
+        tintPanelIcon: true
+        usageText: "50%"
+        width: 120
+        height: 32
+    }
+
+    UsageUi.CompactUsageButton {
+        id: untintedProviderButton
+        providerId: "claude"
+        accentColor: "#D97757"
+        tintPanelIcon: false
+        usageText: "50%"
+        width: 120
+        height: 32
+    }
+
     Component.onCompleted: Qt.callLater(function() {
         assert(button.activeFocusOnTab, "the compact control must participate in keyboard traversal")
         assert(button.focusPolicy === Qt.StrongFocus, "the compact control must be reachable from keyboard focus navigation")
@@ -65,6 +85,16 @@ Item {
         assert(root.scrollDeltaReceived === 1, "simulateScroll forward must deliver delta 1")
         button.simulateScroll(-1)
         assert(root.scrollDeltaReceived === -1, "simulateScroll backward must deliver delta -1")
+
+        // Provider icon and tinting tests
+        assert(button.effectiveIconSource.toString().indexOf("kodexbar-monochrome.svg") !== -1,
+               "default/all mode must use kodexbar-monochrome.svg")
+        assert(providerButton.effectiveIconSource.toString().indexOf("claude.svg") !== -1,
+               "provider mode must resolve to provider's svg icon (claude.svg)")
+        assert(Qt.colorEqual(providerButton.effectiveIconColor, "#D97757"),
+               "tintPanelIcon=true must tint icon with provider accent color")
+        assert(!Qt.colorEqual(untintedProviderButton.effectiveIconColor, "#D97757"),
+               "tintPanelIcon=false must NOT use provider accent color")
 
         finish()
     })

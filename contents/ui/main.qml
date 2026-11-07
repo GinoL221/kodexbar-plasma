@@ -34,9 +34,14 @@ PlasmoidItem {
     property string preferredWindowKey: PreferredWindow.keyOrDefault(plasmoidConfiguration.preferredRepresentativeWindow)
     property bool enableQuotaNotifications: plasmoidConfiguration.enableQuotaNotifications !== false
     property string excludedProviders: plasmoidConfiguration.excludedProviders || ""
+    property string providerOrder: plasmoidConfiguration.providerOrder || ""
     property string languagePreference: plasmoidConfiguration.language || "auto"
     property alias controller: controller
-    readonly property var visibleProviders: ProviderFilterPolicy.filterProviders(root.controller.committedProviders, root.excludedProviders)
+    readonly property var visibleProviders: ProviderFilterPolicy.filterAndSortProviders(
+        root.controller.committedProviders,
+        root.excludedProviders,
+        root.providerOrder
+    )
     readonly property var compactSelection: UsageModel.selectCompact(root.visibleProviders)
     property int cycleIndex: 0
     readonly property var cycleTargets: ProviderCycle.buildCycleTargets(root.visibleProviders, function(id) {
@@ -146,8 +151,23 @@ PlasmoidItem {
         PlatformAction.triggerConfigure(Plasmoid)
     }
 
+    function moveProviderOrder(providerId, delta) {
+        var currentIds = []
+        for (var i = 0; i < root.visibleProviders.length; i++) {
+            var p = root.visibleProviders[i]
+            if (p && typeof p.provider === "string") {
+                currentIds.push(p.provider)
+            }
+        }
+        var nextOrder = ProviderFilterPolicy.moveProviderInOrder(currentIds, root.providerOrder, providerId, delta)
+        root.plasmoidConfiguration.providerOrder = nextOrder
+    }
+
     compactRepresentation: CompactUsageButton {
         usageText: root.panelText()
+        providerId: root.cycledUsage.isAll ? "" : root.cycledUsage.targetId
+        accentColor: root.cycledUsage.isAll ? "" : ProviderIcons.accent(root.cycledUsage.targetId)
+        tintPanelIcon: root.plasmoidConfiguration.tintPanelIcon !== false
         onClicked: root.expanded = !root.expanded
         onScrolled: function(delta) {
             root.cycleIndex = ProviderCycle.nextIndex(root.cycleIndex, delta, root.cycleTargets.length)
@@ -237,7 +257,23 @@ PlasmoidItem {
                         Layout.fillWidth: true
                         Layout.leftMargin: full.bodyInset
                         Layout.rightMargin: full.bodyInset
-                        onSelectedProviderChanged: root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+                        onPopupOpenChanged: {
+                            if (providerSelector.popupOpen && root.cycleIndex > 0) {
+                                providerSelector.selectTabIndex(root.cycleIndex)
+                            }
+                        }
+                        onSelectedProviderChanged: {
+                            root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+                            if (providerSelector.popupOpen) {
+                                var targetCycle = providerSelector.allSelected ? 0 : providerSelector.tabBar.currentIndex
+                                if (root.cycleIndex !== targetCycle) {
+                                    root.cycleIndex = targetCycle
+                                }
+                            }
+                        }
+                        onReorderRequested: function(providerId, delta) {
+                            root.moveProviderOrder(providerId, delta)
+                        }
                     }
 
                     ColumnLayout {
@@ -297,16 +333,6 @@ PlasmoidItem {
                 spacing: Kirigami.Units.smallSpacing
 
                 QQC2.ToolButton {
-                    id: refreshButton
-                    icon.name: "view-refresh"
-                    display: QQC2.AbstractButton.TextBesideIcon
-                    text: Translation.translate("Refresh", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
-                    flat: true
-                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
-                    onClicked: root.controller.requestRefresh()
-                }
-
-                QQC2.ToolButton {
                     id: configureButton
                     objectName: "configureButton"
                     icon.name: "settings-configure"
@@ -317,17 +343,27 @@ PlasmoidItem {
                     onClicked: root.openConfiguration()
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                }
-
                 StatusFooter {
                     id: statusFooter
                     phase: root.controller.phase
                     languagePreference: root.languagePreference
                     showSeparator: false
+                    Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                }
+
+                QQC2.ToolButton {
+                    id: refreshButton
+                    icon.name: "view-refresh"
+                    display: QQC2.AbstractButton.TextBesideIcon
+                    text: Translation.translate("Refresh", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+                    flat: true
                     Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                    onClicked: root.controller.requestRefresh()
                 }
             }
         }
@@ -336,6 +372,15 @@ PlasmoidItem {
             target: root.controller
             function onCommittedGenerationChanged() {
                 root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+            }
+        }
+
+        Connections {
+            target: root
+            function onCycleIndexChanged() {
+                if (providerSelector.tabBar.currentIndex !== root.cycleIndex) {
+                    providerSelector.selectTabIndex(root.cycleIndex)
+                }
             }
         }
     }

@@ -90,6 +90,14 @@ Item {
         popupOpen: false
     }
 
+    UsageUi.ProviderSelector {
+        id: sWheelAndOrder
+        width: root.width
+        providers: []
+        phase: "ready"
+        popupOpen: false
+    }
+
     Component.onCompleted: {
         s.popupOpen = true
         assert(s.allSelected && s.selectedProvider === null && s.usableProviders.length === 0, "empty default All")
@@ -388,6 +396,43 @@ Item {
         ]
         s.popupOpen = true
         assert(s.usableProviders.length === 6, "narrow-width fixture carries all six real providers")
+
+        // Wheel cycling and in-popup provider reorder requests
+        sWheelAndOrder.providers = [
+            p("codex", "src-codex", [w("Session", 10, null, null)]),
+            p("claude", "src-claude", [w("Session", 20, null, null)]),
+            p("nan", "src-nan", [w("Session", 30, null, null)])
+        ]
+        sWheelAndOrder.popupOpen = true
+        assert(sWheelAndOrder.allSelected && sWheelAndOrder.tabBar.currentIndex === 0,
+               "sWheelAndOrder starts on Overview (index 0)")
+        sWheelAndOrder.cycleSelection(1)
+        assert(!sWheelAndOrder.allSelected && sWheelAndOrder.selectedProvider.provider === "codex",
+               "cycleSelection(1) advances from Overview to codex")
+        sWheelAndOrder.cycleSelection(1)
+        assert(!sWheelAndOrder.allSelected && sWheelAndOrder.selectedProvider.provider === "claude",
+               "cycleSelection(1) advances from codex to claude")
+        sWheelAndOrder.cycleSelection(-2)
+        assert(sWheelAndOrder.allSelected && sWheelAndOrder.tabBar.currentIndex === 0,
+               "cycleSelection(-1) twice returns to Overview")
+        sWheelAndOrder.cycleSelection(-1)
+        assert(!sWheelAndOrder.allSelected && sWheelAndOrder.selectedProvider.provider === "nan",
+               "cycleSelection(-1) from Overview wraps to last provider (nan)")
+
+        var reorderedProvider = ""
+        var reorderedDelta = 0
+        sWheelAndOrder.reorderRequested.connect(function(provId, delta) {
+            reorderedProvider = provId
+            reorderedDelta = delta
+        })
+        sWheelAndOrder.requestMoveSelectedProvider(-1)
+        assert(reorderedProvider === "nan" && reorderedDelta === -1,
+               "requestMoveSelectedProvider(-1) emits reorderRequested for selected provider")
+
+        sWheelAndOrder.selectTabIndex(1)
+        assert(!sWheelAndOrder.allSelected && sWheelAndOrder.selectedProvider.provider === "codex",
+               "selectTabIndex(1) selects 1st provider")
+
         // Async geometry stages continue in geometryTimer below.
         geometryTimer.running = true
     }

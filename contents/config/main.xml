@@ -27,6 +27,12 @@
     <entry name="excludedProviders" type="String">
       <default></default>
     </entry>
+    <entry name="providerOrder" type="String">
+      <default></default>
+    </entry>
+    <entry name="tintPanelIcon" type="Bool">
+      <default>true</default>
+    </entry>
     <entry name="language" type="String">
       <default>auto</default>
     </entry>

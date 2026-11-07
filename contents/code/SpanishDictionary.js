@@ -58,6 +58,10 @@ var DICTIONARY = {
     "Today": "Hoy",
     "Last 30 days": "Últimos 30 días",
     "Local token-cost estimate": "Estimado desde los logs locales",
+    "Last 30 days cost": "Costo de los últimos 30 días",
+    "Last 30 days tokens": "Tokens de los últimos 30 días",
+    "Recent tokens": "Tokens más recientes",
+    "Primary model: %1": "Modelo principal: %1",
     "Session cost": "Hoy",
     "Session tokens": "Tokens más recientes",
     "30-day cost": "Costo de los últimos 30 días",
@@ -81,7 +85,14 @@ var DICTIONARY = {
     "Ready": "Listo",
     "Updating...": "Actualizando...",
     "Refreshing...": "Actualizando...",
-    "Timed out": "Tiempo agotado"
+    "Timed out": "Tiempo agotado",
+
+    // Settings
+    "Panel icon:": "Icono del panel:",
+    "Colorize panel icon with provider accent": "Colorear icono del panel con el acento del proveedor",
+    "Provider order:": "Orden de proveedores:",
+    "Move up": "Subir",
+    "Move down": "Bajar"
 }
 
 function translateTerm(term) {

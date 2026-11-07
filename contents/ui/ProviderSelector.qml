@@ -21,6 +21,8 @@ ColumnLayout {
     property string preferredWindowKey: "automatic"
     property string languagePreference: "en"
 
+    signal reorderRequested(string providerId, int delta)
+
     readonly property var usableProviders: root._usable(root.providers)
     readonly property bool allSelected: root._isAllSelected(root.usableProviders)
     readonly property var selectedProvider: root._resolveSelectedProvider(root.usableProviders)
@@ -271,6 +273,35 @@ ColumnLayout {
         }
     }
 
+    function selectTabIndex(index) {
+        var total = 1 + root.usableProviders.length
+        if (index < 0 || index >= total) {
+            return
+        }
+        root._requestedIndex = -1
+        tabBar.currentIndex = index
+        root._activateIndex(index)
+    }
+
+    function cycleSelection(delta) {
+        var total = 1 + root.usableProviders.length
+        if (total <= 1 || delta === 0) {
+            return
+        }
+        var nextIndex = ((tabBar.currentIndex + delta) % total + total) % total
+        root.selectTabIndex(nextIndex)
+    }
+
+    function requestMoveSelectedProvider(delta) {
+        if (root.allSelected || !root.selectedProvider || typeof root.selectedProvider.provider !== "string") {
+            return
+        }
+        var step = delta < 0 ? -1 : delta > 0 ? 1 : 0
+        if (step !== 0) {
+            root.reorderRequested(root.selectedProvider.provider, step)
+        }
+    }
+
     onPopupOpenChanged: {
         if (root.popupOpen) {
             if (!root._hasOpenedBefore) {
@@ -320,6 +351,25 @@ ColumnLayout {
         }
 
         onCurrentIndexChanged: root._ensureTabVisible(currentIndex)
+
+        WheelHandler {
+            id: tabWheelHandler
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType
+            onWheel: function(event) {
+                var rawDelta = event.angleDelta.y !== 0 ? event.angleDelta.y : event.angleDelta.x
+                if (rawDelta === 0) {
+                    return
+                }
+                var step = rawDelta > 0 ? -1 : 1
+                if (event.modifiers & Qt.ShiftModifier) {
+                    root.requestMoveSelectedProvider(step)
+                } else {
+                    root.cycleSelection(step)
+                }
+                event.accepted = true
+            }
+        }
 
         RowLayout {
             id: tabStripRow
@@ -483,6 +533,31 @@ ColumnLayout {
                             onClicked: {
                                 tabBar.currentIndex = index + 1
                                 root._activateIndex(index + 1)
+                            }
+
+                            property bool _dragMoved: false
+
+                            DragHandler {
+                                id: tabDragHandler
+                                target: null
+                                yAxis.enabled: false
+                                onActiveChanged: {
+                                    if (!active) {
+                                        providerTab._dragMoved = false
+                                    }
+                                }
+                                onActiveTranslationChanged: {
+                                    if (!active || providerTab._dragMoved || !providerTab.providerData) {
+                                        return
+                                    }
+                                    var threshold = root.tabChipWidth * 0.55
+                                    if (Math.abs(activeTranslation.x) >= threshold) {
+                                        providerTab._dragMoved = true
+                                        var dir = activeTranslation.x < 0 ? -1 : 1
+                                        root.selectTabIndex(providerTab.index + 1)
+                                        root.reorderRequested(providerTab.providerData.provider, dir)
+                                    }
+                                }
                             }
 
                             contentItem: ColumnLayout {

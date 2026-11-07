@@ -99,4 +99,19 @@ TestCase {
         verify(partialEdgePixels > 0,
             "Provider tab icon must retain partially transparent antialiased edge pixels")
     }
+
+    function test_z_mouse_wheel_switches_tabs() {
+        selector.selectTabIndex(0)
+        compare(selector.tabBar.currentIndex, 0, "starts on Overview tab")
+        compare(selector.allSelected, true, "allSelected is true on Overview")
+
+        mouseWheel(selector.tabBar, selector.tabBar.width / 2, selector.tabBar.height / 2, 0, -120)
+        compare(selector.tabBar.currentIndex, 1, "scrolling wheel down switches to provider tab 1")
+        compare(selector.allSelected, false, "allSelected is false after wheel scroll to provider")
+        compare(selector.selectedProvider.provider, "claude", "claude is selected after wheel scroll")
+
+        mouseWheel(selector.tabBar, selector.tabBar.width / 2, selector.tabBar.height / 2, 0, 120)
+        compare(selector.tabBar.currentIndex, 0, "scrolling wheel up switches back to Overview")
+        compare(selector.allSelected, true, "allSelected is true again on Overview")
+    }
 }

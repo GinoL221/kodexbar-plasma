@@ -48,7 +48,10 @@ ColumnLayout {
         if (root.thresholdLevel === UsageThreshold.LEVEL_WARN) {
             return Kirigami.Theme.neutralTextColor
         }
-        return root.summary ? Kirigami.Theme.disabledTextColor : Kirigami.Theme.highlightColor
+        if (root.summary) {
+            return Kirigami.Theme.disabledTextColor
+        }
+        return root.accentColor.length > 0 ? root.accentColor : Kirigami.Theme.highlightColor
     }
 
     // Geometry handle: summary mid-row bar or detail host (always non-null Item).

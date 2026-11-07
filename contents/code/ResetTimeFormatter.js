@@ -130,9 +130,13 @@ function parseDate(text, nowMs) {
                 return NaN
             }
             if (!dateMatch[3] && target.getTime() < nowMs) {
-                target = new Date(year + 1, month, day, hours, minutes, 0, 0)
-                if (target.getMonth() !== month || target.getDate() !== day) {
+                var nextYearTarget = new Date(year + 1, month, day, hours, minutes, 0, 0)
+                if (nextYearTarget.getMonth() !== month || nextYearTarget.getDate() !== day) {
                     return NaN
+                }
+                var maxRolloverMs = 60 * 24 * 60 * 60 * 1000
+                if (nextYearTarget.getTime() - nowMs <= maxRolloverMs) {
+                    target = nextYearTarget
                 }
             }
             return target.getTime()
@@ -201,8 +205,11 @@ function formatResetText(resetsAt, resetDescription, nowMs, languagePreference) 
             }
 
             var dateMs = parseDate(desc, effectiveNowMs)
-            if (dateMs !== null && !isNaN(dateMs) && dateMs > effectiveNowMs) {
-                return formatCountdownFromDiff(dateMs - effectiveNowMs, isSpanish)
+            if (dateMs !== null && !isNaN(dateMs)) {
+                if (dateMs > effectiveNowMs) {
+                    return formatCountdownFromDiff(dateMs - effectiveNowMs, isSpanish)
+                }
+                return formatCountdown(0, 0, 0, true, isSpanish)
             }
 
             // Fallback: non-temporal note or unparseable description

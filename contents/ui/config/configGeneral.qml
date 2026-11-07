@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
@@ -6,6 +8,8 @@ import org.kde.kcmutils as KCM
 import org.kde.plasma.components as PlasmaComponents
 
 import "../../code/PreferredWindow.js" as PreferredWindow
+import "../../code/ProviderFilterPolicy.js" as ProviderFilterPolicy
+import "../../code/ProviderIcons.js" as ProviderIcons
 import "../../code/Translation.js" as Translation
 
 KCM.SimpleKCM {
@@ -26,12 +30,30 @@ KCM.SimpleKCM {
     property alias preferredWindowGuidance: preferredWindowGuidanceLabel
     property alias cfg_enableQuotaNotifications: enableQuotaNotifications.checked
     property bool cfg_enableQuotaNotificationsDefault
+    property alias cfg_tintPanelIcon: tintPanelIcon.checked
+    property bool cfg_tintPanelIconDefault: true
     property alias cfg_excludedProviders: excludedProviders.text
     property string cfg_excludedProvidersDefault
+    property alias cfg_providerOrder: providerOrder.text
+    property string cfg_providerOrderDefault
     property alias cfg_language: languageControl.selectedKey
     property string cfg_languageDefault
 
     readonly property var preferredWindowKeys: PreferredWindow.VALID_KEYS
+    readonly property var defaultOrderCandidates: ["codex", "claude", "antigravity", "grok", "nan"]
+    readonly property var orderedProviderIds: ProviderFilterPolicy.effectiveOrderList(
+        page.defaultOrderCandidates,
+        providerOrder.text
+    )
+
+    function moveProvider(providerId, delta) {
+        providerOrder.text = ProviderFilterPolicy.moveProviderInOrder(
+            page.defaultOrderCandidates,
+            providerOrder.text,
+            providerId,
+            delta
+        )
+    }
 
     function preferredWindowIndex(key) {
         var index = page.preferredWindowKeys.indexOf(key)
@@ -179,6 +201,16 @@ KCM.SimpleKCM {
                     Accessible.description: i18n("Show native Plasma notifications when provider usage reaches critical (90%) or exhausted (100%) levels, or when rate limits trigger backoff.")
                 }
 
+                QQC2.CheckBox {
+                    id: tintPanelIcon
+                    objectName: "tintPanelIcon"
+                    checked: true
+                    Kirigami.FormData.label: i18n("Panel icon:")
+                    text: i18n("Colorize panel icon with provider accent")
+                    Accessible.name: i18n("Colorize panel icon with provider accent")
+                    Accessible.description: i18n("When cycling providers from the panel, tint the icon with the provider's brand color instead of monochrome text color.")
+                }
+
                 QQC2.TextField {
                     id: excludedProviders
                     objectName: "excludedProviders"
@@ -187,6 +219,55 @@ KCM.SimpleKCM {
                     Accessible.name: i18n("Excluded provider IDs")
                     Accessible.description: i18n("Comma-separated list of provider IDs to hide from the panel summary and popup list.")
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 24
+                }
+
+                ColumnLayout {
+                    Kirigami.FormData.label: i18n("Provider order:")
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 24
+                    spacing: Kirigami.Units.smallSpacing
+
+                    Repeater {
+                        model: page.orderedProviderIds
+
+                        delegate: RowLayout {
+                            id: orderRow
+                            required property string modelData
+                            required property int index
+
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            PlasmaComponents.Label {
+                                text: (orderRow.index + 1) + ". " + ProviderIcons.displayName(orderRow.modelData)
+                                Layout.fillWidth: true
+                            }
+
+                            QQC2.ToolButton {
+                                icon.name: "go-up"
+                                display: QQC2.AbstractButton.IconOnly
+                                enabled: orderRow.index > 0
+                                Accessible.name: qsTr("Move up")
+                                onClicked: page.moveProvider(orderRow.modelData, -1)
+                            }
+
+                            QQC2.ToolButton {
+                                icon.name: "go-down"
+                                display: QQC2.AbstractButton.IconOnly
+                                enabled: orderRow.index < page.orderedProviderIds.length - 1
+                                Accessible.name: qsTr("Move down")
+                                onClicked: page.moveProvider(orderRow.modelData, 1)
+                            }
+                        }
+                    }
+
+                    QQC2.TextField {
+                        id: providerOrder
+                        objectName: "providerOrder"
+                        placeholderText: i18n("e.g. codex, claude, antigravity, grok, nan")
+                        Accessible.name: i18n("Provider order IDs")
+                        Accessible.description: i18n("Comma-separated list of provider IDs in your preferred display order, or use the up and down buttons above.")
+                        Layout.fillWidth: true
+                    }
                 }
 
                 QQC2.ComboBox {

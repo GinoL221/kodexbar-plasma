@@ -106,6 +106,7 @@ ColumnLayout {
     CostSection {
         snapshot: root.showHeaderDetails ? root.costSnapshot : null
         languagePreference: root.languagePreference
+        accentColor: root.providerAccent
         Layout.fillWidth: true
     }
 

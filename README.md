@@ -8,7 +8,7 @@
 
 KodexBar Plasma is a native KDE Plasma widget that displays all-provider usage returned by the external [CodexBar](https://github.com/steipete/CodexBar) CLI. It renders the CLI response in a compact panel view and a Plasma-native popup.
 
-The CLI is the boundary: KodexBar Plasma runs one configured executable with `usage --provider all --format json --json-only`. CodexBar remains responsible for provider configuration, credentials, API access, and its own data acquisition.
+The CLI is the boundary: KodexBar Plasma runs the configured executable with `usage --provider all --format json --json-only`, and may make a separate selected-provider cost request described below. CodexBar remains responsible for provider configuration, credentials, API access, and its own data acquisition.
 
 ## Provenance
 
@@ -138,12 +138,12 @@ Selecting a single provider (not `All`) shows additional CLI-supplied context in
 
 ### Optional local cost estimate
 
-For a selected provider that CodexBar's `cost` subcommand supports (`codex` or `claude` only), the widget may additionally request and show a **Cost** section labeled `source: local` — a local token-cost estimate reported directly by the CLI (`sessionCostUSD`, `sessionTokens`, `last30DaysCostUSD`, `last30DaysTokens`). This estimate is:
+For a selected provider that CodexBar's `cost` subcommand supports (`codex` or `claude` only), the widget may additionally request and show a **Cost** section with CLI-reported totals (`sessionCostUSD`, `sessionTokens`, `last30DaysCostUSD`, `last30DaysTokens`). When the source is `local`, it labels the figures as a local token-cost estimate. The request is:
 
 - Requested only while a supported provider is selected, through its own isolated lifecycle and exact command `cost --provider {provider} --format json --json-only` — never part of, or a precondition for, the unchanged all-provider `usage --provider all --format json --json-only` request.
 - Never requested, computed, or shown for `All`, or for a provider the `cost` subcommand does not support.
 - Fail-closed: an empty, malformed, non-matching, failed, or timed-out (60s) cost result simply hides the Cost section; it never hides, delays, or otherwise affects Usage, and never surfaces raw diagnostics.
-- Reported, not calculated: the widget never prices, estimates, or computes cost or tokens in QML — the numbers shown are exactly what the CLI reports.
+- Reported, not priced: the widget formats CLI-reported totals but does not calculate token prices. Valid daily entries can also produce a histogram of up to 30 date-sorted days; bars use cost when positive and otherwise tokens. A primary model is selected by summing valid model-breakdown costs across valid daily entries, with token totals breaking cost ties.
 
 ### Optional: NaN Cloud usage
 
@@ -165,9 +165,9 @@ KodexBar Plasma integrates directly with KDE Frameworks 6 (`KNotification`) to a
 
 ## MVP exclusions
 
-KodexBar Plasma deliberately does not implement provider implementations, authentication or cookie automation, fallback probing, reset or account actions, provider or source switching, calculated reset durations, or charts. Use CodexBar and provider tools for those responsibilities.
+KodexBar Plasma deliberately does not implement provider integrations, authentication or cookie automation, fallback probing, reset or account actions, provider or source switching, or token pricing. Use CodexBar and provider tools for those responsibilities.
 
-This widget never computes, estimates, or fabricates pace, credits, resets, identity, organization, cost, or token values — every field above is exactly what the CLI reports, validated and passed through unmodified. It does not add authentication, Add Account, Quit, redeem or other credit/reset-mutation actions, price calculation in QML, provider/CLI switching, or any change to the exact `usage --provider all --format json --json-only` invocation. All richer per-provider fields not explicitly covered above remain preserved verbatim under a per-provider `raw` key without a display path.
+The widget validates CLI-supplied pace, credits, identity, organization, cost, and token values; it formats values for display, derives reset countdowns from parseable timestamps or descriptions, and derives the cost histogram and primary model as described above. It does not fabricate provider data. It does not add authentication, Add Account, Quit, redeem or other credit/reset-mutation actions, price calculation in QML, provider/CLI switching, or any change to the exact `usage --provider all --format json --json-only` invocation. All richer per-provider fields not explicitly covered above remain preserved verbatim under a per-provider `raw` key without a display path.
 
 ## Settings
 

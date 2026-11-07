@@ -53,6 +53,7 @@ function displayName(value) {
 // Empty string → call site uses Kirigami.Theme.highlightColor.
 // Tokens are #rrggbb chosen for legibility on both Breeze Light and Dark tracks.
 var accents = {
+    "antigravity": "#3186FF",
     "claude": "#D97757",
     "codex": "#2AA8A0",
     "openai": "#10A37F",
@@ -63,6 +64,7 @@ var accents = {
     "copilot": "#7C3AED",
     "cursor": "#F59E0B",
     "mistral": "#F97316",
+    "nan": "#7D39EB",
     "kiro": "#8B5CF6",
     "perplexity": "#22D3EE",
     "deepseek": "#0EA5E9",

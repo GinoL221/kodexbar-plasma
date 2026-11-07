@@ -5,7 +5,7 @@ import "../contents/ui" as UsageUi
 Item {
     id: root
     width: 400
-    height: 620
+    height: 720
     property bool assertionFailed: false
 
     function assert(c, m) {
@@ -124,6 +124,24 @@ Item {
         windowData: ({ label: "Session", usedPercent: 100, resetsAt: null, resetDescription: null })
     }
 
+    UsageUi.UsageWindowRow {
+        id: pct50DetailWithAccent
+        width: 400
+        y: 580
+        summary: false
+        accentColor: "#D97757"
+        windowData: ({ label: "Session", usedPercent: 50, resetsAt: null, resetDescription: null })
+    }
+
+    UsageUi.UsageWindowRow {
+        id: pct75DetailWithAccent
+        width: 400
+        y: 620
+        summary: false
+        accentColor: "#D97757"
+        windowData: ({ label: "Weekly", usedPercent: 75, resetsAt: null, resetDescription: null })
+    }
+
     Timer {
         interval: 100
         running: true
@@ -178,6 +196,13 @@ Item {
             }
             root.assert(!Qt.colorEqual(pct50Summary.percentageLabel.color, pct50Detail.percentageLabel.color),
                 "calm-level percentage color must differentiate summary (disabled) from detail (highlight) mode")
+
+            // Detail mode with explicit provider accent: calm level adopts accentColor;
+            // warning level preserves neutralTextColor (accent must not mask threshold).
+            root.assert(Qt.colorEqual(pct50DetailWithAccent.percentageLabel.color, "#D97757"),
+                "detail-mode calm percentage must adopt provider accentColor when present")
+            root.assert(Qt.colorEqual(pct75DetailWithAccent.percentageLabel.color, Kirigami.Theme.neutralTextColor),
+                "detail-mode warning percentage must preserve neutralTextColor even when accentColor is set")
 
             // D13 fixed-column invariant (spec scenario "Bar track length is
             // threshold-independent"): same label text, same percent-text

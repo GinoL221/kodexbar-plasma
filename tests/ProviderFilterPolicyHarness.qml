@@ -52,6 +52,45 @@ Item {
         var untouched = ProviderFilterPolicy.filterProviders(sample, "")
         assert(untouched.length === 3, "empty filter returns all providers unchanged")
 
+        // 4. Custom provider ordering
+        var orderedList = ProviderFilterPolicy.parseOrder(" Claude , codex, nan , CLAUDE ")
+        assert(orderedList.length === 3 && orderedList[0] === "claude" && orderedList[1] === "codex" && orderedList[2] === "nan",
+               "parseOrder trims, lowercases, and deduplicates provider IDs")
+
+        var unsortedSample = [
+            { provider: "codex", windows: [] },
+            { provider: "antigravity", windows: [] },
+            { provider: "grok", windows: [] },
+            { provider: "nan", windows: [] },
+            { provider: "claude", windows: [] }
+        ]
+        var sorted = ProviderFilterPolicy.sortProviders(unsortedSample, "claude, codex, nan")
+        assert(sorted.length === 5, "sortProviders preserves all providers")
+        assert(sorted[0].provider === "claude", "claude moved to 1st")
+        assert(sorted[1].provider === "codex", "codex moved to 2nd")
+        assert(sorted[2].provider === "nan", "nan moved to 3rd")
+        assert(sorted[3].provider === "antigravity", "unlisted antigravity keeps relative order 4th")
+        assert(sorted[4].provider === "grok", "unlisted grok keeps relative order 5th")
+
+        // 5. Combined filter and sort
+        var filteredSorted = ProviderFilterPolicy.filterAndSortProviders(unsortedSample, "grok", "claude, nan, codex")
+        assert(filteredSorted.length === 4, "filterAndSortProviders hides grok and sorts remaining 4")
+        assert(filteredSorted[0].provider === "claude" && filteredSorted[1].provider === "nan"
+               && filteredSorted[2].provider === "codex" && filteredSorted[3].provider === "antigravity",
+               "filterAndSortProviders order matches claude, nan, codex, antigravity")
+
+        // 6. Moving a provider left/up (-1) or right/down (+1)
+        var currentIds = ["codex", "antigravity", "grok", "nan", "claude"]
+        var movedLeft = ProviderFilterPolicy.moveProviderInOrder(currentIds, "", "claude", -1)
+        assert(movedLeft === "codex, antigravity, grok, claude, nan",
+               "moving claude left (-1) swaps it with nan: " + movedLeft)
+        var movedAgain = ProviderFilterPolicy.moveProviderInOrder(currentIds, movedLeft, "claude", -1)
+        assert(movedAgain === "codex, antigravity, claude, grok, nan",
+               "moving claude left (-1) again swaps it with grok: " + movedAgain)
+        var boundaryMove = ProviderFilterPolicy.moveProviderInOrder(currentIds, movedAgain, "codex", -1)
+        assert(boundaryMove === "codex, antigravity, claude, grok, nan",
+               "moving first provider left (-1) is a no-op at boundary")
+
         finish()
     }
 }
