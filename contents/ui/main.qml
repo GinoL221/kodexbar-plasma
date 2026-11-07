@@ -165,7 +165,9 @@ PlasmoidItem {
 
     compactRepresentation: CompactUsageButton {
         usageText: root.panelText()
+        providerId: root.cycledUsage.isAll ? "" : root.cycledUsage.targetId
         accentColor: root.cycledUsage.isAll ? "" : ProviderIcons.accent(root.cycledUsage.targetId)
+        tintPanelIcon: root.plasmoidConfiguration.tintPanelIcon !== false
         onClicked: root.expanded = !root.expanded
         onScrolled: function(delta) {
             root.cycleIndex = ProviderCycle.nextIndex(root.cycleIndex, delta, root.cycleTargets.length)
