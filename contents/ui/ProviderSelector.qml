@@ -278,6 +278,7 @@ ColumnLayout {
         if (index < 0 || index >= total) {
             return
         }
+        root._requestedIndex = -1
         tabBar.currentIndex = index
         root._activateIndex(index)
     }
@@ -354,7 +355,6 @@ ColumnLayout {
         WheelHandler {
             id: tabWheelHandler
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            acceptedModifiers: Qt.NoModifier | Qt.ShiftModifier
             grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType
             onWheel: function(event) {
                 var rawDelta = event.angleDelta.y !== 0 ? event.angleDelta.y : event.angleDelta.x

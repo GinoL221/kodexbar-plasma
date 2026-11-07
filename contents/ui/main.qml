@@ -255,7 +255,20 @@ PlasmoidItem {
                         Layout.fillWidth: true
                         Layout.leftMargin: full.bodyInset
                         Layout.rightMargin: full.bodyInset
-                        onSelectedProviderChanged: root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+                        onPopupOpenChanged: {
+                            if (providerSelector.popupOpen && root.cycleIndex > 0) {
+                                providerSelector.selectTabIndex(root.cycleIndex)
+                            }
+                        }
+                        onSelectedProviderChanged: {
+                            root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+                            if (providerSelector.popupOpen) {
+                                var targetCycle = providerSelector.allSelected ? 0 : providerSelector.tabBar.currentIndex
+                                if (root.cycleIndex !== targetCycle) {
+                                    root.cycleIndex = targetCycle
+                                }
+                            }
+                        }
                         onReorderRequested: function(providerId, delta) {
                             root.moveProviderOrder(providerId, delta)
                         }
@@ -363,7 +376,9 @@ PlasmoidItem {
         Connections {
             target: root
             function onCycleIndexChanged() {
-                providerSelector.selectTabIndex(root.cycleIndex)
+                if (providerSelector.tabBar.currentIndex !== root.cycleIndex) {
+                    providerSelector.selectTabIndex(root.cycleIndex)
+                }
             }
         }
     }

@@ -15,19 +15,6 @@ QQC2.ToolButton {
         root.scrolled(delta)
     }
 
-    WheelHandler {
-        id: wheelHandler
-        target: root
-        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        onWheel: function(event) {
-            if (event.angleDelta.y > 0) {
-                root.scrolled(-1)
-            } else if (event.angleDelta.y < 0) {
-                root.scrolled(1)
-            }
-        }
-    }
-
     text: ""
     icon.name: ""
     display: QQC2.AbstractButton.TextBesideIcon
@@ -35,6 +22,7 @@ QQC2.ToolButton {
 
     MouseArea {
         anchors.fill: parent
+        z: 10
         acceptedButtons: Qt.RightButton
         onPressed: function(mouse) {
             mouse.accepted = false
