@@ -34,9 +34,14 @@ PlasmoidItem {
     property string preferredWindowKey: PreferredWindow.keyOrDefault(plasmoidConfiguration.preferredRepresentativeWindow)
     property bool enableQuotaNotifications: plasmoidConfiguration.enableQuotaNotifications !== false
     property string excludedProviders: plasmoidConfiguration.excludedProviders || ""
+    property string providerOrder: plasmoidConfiguration.providerOrder || ""
     property string languagePreference: plasmoidConfiguration.language || "auto"
     property alias controller: controller
-    readonly property var visibleProviders: ProviderFilterPolicy.filterProviders(root.controller.committedProviders, root.excludedProviders)
+    readonly property var visibleProviders: ProviderFilterPolicy.filterAndSortProviders(
+        root.controller.committedProviders,
+        root.excludedProviders,
+        root.providerOrder
+    )
     readonly property var compactSelection: UsageModel.selectCompact(root.visibleProviders)
     property int cycleIndex: 0
     readonly property var cycleTargets: ProviderCycle.buildCycleTargets(root.visibleProviders, function(id) {
@@ -146,8 +151,21 @@ PlasmoidItem {
         PlatformAction.triggerConfigure(Plasmoid)
     }
 
+    function moveProviderOrder(providerId, delta) {
+        var currentIds = []
+        for (var i = 0; i < root.visibleProviders.length; i++) {
+            var p = root.visibleProviders[i]
+            if (p && typeof p.provider === "string") {
+                currentIds.push(p.provider)
+            }
+        }
+        var nextOrder = ProviderFilterPolicy.moveProviderInOrder(currentIds, root.providerOrder, providerId, delta)
+        root.plasmoidConfiguration.providerOrder = nextOrder
+    }
+
     compactRepresentation: CompactUsageButton {
         usageText: root.panelText()
+        accentColor: root.cycledUsage.isAll ? "" : ProviderIcons.accent(root.cycledUsage.targetId)
         onClicked: root.expanded = !root.expanded
         onScrolled: function(delta) {
             root.cycleIndex = ProviderCycle.nextIndex(root.cycleIndex, delta, root.cycleTargets.length)
@@ -238,6 +256,9 @@ PlasmoidItem {
                         Layout.leftMargin: full.bodyInset
                         Layout.rightMargin: full.bodyInset
                         onSelectedProviderChanged: root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+                        onReorderRequested: function(providerId, delta) {
+                            root.moveProviderOrder(providerId, delta)
+                        }
                     }
 
                     ColumnLayout {
@@ -336,6 +357,13 @@ PlasmoidItem {
             target: root.controller
             function onCommittedGenerationChanged() {
                 root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+            }
+        }
+
+        Connections {
+            target: root
+            function onCycleIndexChanged() {
+                providerSelector.selectTabIndex(root.cycleIndex)
             }
         }
     }

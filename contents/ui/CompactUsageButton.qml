@@ -7,6 +7,7 @@ QQC2.ToolButton {
     id: root
 
     property string usageText: ""
+    property string accentColor: ""
 
     signal scrolled(int delta)
 
@@ -38,6 +39,16 @@ QQC2.ToolButton {
         onPressed: function(mouse) {
             mouse.accepted = false
         }
+        onWheel: function(wheel) {
+            var rawDelta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x
+            if (rawDelta > 0) {
+                root.scrolled(-1)
+                wheel.accepted = true
+            } else if (rawDelta < 0) {
+                root.scrolled(1)
+                wheel.accepted = true
+            }
+        }
     }
     Accessible.name: typeof i18n === "function"
         ? i18n("KodexBar usage: %1. Open details.", usageText)
@@ -56,7 +67,7 @@ QQC2.ToolButton {
             id: compactIcon
             source: Qt.resolvedUrl("../icons/kodexbar-monochrome.svg")
             isMask: true
-            color: Kirigami.Theme.textColor
+            color: root.accentColor.length > 0 ? root.accentColor : Kirigami.Theme.textColor
             implicitWidth: Kirigami.Units.iconSizes.smallMedium
             implicitHeight: Kirigami.Units.iconSizes.smallMedium
             anchors.centerIn: parent
