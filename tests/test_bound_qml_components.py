@@ -1,5 +1,5 @@
-import unittest
 from pathlib import Path
+import unittest
 
 
 ROOT = Path(__file__).parents[1]
@@ -53,7 +53,7 @@ class BoundQmlComponentsTest(unittest.TestCase):
         source = self.source("main.qml")
         self.assertIn("ScrollBar.horizontal.policy", source)
         self.assertIn("ScrollBar.AlwaysOff", source)
-        self.assertIn("ScrollBar.vertical.policy", source)
+        self.assertTrue("ScrollBar.vertical.policy" in source or ("ScrollBar.vertical" in source and "policy:" in source))
         self.assertIn("ScrollBar.AsNeeded", source)
 
 

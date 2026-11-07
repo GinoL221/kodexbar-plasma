@@ -32,6 +32,10 @@ KCM.SimpleKCM {
     property bool cfg_enableQuotaNotificationsDefault
     property alias cfg_tintPanelIcon: tintPanelIcon.checked
     property bool cfg_tintPanelIconDefault: true
+    property alias cfg_pinnedProvider: pinnedProviderControl.selectedKey
+    property string cfg_pinnedProviderDefault
+    property alias cfg_panelDisplayStyle: panelDisplayStyleControl.selectedKey
+    property string cfg_panelDisplayStyleDefault: "iconOnly"
     property alias cfg_excludedProviders: excludedProviders.text
     property string cfg_excludedProvidersDefault
     property alias cfg_providerOrder: providerOrder.text
@@ -209,6 +213,63 @@ KCM.SimpleKCM {
                     text: i18n("Colorize panel icon with provider accent")
                     Accessible.name: i18n("Colorize panel icon with provider accent")
                     Accessible.description: i18n("When cycling providers from the panel, tint the icon with the provider's brand color instead of monochrome text color.")
+                }
+
+                QQC2.ComboBox {
+                    id: pinnedProviderControl
+                    objectName: "pinnedProviderControl"
+                    property string selectedKey: ""
+                    Kirigami.FormData.label: Translation.translate("Pinned provider:", [], typeof i18n === "function" ? i18n : null)
+                    model: [
+                        Translation.translate("All providers (free cycle)", [], typeof i18n === "function" ? i18n : null),
+                        "Codex",
+                        "Claude",
+                        "Antigravity",
+                        "Grok",
+                        "NaN Cloud"
+                    ]
+                    readonly property var keyValues: ["", "codex", "claude", "antigravity", "grok", "nan"]
+                    Accessible.name: i18n("Pinned provider")
+                    Accessible.description: i18n("Pin this widget instance to a single provider, or allow cycling across all providers.")
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                    onActivated: {
+                        selectedKey = keyValues[currentIndex] !== undefined ? keyValues[currentIndex] : ""
+                    }
+                    onSelectedKeyChanged: {
+                        var idx = keyValues.indexOf(selectedKey)
+                        currentIndex = idx >= 0 ? idx : 0
+                    }
+                    Component.onCompleted: {
+                        var idx = keyValues.indexOf(selectedKey)
+                        currentIndex = idx >= 0 ? idx : 0
+                    }
+                }
+
+                QQC2.ComboBox {
+                    id: panelDisplayStyleControl
+                    objectName: "panelDisplayStyleControl"
+                    property string selectedKey: "iconOnly"
+                    Kirigami.FormData.label: Translation.translate("Panel display:", [], typeof i18n === "function" ? i18n : null)
+                    model: [
+                        Translation.translate("Icon only", [], typeof i18n === "function" ? i18n : null),
+                        Translation.translate("Icon and percentage", [], typeof i18n === "function" ? i18n : null),
+                        Translation.translate("Icon, name, and percentage", [], typeof i18n === "function" ? i18n : null)
+                    ]
+                    readonly property var styleKeys: ["iconOnly", "iconAndPercent", "iconNameAndPercent"]
+                    Accessible.name: i18n("Panel display style")
+                    Accessible.description: i18n("Choose whether the panel button displays only the icon, the icon with percentage, or the icon with provider name and percentage.")
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                    onActivated: {
+                        selectedKey = styleKeys[currentIndex] !== undefined ? styleKeys[currentIndex] : "iconOnly"
+                    }
+                    onSelectedKeyChanged: {
+                        var idx = styleKeys.indexOf(selectedKey)
+                        currentIndex = idx >= 0 ? idx : 0
+                    }
+                    Component.onCompleted: {
+                        var idx = styleKeys.indexOf(selectedKey)
+                        currentIndex = idx >= 0 ? idx : 0
+                    }
                 }
 
                 QQC2.TextField {

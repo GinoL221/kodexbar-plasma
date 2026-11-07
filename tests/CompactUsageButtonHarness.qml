@@ -63,6 +63,26 @@ Item {
         height: 32
     }
 
+    UsageUi.CompactUsageButton {
+        id: percentOnlyButton
+        providerId: "claude"
+        providerName: "Claude"
+        percentText: "36%"
+        displayStyle: "iconAndPercent"
+        width: 120
+        height: 32
+    }
+
+    UsageUi.CompactUsageButton {
+        id: nameAndPercentButton
+        providerId: "claude"
+        providerName: "Claude"
+        percentText: "36%"
+        displayStyle: "iconNameAndPercent"
+        width: 140
+        height: 32
+    }
+
     Component.onCompleted: Qt.callLater(function() {
         assert(button.activeFocusOnTab, "the compact control must participate in keyboard traversal")
         assert(button.focusPolicy === Qt.StrongFocus, "the compact control must be reachable from keyboard focus navigation")
@@ -95,6 +115,11 @@ Item {
                "tintPanelIcon=true must tint icon with provider accent color")
         assert(!Qt.colorEqual(untintedProviderButton.effectiveIconColor, "#D97757"),
                "tintPanelIcon=false must NOT use provider accent color")
+
+        // Display styles
+        assert(button.displayText === "", "iconOnly button must have empty displayText")
+        assert(percentOnlyButton.displayText === "36%", "iconAndPercent must show percentage only")
+        assert(nameAndPercentButton.displayText === "Claude 36%", "iconNameAndPercent must show provider name and percentage")
 
         finish()
     })

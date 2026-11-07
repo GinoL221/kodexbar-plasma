@@ -33,6 +33,12 @@
     <entry name="tintPanelIcon" type="Bool">
       <default>true</default>
     </entry>
+    <entry name="pinnedProvider" type="String">
+      <default></default>
+    </entry>
+    <entry name="panelDisplayStyle" type="String">
+      <default>iconOnly</default>
+    </entry>
     <entry name="language" type="String">
       <default>auto</default>
     </entry>

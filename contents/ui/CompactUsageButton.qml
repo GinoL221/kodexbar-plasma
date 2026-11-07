@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
 
 import "../code/ProviderIcons.js" as ProviderIcons
 
@@ -10,6 +11,9 @@ QQC2.ToolButton {
 
     property string usageText: ""
     property string providerId: ""
+    property string providerName: ""
+    property string percentText: ""
+    property string displayStyle: "iconOnly"
     property string accentColor: ""
     property bool tintPanelIcon: true
 
@@ -20,6 +24,23 @@ QQC2.ToolButton {
     readonly property color effectiveIconColor: (root.tintPanelIcon && root.accentColor.length > 0)
         ? root.accentColor
         : Kirigami.Theme.textColor
+
+    readonly property string displayText: {
+        if (root.displayStyle === "iconOnly") {
+            return ""
+        }
+        if (root.displayStyle === "iconNameAndPercent") {
+            if (root.providerName.length > 0 && root.percentText.length > 0) {
+                return root.providerName + " " + root.percentText
+            }
+            if (root.providerName.length > 0) {
+                return root.providerName
+            }
+            return root.percentText
+        }
+        // iconAndPercent
+        return root.percentText
+    }
 
     signal scrolled(int delta)
 
@@ -60,7 +81,9 @@ QQC2.ToolButton {
     Layout.minimumHeight: Kirigami.Units.iconSizes.smallMedium
 
     contentItem: Item {
-        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+        implicitWidth: root.displayStyle === "iconOnly" || root.displayText.length === 0
+            ? Kirigami.Units.iconSizes.smallMedium
+            : compactIcon.implicitWidth + Kirigami.Units.smallSpacing + panelLabel.implicitWidth
         implicitHeight: Kirigami.Units.iconSizes.smallMedium
 
         ProviderIcon {
@@ -70,7 +93,21 @@ QQC2.ToolButton {
             color: root.effectiveIconColor
             implicitWidth: Kirigami.Units.iconSizes.smallMedium
             implicitHeight: Kirigami.Units.iconSizes.smallMedium
-            anchors.centerIn: parent
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: root.displayStyle === "iconOnly" || root.displayText.length === 0 ? undefined : parent.left
+            anchors.horizontalCenter: root.displayStyle === "iconOnly" || root.displayText.length === 0 ? parent.horizontalCenter : undefined
+        }
+
+        PlasmaComponents.Label {
+            id: panelLabel
+            objectName: "compactPanelLabel"
+            visible: root.displayStyle !== "iconOnly" && root.displayText.length > 0
+            text: root.displayText
+            color: Kirigami.Theme.textColor
+            font.pointSize: Kirigami.Theme.defaultFont.pointSize
+            anchors.left: compactIcon.right
+            anchors.leftMargin: Kirigami.Units.smallSpacing
+            anchors.verticalCenter: parent.verticalCenter
         }
     }
 }

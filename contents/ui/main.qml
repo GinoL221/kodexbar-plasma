@@ -36,6 +36,8 @@ PlasmoidItem {
     property string excludedProviders: plasmoidConfiguration.excludedProviders || ""
     property string providerOrder: plasmoidConfiguration.providerOrder || ""
     property string languagePreference: plasmoidConfiguration.language || "auto"
+    property string pinnedProvider: plasmoidConfiguration.pinnedProvider || ""
+    property string panelDisplayStyle: plasmoidConfiguration.panelDisplayStyle || "iconOnly"
     property alias controller: controller
     readonly property var visibleProviders: ProviderFilterPolicy.filterAndSortProviders(
         root.controller.committedProviders,
@@ -44,12 +46,36 @@ PlasmoidItem {
     )
     readonly property var compactSelection: UsageModel.selectCompact(root.visibleProviders)
     property int cycleIndex: 0
+    function pinnedIndex() {
+        if (!root.pinnedProvider || root.pinnedProvider.length === 0) {
+            return -1
+        }
+        for (var i = 0; i < root.cycleTargets.length; i++) {
+            if (root.cycleTargets[i] && root.cycleTargets[i].id === root.pinnedProvider) {
+                return i
+            }
+        }
+        return -1
+    }
+    readonly property var pinnedProviderData: {
+        if (!root.pinnedProvider || root.pinnedProvider.length === 0) {
+            return null
+        }
+        for (var p = 0; p < root.visibleProviders.length; p++) {
+            var item = root.visibleProviders[p]
+            if (item && item.provider === root.pinnedProvider) {
+                return item
+            }
+        }
+        return null
+    }
+    readonly property int effectiveCycleIndex: root.pinnedIndex() >= 0 ? root.pinnedIndex() : root.cycleIndex
     readonly property var cycleTargets: ProviderCycle.buildCycleTargets(root.visibleProviders, function(id) {
         return ProviderIcons.displayName(id)
     })
     readonly property var cycledUsage: ProviderCycle.resolveCycledUsage(
         root.cycleTargets,
-        root.cycleIndex,
+        root.effectiveCycleIndex,
         root.preferredWindowKey,
         UsageModel.selectCompact,
         UsageModel.selectRepresentative,
@@ -166,10 +192,16 @@ PlasmoidItem {
     compactRepresentation: CompactUsageButton {
         usageText: root.panelText()
         providerId: root.cycledUsage.isAll ? "" : root.cycledUsage.targetId
+        providerName: root.cycledUsage.isAll ? "" : root.cycledUsage.targetName
+        percentText: root.cycledUsage.usedPercent !== null ? Math.round(root.cycledUsage.usedPercent) + "%" : ""
+        displayStyle: root.panelDisplayStyle
         accentColor: root.cycledUsage.isAll ? "" : ProviderIcons.accent(root.cycledUsage.targetId)
         tintPanelIcon: root.plasmoidConfiguration.tintPanelIcon !== false
         onClicked: root.expanded = !root.expanded
         onScrolled: function(delta) {
+            if (root.pinnedProvider.length > 0) {
+                return
+            }
             root.cycleIndex = ProviderCycle.nextIndex(root.cycleIndex, delta, root.cycleTargets.length)
         }
     }
@@ -249,6 +281,7 @@ PlasmoidItem {
 
                     ProviderSelector {
                         id: providerSelector
+                        visible: root.pinnedProvider.length === 0
                         providers: root.visibleProviders
                         phase: root.controller.phase
                         popupOpen: root.expanded
@@ -258,8 +291,11 @@ PlasmoidItem {
                         Layout.leftMargin: full.bodyInset
                         Layout.rightMargin: full.bodyInset
                         onPopupOpenChanged: {
-                            if (providerSelector.popupOpen && root.cycleIndex > 0) {
-                                providerSelector.selectTabIndex(root.cycleIndex)
+                            if (providerSelector.popupOpen) {
+                                var target = root.effectiveCycleIndex
+                                if (target > 0) {
+                                    providerSelector.selectTabIndex(target)
+                                }
                             }
                         }
                         onSelectedProviderChanged: {
@@ -284,12 +320,12 @@ PlasmoidItem {
 
                         Kirigami.Separator {
                             objectName: "overviewProviderListSeparator"
-                            visible: providerSelector.allSelected
+                            visible: root.pinnedProvider.length === 0 && providerSelector.allSelected
                             Layout.fillWidth: true
                         }
 
                         Repeater {
-                            model: providerSelector.allSelected ? providerSelector.usableProviders : []
+                            model: (root.pinnedProvider.length === 0 && providerSelector.allSelected) ? providerSelector.usableProviders : []
 
                             delegate: ProviderRow {
                                 required property var modelData
@@ -303,15 +339,19 @@ PlasmoidItem {
                         }
 
                         ProviderRow {
-                            visible: !providerSelector.allSelected && providerSelector.selectedProvider !== null
-                            providerData: providerSelector.selectedProvider || ({})
+                            visible: root.pinnedProvider.length > 0
+                                ? (root.pinnedProviderData !== null)
+                                : (!providerSelector.allSelected && providerSelector.selectedProvider !== null)
+                            providerData: root.pinnedProvider.length > 0
+                                ? (root.pinnedProviderData || ({}))
+                                : (providerSelector.selectedProvider || ({}))
                             compact: false
                             languagePreference: root.languagePreference
                             iconResolver: providerSelector.iconResolver
                             // "All" is never bound here: selectedProvider is null
                             // whenever allSelected, so no cost record is ever read.
-                            costSnapshot: providerSelector.selectedProvider
-                                ? costController.snapshotFor(providerSelector.selectedProvider.provider, root.controller.committedGeneration)
+                            costSnapshot: (root.pinnedProvider.length > 0 ? root.pinnedProviderData : providerSelector.selectedProvider)
+                                ? costController.snapshotFor((root.pinnedProvider.length > 0 ? root.pinnedProviderData.provider : providerSelector.selectedProvider.provider), root.controller.committedGeneration)
                                 : null
                             Layout.fillWidth: true
                         }
@@ -371,17 +411,34 @@ PlasmoidItem {
         Connections {
             target: root.controller
             function onCommittedGenerationChanged() {
-                root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+                if (root.pinnedProvider.length > 0) {
+                    if (root.pinnedProviderData) {
+                        root.maybeRequestCost(false, root.pinnedProviderData)
+                    }
+                } else {
+                    root.maybeRequestCost(providerSelector.allSelected, providerSelector.selectedProvider)
+                }
             }
         }
 
         Connections {
             target: root
-            function onCycleIndexChanged() {
-                if (providerSelector.tabBar.currentIndex !== root.cycleIndex) {
-                    providerSelector.selectTabIndex(root.cycleIndex)
+            function onEffectiveCycleIndexChanged() {
+                if (providerSelector.tabBar.currentIndex !== root.effectiveCycleIndex) {
+                    providerSelector.selectTabIndex(root.effectiveCycleIndex)
                 }
             }
+            function onCycleIndexChanged() {
+                if (providerSelector.tabBar.currentIndex !== root.effectiveCycleIndex) {
+                    providerSelector.selectTabIndex(root.effectiveCycleIndex)
+                }
+            }
+        }
+    }
+
+    onExpandedChanged: {
+        if (root.expanded && root.pinnedProvider.length > 0 && root.pinnedProviderData) {
+            root.maybeRequestCost(false, root.pinnedProviderData)
         }
     }
 

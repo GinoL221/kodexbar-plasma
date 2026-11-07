@@ -90,6 +90,12 @@ var DICTIONARY = {
     // Settings
     "Panel icon:": "Icono del panel:",
     "Colorize panel icon with provider accent": "Colorear icono del panel con el acento del proveedor",
+    "Pinned provider:": "Proveedor fijado:",
+    "All providers (free cycle)": "Todos los proveedores (ciclo libre)",
+    "Panel display:": "Visualización en el panel:",
+    "Icon only": "Solo icono",
+    "Icon and percentage": "Icono y porcentaje",
+    "Icon, name, and percentage": "Icono, nombre y porcentaje",
     "Provider order:": "Orden de proveedores:",
     "Move up": "Subir",
     "Move down": "Bajar"
