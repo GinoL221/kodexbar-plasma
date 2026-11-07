@@ -11,8 +11,9 @@ Item {
     property string accentColor: ""
 
     readonly property var validDaily: Array.isArray(root.daily) ? root.daily : []
-    // Cap visible histogram to the last 7 days so bars remain consistent and readable.
-    readonly property var recentDaily: root.validDaily.slice(-7)
+    // Display up to the most recent 14 days aligned to the right so the present
+    // day anchors at the right edge while bars keep a consistent width.
+    readonly property var recentDaily: root.validDaily.slice(-14)
     readonly property bool hasBars: root.recentDaily.length > 0
     readonly property color barFillColor: root.accentColor.length > 0
         ? root.accentColor
@@ -54,6 +55,12 @@ Item {
         anchors.fill: parent
         spacing: Math.max(4, Math.round(Kirigami.Units.smallSpacing))
 
+        // Left flexible spacer pushes bars to the right so the latest day anchors on the right edge.
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+        }
+
         Repeater {
             model: root.recentDaily
 
@@ -75,9 +82,9 @@ Item {
                 readonly property real ratio: Math.max(0, Math.min(1, barDelegate.metricValue / root.maxMetric))
 
                 Layout.fillHeight: true
-                Layout.preferredWidth: 14
-                Layout.minimumWidth: 8
-                Layout.maximumWidth: 18
+                Layout.preferredWidth: 16
+                Layout.minimumWidth: 12
+                Layout.maximumWidth: 20
                 Layout.fillWidth: false
 
                 Rectangle {
@@ -88,18 +95,11 @@ Item {
                     height: barDelegate.ratio > 0
                         ? Math.max(4, Math.round(parent.height * barDelegate.ratio))
                         : 2
-                    radius: 2
+                    radius: 3
                     color: barDelegate.ratio > 0 ? root.barFillColor : Kirigami.Theme.disabledTextColor
                     opacity: barDelegate.ratio > 0 ? 0.85 : 0.28
                 }
             }
-        }
-
-        // Elastic spacer keeps bars at their fixed styled width rather than
-        // bloating across the whole popup width when few days are present.
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
         }
     }
 }
