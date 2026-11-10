@@ -9,6 +9,8 @@ var DICTIONARY = {
     "Session": "Sesión",
     "Weekly": "Semanal",
     "Monthly": "Mensual",
+    "Fable": "Fable",
+    "Fable only": "Solo Fable",
     "Automatic": "Automático",
     "All": "Todos",
     "Overview": "General",

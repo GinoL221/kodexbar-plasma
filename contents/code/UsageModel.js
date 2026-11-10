@@ -120,6 +120,25 @@ function normalizeProvider(entry) {
                 windows.push(window)
             }
         }
+
+        for (var k = 0; k < extras.length; k++) {
+            var extra = extras[k]
+            if (extra && extra.window && typeof extra.id === "string") {
+                var label = extra.title || extra.id
+                if (extra.id === "claude-weekly-scoped-fable"
+                    || (typeof extra.title === "string" && extra.title.toLowerCase() === "fable only")) {
+                    label = "Fable"
+                }
+                var customExtraLabel = customWindowLabel(entry.rateWindowLabels, extra.id)
+                if (customExtraLabel !== null) {
+                    label = customExtraLabel
+                }
+                var extraWin = normalizeWindow({ key: extra.id, label: label }, extra.window)
+                if (extraWin !== null) {
+                    windows.push(extraWin)
+                }
+            }
+        }
     }
 
     // raw is a live reference to the parsed CLI entry, never a copy: normalized

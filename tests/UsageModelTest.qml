@@ -641,4 +641,38 @@ TestCase {
             compare(result.providers[0].windows[0].label, "Session")
         }
     }
+
+    function test_normalizesClaudeExtraRateWindowsToFable() {
+        var result = UsageModel.normalize({
+            provider: "claude",
+            source: "oauth",
+            usage: {
+                primary: { usedPercent: 70, resetsAt: "2026-11-10T09:09:59Z", resetDescription: "Nov 10 at 6:09AM" },
+                secondary: { usedPercent: 78, resetsAt: "2026-11-11T03:59:59Z", resetDescription: "Nov 11 at 12:59AM" },
+                extraRateWindows: [
+                    {
+                        id: "claude-weekly-scoped-fable",
+                        title: "Fable only",
+                        window: {
+                            usedPercent: 8,
+                            resetsAt: "2026-11-11T03:59:59Z",
+                            resetDescription: "Nov 11 at 12:59AM"
+                        }
+                    }
+                ]
+            }
+        })
+
+        compare(result.providers.length, 1)
+        var p = result.providers[0]
+        compare(p.windows.length, 3)
+        compare(p.windows[0].label, "Session")
+        compare(p.windows[0].usedPercent, 70)
+        compare(p.windows[1].label, "Weekly")
+        compare(p.windows[1].usedPercent, 78)
+        compare(p.windows[2].key, "claude-weekly-scoped-fable")
+        compare(p.windows[2].label, "Fable")
+        compare(p.windows[2].usedPercent, 8)
+        compare(p.windows[2].resetsAt, "2026-11-11T03:59:59Z")
+    }
 }
