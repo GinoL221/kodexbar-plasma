@@ -121,19 +121,36 @@ function normalizeProvider(entry) {
             }
         }
 
+        var hasTertiary = false
+        for (var w = 0; w < windows.length; w++) {
+            if (windows[w].key === "tertiary") {
+                hasTertiary = true
+                break
+            }
+        }
+
         for (var k = 0; k < extras.length; k++) {
             var extra = extras[k]
             if (extra && extra.window && typeof extra.id === "string") {
+                var isFable = extra.id === "claude-weekly-scoped-fable"
+                    || (typeof extra.title === "string" && extra.title.toLowerCase() === "fable only")
+                var windowKey = extra.id
                 var label = extra.title || extra.id
-                if (extra.id === "claude-weekly-scoped-fable"
-                    || (typeof extra.title === "string" && extra.title.toLowerCase() === "fable only")) {
+                if (isFable) {
                     label = "Fable"
+                    if (!hasTertiary) {
+                        windowKey = "tertiary"
+                        hasTertiary = true
+                    }
                 }
                 var customExtraLabel = customWindowLabel(entry.rateWindowLabels, extra.id)
+                if (customExtraLabel === null && windowKey === "tertiary") {
+                    customExtraLabel = customWindowLabel(entry.rateWindowLabels, "tertiary")
+                }
                 if (customExtraLabel !== null) {
                     label = customExtraLabel
                 }
-                var extraWin = normalizeWindow({ key: extra.id, label: label }, extra.window)
+                var extraWin = normalizeWindow({ key: windowKey, label: label }, extra.window)
                 if (extraWin !== null) {
                     windows.push(extraWin)
                 }

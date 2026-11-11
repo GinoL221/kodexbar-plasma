@@ -670,9 +670,15 @@ TestCase {
         compare(p.windows[0].usedPercent, 70)
         compare(p.windows[1].label, "Weekly")
         compare(p.windows[1].usedPercent, 78)
-        compare(p.windows[2].key, "claude-weekly-scoped-fable")
+        compare(p.windows[2].key, "tertiary")
         compare(p.windows[2].label, "Fable")
         compare(p.windows[2].usedPercent, 8)
         compare(p.windows[2].resetsAt, "2026-11-11T03:59:59Z")
+
+        var overview = UsageModel.selectOverviewWindows(p.windows)
+        compare(overview.length, 3)
+        compare(overview[0].label, "Session")
+        compare(overview[1].label, "Weekly")
+        compare(overview[2].label, "Fable")
     }
 }
