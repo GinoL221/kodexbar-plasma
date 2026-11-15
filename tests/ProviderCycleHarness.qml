@@ -83,6 +83,25 @@ Item {
         )
         assert(outOfBounds.isAll === true, "out of bounds index must fall back to All")
 
+        // 7. Pinned provider resolution must never leak 'All' when missing
+        var pinnedPresent = ProviderCycle.resolvePinnedUsage(
+            "claude", targets, "session",
+            UsageModel.selectRepresentative,
+            displayNameFn
+        )
+        assert(pinnedPresent.isAll === false && pinnedPresent.targetId === "claude" && pinnedPresent.usedPercent === 75,
+               "resolvePinnedUsage must resolve an active pinned provider")
+
+        var pinnedMissing = ProviderCycle.resolvePinnedUsage(
+            "nan", targets, "session",
+            UsageModel.selectRepresentative,
+            function(id) { return id === "nan" ? "NaN Cloud" : id }
+        )
+        assert(pinnedMissing.isAll === false && pinnedMissing.targetId === "nan"
+               && pinnedMissing.targetName === "NaN Cloud" && pinnedMissing.usedPercent === null
+               && pinnedMissing.allSummaryText === "",
+               "resolvePinnedUsage must preserve pinned identity without falling back to All when missing")
+
         finish()
     }
 }

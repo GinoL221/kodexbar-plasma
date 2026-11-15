@@ -193,6 +193,18 @@ Item {
                "a pace entry without a summary must be omitted")
         assert(Object.keys(ProviderDetails.paceSummaryByLabel({ raw: {} })).length === 0, "a missing pace object must be omitted")
 
+        var paceByKey = ProviderDetails.paceSummaryByKey({
+            raw: {
+                pace: {
+                    primary: { summary: "42% used" },
+                    secondary: { summary: "67% used" },
+                    tertiary: { summary: "10% in reserve" }
+                }
+            }
+        })
+        assert(paceByKey.primary === "42% used" && paceByKey.secondary === "67% used" && paceByKey.tertiary === "10% in reserve",
+               "paceSummaryByKey must preserve window keys regardless of custom labels")
+
         var resetCredits = ProviderDetails.validResetCredits({
             raw: { usage: { codexResetCredits: { availableCount: 2, credits: [
                 { amount: 1, expiresAt: "2026-09-01T00:00:00Z" }, { amount: 1, expiresAt: "2026-10-01T00:00:00Z" }

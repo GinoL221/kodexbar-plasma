@@ -42,6 +42,8 @@ ColumnLayout {
             typeof i18np === "function" ? i18np : null)
         : Translation.translate("No usage windows available", [], typeof i18n === "function" ? i18n : null)
     readonly property bool showHeaderDetails: !root.compact && !root.summary
+    readonly property var paceByKey: root.showHeaderDetails
+        ? ProviderDetailsLogic.paceSummaryByKey(root.providerData) : ({})
     readonly property var paceByLabel: root.showHeaderDetails
         ? ProviderDetailsLogic.paceSummaryByLabel(root.providerData) : ({})
     readonly property var creditsRemaining: root.showHeaderDetails
@@ -230,7 +232,9 @@ ColumnLayout {
                         compact: root.compact
                         summary: false
                         languagePreference: root.languagePreference
-                        paceSummary: root.paceByLabel[modelData.label] || ""
+                        paceSummary: (modelData.key && root.paceByKey[modelData.key])
+                            ? root.paceByKey[modelData.key]
+                            : (root.paceByLabel[modelData.label] || "")
                         accentColor: root.providerAccent
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0

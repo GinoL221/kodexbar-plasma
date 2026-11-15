@@ -93,6 +93,7 @@ var DICTIONARY = {
     "Panel icon:": "Icono del panel:",
     "Colorize panel icon with provider accent": "Colorear icono del panel con el acento del proveedor",
     "Pinned provider:": "Proveedor fijado:",
+    "Pinned provider \"%1\" is unavailable or hidden": "El proveedor fijado \"%1\" no está disponible u oculto",
     "All providers (free cycle)": "Todos los proveedores (ciclo libre)",
     "Panel display:": "Visualización en el panel:",
     "Icon only": "Solo icono",

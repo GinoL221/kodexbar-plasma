@@ -265,6 +265,23 @@ function paceSummaryByLabel(providerData) {
     return result
 }
 
+function paceSummaryByKey(providerData) {
+    var raw = rawTopLevel(providerData)
+    var pace = raw ? rawValue(raw, "pace") : null
+    var result = {}
+    if (!pace || typeof pace !== "object" || pace instanceof Array) {
+        return result
+    }
+    for (var i = 0; i < paceWindowDefinitions.length; i++) {
+        var definition = paceWindowDefinitions[i]
+        var entry = rawValue(pace, definition.key)
+        if (entry && typeof entry === "object" && !(entry instanceof Array) && isNonEmptyString(entry.summary)) {
+            result[definition.key] = entry.summary
+        }
+    }
+    return result
+}
+
 function isFiniteNonNegative(value) {
     return typeof value === "number" && isFinite(value) && value >= 0
 }

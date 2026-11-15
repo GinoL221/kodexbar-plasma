@@ -73,16 +73,26 @@ PlasmoidItem {
     readonly property var cycleTargets: ProviderCycle.buildCycleTargets(root.visibleProviders, function(id) {
         return ProviderIcons.displayName(id)
     })
-    readonly property var cycledUsage: ProviderCycle.resolveCycledUsage(
-        root.cycleTargets,
-        root.effectiveCycleIndex,
-        root.preferredWindowKey,
-        UsageModel.selectCompact,
-        UsageModel.selectRepresentative,
-        function(id) {
-            return ProviderIcons.displayName(id)
-        }
-    )
+    readonly property var cycledUsage: root.pinnedProvider.length > 0
+        ? ProviderCycle.resolvePinnedUsage(
+            root.pinnedProvider,
+            root.cycleTargets,
+            root.preferredWindowKey,
+            UsageModel.selectRepresentative,
+            function(id) {
+                return ProviderIcons.displayName(id)
+            }
+        )
+        : ProviderCycle.resolveCycledUsage(
+            root.cycleTargets,
+            root.effectiveCycleIndex,
+            root.preferredWindowKey,
+            UsageModel.selectCompact,
+            UsageModel.selectRepresentative,
+            function(id) {
+                return ProviderIcons.displayName(id)
+            }
+        )
 
     preferredRepresentation: compactRepresentation
     toolTipMainText: root.cycledUsage.isAll ? "KodexBar Plasma" : "KodexBar — " + root.cycledUsage.targetName
@@ -376,6 +386,26 @@ PlasmoidItem {
                                 ? costController.snapshotFor((root.pinnedProvider.length > 0 ? root.pinnedProviderData.provider : providerSelector.selectedProvider.provider), root.controller.committedGeneration)
                                 : null
                             Layout.fillWidth: true
+                        }
+
+                        PlasmaComponents.Label {
+                            objectName: "pinnedUnavailableLabel"
+                            visible: root.pinnedProvider.length > 0
+                                && root.pinnedProviderData === null
+                                && root.controller.phase !== "noData"
+                                && root.controller.phase !== "error"
+                            text: visible
+                                ? Translation.translate(
+                                    "Pinned provider \"%1\" is unavailable or hidden",
+                                    [ProviderIcons.displayName(root.pinnedProvider)],
+                                    typeof i18n === "function" ? i18n : null,
+                                    root.languagePreference
+                                )
+                                : ""
+                            color: Kirigami.Theme.disabledTextColor
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                         }
                     }
 

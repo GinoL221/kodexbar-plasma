@@ -20,6 +20,7 @@ RowLayout {
     property bool detailed: false
     property string languagePreference: "en"
     property var iconResolver: function(value) { return "dialog-information" }
+    property real nowMs: Date.now()
 
     readonly property string providerValue: providerData && providerData.provider !== null
         && providerData.provider !== undefined ? String(providerData.provider) : ""
@@ -39,7 +40,7 @@ RowLayout {
     readonly property string headerUpdatedAtDisplay: root.headerUpdatedAt.length > 0
         ? RelativeTime.formatUpdatedLabel(
             root.headerUpdatedAt,
-            Date.now(),
+            root.nowMs,
             function(template, args) {
                 return Translation.translate(template, args, typeof i18n === "function" ? i18n : null, root.languagePreference)
             })
@@ -146,5 +147,13 @@ RowLayout {
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignRight
         }
+    }
+
+    Timer {
+        id: updatedRefreshTimer
+        interval: 60000
+        repeat: true
+        running: root.visible && root.headerUpdatedAt.length > 0
+        onTriggered: root.nowMs = Date.now()
     }
 }

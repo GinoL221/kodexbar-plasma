@@ -107,3 +107,27 @@ function resolveCycledUsage(targets, index, preferredWindowKey, selectCompactFn,
         providerName: target.name
     }
 }
+
+function resolvePinnedUsage(pinnedProvider, targets, preferredWindowKey, selectRepresentativeFn, displayNameFn) {
+    var id = typeof pinnedProvider === "string" ? pinnedProvider.trim() : ""
+    var getName = typeof displayNameFn === "function" ? displayNameFn : function(val) { return val || "" }
+    var list = Array.isArray(targets) ? targets : []
+
+    for (var i = 0; i < list.length; i++) {
+        if (list[i] && !list[i].isAll && list[i].id === id) {
+            return resolveCycledUsage(list, i, preferredWindowKey, null, selectRepresentativeFn, getName)
+        }
+    }
+
+    var displayName = getName(id)
+    return {
+        isAll: false,
+        targetId: id,
+        targetName: displayName,
+        selection: null,
+        usedPercent: null,
+        label: "",
+        providerName: displayName,
+        allSummaryText: ""
+    }
+}

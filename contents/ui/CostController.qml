@@ -124,7 +124,11 @@ Item {
                 enqueuePrefetch(provider, usageGeneration)
                 return
             }
-            // Standard/interactive request replaces in-flight request immediately
+            // Standard/interactive request replaces in-flight request immediately;
+            // re-queue an interrupted background prefetch so it resumes afterward.
+            if (activeIsPrefetch && activeProvider.length > 0 && activeGeneration > 0) {
+                enqueuePrefetch(activeProvider, activeGeneration)
+            }
             releaseActive()
         }
 

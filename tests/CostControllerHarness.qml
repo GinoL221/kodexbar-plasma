@@ -11,6 +11,7 @@ Item {
     property var sharing: null
     property var disabled: null
     property var draining: null
+    property var preempting: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -213,6 +214,23 @@ Item {
         assert(draining.activeRequestCount === 1 && draining.activeGeneration === 22,
                "the queue must continue past an item resolved from the shared cache")
         draining.destroy()
+
+        // Interactive request preempting a background prefetch must re-queue
+        // the interrupted prefetch so it resumes after the interactive scan.
+        preempting = controllerComponent.createObject(root, {
+            commandPath: "/tmp/codexbar", testMode: true, cacheEnabled: false
+        })
+        preempting.request("codex", 30, true)
+        assert(preempting.activeRequestCount === 1 && preempting.activeProvider === "codex" && preempting.activeIsPrefetch === true,
+               "prefetch must start when idle")
+        preempting.request("claude", 30, false)
+        assert(preempting.activeProvider === "claude" && preempting.activeIsPrefetch === false,
+               "interactive request must preempt active prefetch")
+        preempting.completeForTest(preempting.activeSerial, payloadFor("claude", 8), 0)
+        assert(preempting.activeRequestCount === 1 && preempting.activeProvider === "codex"
+               && preempting.activeGeneration === 30 && preempting.activeIsPrefetch === true,
+               "preempted prefetch must be re-queued and resume after interactive request completes")
+        preempting.destroy()
 
         finish()
     }

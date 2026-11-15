@@ -432,6 +432,28 @@ Item {
         costSnapshot: null
     }
 
+    UsageUi.ProviderRow {
+        id: customLabelPaceRow
+        width: 450
+        providerData: ({
+            provider: "nan",
+            source: "api",
+            windows: [
+                { key: "primary", label: "DS V4", usedPercent: 25 },
+                { key: "secondary", label: "GLM", usedPercent: 50 }
+            ],
+            raw: {
+                pace: {
+                    primary: { summary: "10% in reserve" },
+                    secondary: { summary: "On track" }
+                },
+                usage: {
+                    updatedAt: "2026-08-17T00:00:00Z"
+                }
+            }
+        })
+    }
+
     UsageUi.UsageWindowRow {
         id: windowRow
         windowData: ({ label: "Session", usedPercent: 72, resetsAt: "2026-08-09T12:00:00Z", resetDescription: "Exact reset note" })
@@ -758,6 +780,17 @@ Item {
         windowRow.windowData = { label: "Session", usedPercent: 50, resetsAt: null, resetDescription: "Resets in 2 hours, 20 minutes" }
         assert(windowRow.resetDescriptionLabel.visible === true && windowRow.resetDescriptionLabel.text === "Resets in 2h 20m",
                "detail mode standardizes relative reset duration")
+
+        // Custom-labeled windows must still receive pace summaries by window key,
+        // and ProviderHeader must expose a reactive nowMs clock for relative updates.
+        var customPaceLabel = findObject(customLabelPaceRow, "paceSummaryLabel")
+        assert(customPaceLabel !== null && customPaceLabel.visible && customPaceLabel.text === "10% in reserve",
+               "custom-labeled window must match pace summary by window key")
+        var customHeader = findObject(customLabelPaceRow, "updatedAtLabel")
+        assert(customHeader !== null && customHeader.parent !== null, "updatedAtLabel must exist in detail header")
+        var headerParent = customHeader.parent.parent
+        assert(typeof headerParent.nowMs === "number" && headerParent.nowMs > 0,
+               "ProviderHeader must expose a reactive nowMs timestamp property")
 
     }
 

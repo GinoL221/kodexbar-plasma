@@ -37,7 +37,6 @@ Item {
     readonly property bool rateLimited: consecutiveRateLimits > 0
     property int generation: 0
     property bool refreshQueued: false
-    property bool followUpScheduled: false
     property bool requestActive: false
     property string activeStage: ""
     property string activeSource: ""
@@ -191,7 +190,7 @@ Item {
         releaseStage()
         requestActive = false
         activeGeneration = 0
-        if (scheduleFollowUp && refreshQueued && !followUpScheduled) {
+        if (scheduleFollowUp && refreshQueued) {
             refreshQueued = false
             requestRefresh()
         }
