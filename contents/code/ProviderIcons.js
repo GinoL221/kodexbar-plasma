@@ -84,3 +84,28 @@ function accent(value) {
     }
     return ""
 }
+
+var defaultOrderCandidates = ["codex", "claude", "antigravity", "grok", "nan"]
+
+function pinnedProviderKeys() {
+    var keys = [""]
+    var i
+    for (i = 0; i < defaultOrderCandidates.length; i++) {
+        keys.push(defaultOrderCandidates[i])
+    }
+    for (i = 0; i < knownProviders.length; i++) {
+        if (keys.indexOf(knownProviders[i]) === -1) {
+            keys.push(knownProviders[i])
+        }
+    }
+    return keys
+}
+
+function pinnedProviderLabels(allProvidersLabel) {
+    var keys = pinnedProviderKeys()
+    var labels = []
+    for (var i = 0; i < keys.length; i++) {
+        labels.push(keys[i] === "" ? String(allProvidersLabel || "") : displayName(keys[i]))
+    }
+    return labels
+}

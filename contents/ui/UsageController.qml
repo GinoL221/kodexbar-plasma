@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.LocalStorage as LocalStorage
 import org.kde.plasma.plasma5support as Plasma5Support

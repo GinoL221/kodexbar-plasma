@@ -44,7 +44,7 @@ KCM.SimpleKCM {
     property string cfg_languageDefault
 
     readonly property var preferredWindowKeys: PreferredWindow.VALID_KEYS
-    readonly property var defaultOrderCandidates: ["codex", "claude", "antigravity", "grok", "nan"]
+    readonly property var defaultOrderCandidates: ProviderIcons.defaultOrderCandidates
     readonly property var orderedProviderIds: ProviderFilterPolicy.effectiveOrderList(
         page.defaultOrderCandidates,
         providerOrder.text
@@ -134,7 +134,7 @@ KCM.SimpleKCM {
                     stepSize: 1
                     textFromValue: function(value) {
                         return Translation.plural("%1 second", "%1 seconds", value,
-                            typeof i18np === "function" ? i18np : null)
+                            typeof i18np === "function" ? i18np : null, languageControl.selectedKey)
                     }
                     valueFromText: function(text) { return Number(text.replace(/\D/g, "")) }
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 10
@@ -147,9 +147,9 @@ KCM.SimpleKCM {
                     textRole: ""
                     Accessible.name: i18n("Request timeout preset")
                     displayText: currentIndex === 3
-                        ? Translation.translate("Custom", [], typeof i18n === "function" ? i18n : null)
+                        ? Translation.translate("Custom", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
                         : Translation.plural("%1 second", "%1 seconds", currentValue,
-                            typeof i18np === "function" ? i18np : null)
+                            typeof i18np === "function" ? i18np : null, languageControl.selectedKey)
                     onActivated: {
                         if (currentIndex < 3) {
                             requestTimeout.value = currentValue
@@ -168,7 +168,7 @@ KCM.SimpleKCM {
                     value: 60
                     textFromValue: function(value) {
                         return Translation.plural("%1 second", "%1 seconds", value,
-                            typeof i18np === "function" ? i18np : null)
+                            typeof i18np === "function" ? i18np : null, languageControl.selectedKey)
                     }
                     valueFromText: function(text) { return Number(text.replace(/\D/g, "")) }
                     Accessible.name: i18n("Custom request timeout in seconds")
@@ -183,10 +183,10 @@ KCM.SimpleKCM {
                     property string selectedKey: "automatic"
                     Kirigami.FormData.label: i18n("Representative window:")
                     model: [
-                        Translation.translate("Automatic", [], typeof i18n === "function" ? i18n : null),
-                        Translation.translate("Session", [], typeof i18n === "function" ? i18n : null),
-                        Translation.translate("Weekly", [], typeof i18n === "function" ? i18n : null),
-                        Translation.translate("Monthly", [], typeof i18n === "function" ? i18n : null)
+                        Translation.translate("Automatic", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey),
+                        Translation.translate("Session", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey),
+                        Translation.translate("Weekly", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey),
+                        Translation.translate("Monthly", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
                     ]
                     Accessible.name: i18n("Preferred representative window")
                     Accessible.description: i18n("Choose which usage window every provider summary shows in All. Automatic uses Session, then Weekly, then Monthly.")
@@ -219,16 +219,11 @@ KCM.SimpleKCM {
                     id: pinnedProviderControl
                     objectName: "pinnedProviderControl"
                     property string selectedKey: ""
-                    Kirigami.FormData.label: Translation.translate("Pinned provider:", [], typeof i18n === "function" ? i18n : null)
-                    model: [
-                        Translation.translate("All providers (free cycle)", [], typeof i18n === "function" ? i18n : null),
-                        "Codex",
-                        "Claude",
-                        "Antigravity",
-                        "Grok",
-                        "NaN Cloud"
-                    ]
-                    readonly property var keyValues: ["", "codex", "claude", "antigravity", "grok", "nan"]
+                    Kirigami.FormData.label: Translation.translate("Pinned provider:", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
+                    readonly property var keyValues: ProviderIcons.pinnedProviderKeys()
+                    model: ProviderIcons.pinnedProviderLabels(
+                        Translation.translate("All providers (free cycle)", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
+                    )
                     Accessible.name: i18n("Pinned provider")
                     Accessible.description: i18n("Pin this widget instance to a single provider, or allow cycling across all providers.")
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 14
@@ -249,11 +244,11 @@ KCM.SimpleKCM {
                     id: panelDisplayStyleControl
                     objectName: "panelDisplayStyleControl"
                     property string selectedKey: "iconOnly"
-                    Kirigami.FormData.label: Translation.translate("Panel display:", [], typeof i18n === "function" ? i18n : null)
+                    Kirigami.FormData.label: Translation.translate("Panel display:", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
                     model: [
-                        Translation.translate("Icon only", [], typeof i18n === "function" ? i18n : null),
-                        Translation.translate("Icon and percentage", [], typeof i18n === "function" ? i18n : null),
-                        Translation.translate("Icon, name, and percentage", [], typeof i18n === "function" ? i18n : null)
+                        Translation.translate("Icon only", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey),
+                        Translation.translate("Icon and percentage", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey),
+                        Translation.translate("Icon, name, and percentage", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
                     ]
                     readonly property var styleKeys: ["iconOnly", "iconAndPercent", "iconNameAndPercent"]
                     Accessible.name: i18n("Panel display style")

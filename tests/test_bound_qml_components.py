@@ -18,6 +18,9 @@ class BoundQmlComponentsTest(unittest.TestCase):
             "UsageWindowRow.qml",
             "ErrorSummary.qml",
             "ProviderDetails.qml",
+            "CompactUsageButton.qml",
+            "UsageController.qml",
+            "CostController.qml",
         ):
             with self.subTest(name=name):
                 self.assertIn("pragma ComponentBehavior: Bound", self.source(name))

@@ -19,7 +19,7 @@ Item {
         ? root.accentColor
         : Kirigami.Theme.highlightColor
 
-    // Determine scale unit homogeneously across the visible 7-day window
+    // Determine scale unit homogeneously across the visible 14-day window
     // to avoid mixing dollar and token magnitudes in the same chart (R3-mixed-histogram-units).
     readonly property bool isCostMode: {
         for (var i = 0; i < root.recentDaily.length; i++) {

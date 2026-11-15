@@ -75,6 +75,21 @@ Item {
         assert(ProviderIcons.accent("antigravity") === "#3186FF", "antigravity brand accent")
         assert(ProviderIcons.accent("nan") === "#7D39EB", "nan brand accent")
 
+        assert(Array.isArray(ProviderIcons.defaultOrderCandidates)
+               && ProviderIcons.defaultOrderCandidates.join(",") === "codex,claude,antigravity,grok,nan",
+               "defaultOrderCandidates must list the 5 featured providers in order")
+        var pinnedKeys = ProviderIcons.pinnedProviderKeys()
+        assert(Array.isArray(pinnedKeys)
+               && pinnedKeys.length === ProviderIcons.knownProviders.length + 1,
+               "pinnedProviderKeys must include empty key plus every known provider once")
+        assert(pinnedKeys.slice(0, 6).join(",") === ",codex,claude,antigravity,grok,nan",
+               "pinnedProviderKeys must start with empty key then featured providers")
+        var pinnedLabels = ProviderIcons.pinnedProviderLabels("All providers")
+        assert(Array.isArray(pinnedLabels) && pinnedLabels.length === pinnedKeys.length,
+               "pinnedProviderLabels must align 1:1 with pinnedProviderKeys")
+        assert(pinnedLabels.slice(0, 6).join("|") === "All providers|Codex|Claude|Antigravity|Grok|NaN Cloud",
+               "pinnedProviderLabels must format featured providers via displayName")
+
         finish()
     }
 }
