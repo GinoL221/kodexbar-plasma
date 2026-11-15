@@ -38,6 +38,12 @@ class RunQmlTestsDiscoveryTest(unittest.TestCase):
         # Discovery is basename glob order; ensure every plain harness exists.
         self.assertEqual(plain, sorted(plain))
 
+    def test_runner_auto_discovers_all_python_test_suites(self):
+        text = RUNNER.read_text(encoding="utf-8")
+        self.assertIn('"$tests_dir"/test_*.py', text)
+        on_disk = sorted(path.name for path in TESTS.glob("test_*.py"))
+        self.assertGreaterEqual(len(on_disk), 8)
+
 
 if __name__ == "__main__":
     unittest.main()

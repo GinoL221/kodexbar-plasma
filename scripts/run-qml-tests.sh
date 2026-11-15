@@ -154,14 +154,15 @@ for color_scheme in BreezeLight.colors BreezeDark.colors; do
         "$runner" -input "$tests_dir/ProviderDetailsIntegrationTest.qml" -import "$repo_root"
 done
 
-printf 'Running tests/test_cli_contract_fixture.py\n'
-python3 "$tests_dir/test_cli_contract_fixture.py"
-
-printf 'Running tests/test_run_qml_tests_discovery.py\n'
-python3 "$tests_dir/test_run_qml_tests_discovery.py"
-
-printf 'Running tests/test_notification_wiring.py\n'
-python3 "$tests_dir/test_notification_wiring.py"
+# Auto-discover Python unit test suites (alphabetical).
+python_count=0
+for py_test in "$tests_dir"/test_*.py; do
+    [ -f "$py_test" ] || fail "no tests/test_*.py files found"
+    python_count=$((python_count + 1))
+    printf 'Running %s\n' "${py_test#"$repo_root/"}"
+    python3 "$py_test"
+done
+[ "$python_count" -gt 0 ] || fail "auto-discover found zero Python test suites"
 
 # Auto-discover plain *Harness.qml (alphabetical). Special lifecycle harnesses
 # are skipped here and run with their fixture/env contracts below.

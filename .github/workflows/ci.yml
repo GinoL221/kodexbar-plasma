@@ -23,6 +23,9 @@ jobs:
       - name: Check provider icon assets
         run: python3 scripts/check-provider-icons.py
 
+      - name: Run Python unit tests
+        run: python3 -m unittest discover -s tests -p "test_*.py"
+
       - name: Check whitespace in changed lines
         shell: sh
         run: |
