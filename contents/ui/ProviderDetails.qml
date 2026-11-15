@@ -7,12 +7,14 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
 import "../code/ProviderDetails.js" as ProviderDetails
+import "../code/Translation.js" as Translation
 
 ColumnLayout {
     id: root
 
     property var providerData: ({})
     property bool expanded: false
+    property string languagePreference: "auto"
 
     readonly property var acceptedDetails: ProviderDetails.acceptedDetails(root.providerData)
     readonly property alias disclosureButton: disclosure
@@ -23,14 +25,11 @@ ColumnLayout {
     Accessible.name: translatePlural("%1 provider detail", "%1 provider details", root.acceptedDetails.length)
 
     function translate(text) {
-        return typeof i18n === "function" ? i18n(text) : text
+        return Translation.translate(text, [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     }
 
     function translatePlural(singular, plural, count) {
-        if (typeof i18np === "function") {
-            return i18np(singular, plural, count)
-        }
-        return (count === 1 ? singular : plural).replace("%1", count)
+        return Translation.plural(singular, plural, count, typeof i18np === "function" ? i18np : null, root.languagePreference)
     }
 
     QQC2.ToolButton {
@@ -112,7 +111,7 @@ ColumnLayout {
                         PlasmaComponents.Label {
                             visible: rowDelegate.modelData.secondaryValue !== undefined && rowDelegate.modelData.secondaryValue !== null
                                      && String(rowDelegate.modelData.secondaryValue).length > 0
-                            text: rowDelegate.modelData.secondaryValue
+                            text: visible ? String(rowDelegate.modelData.secondaryValue) : ""
                             color: Kirigami.Theme.disabledTextColor
                             wrapMode: Text.WordWrap
                             textFormat: Text.PlainText

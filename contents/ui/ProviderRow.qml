@@ -35,12 +35,12 @@ ColumnLayout {
         && providerData.source !== undefined ? String(providerData.source) : ""
     readonly property string providerText: providerValue.length > 0
         ? ProviderIcons.displayName(providerValue)
-        : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
+        : Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     readonly property string providerAccent: ProviderIcons.accent(root.providerValue)
     readonly property string accessibleState: root.displayedWindows.length > 0
         ? Translation.plural("%1 available usage window", "%1 available usage windows", root.displayedWindows.length,
-            typeof i18np === "function" ? i18np : null)
-        : Translation.translate("No usage windows available", [], typeof i18n === "function" ? i18n : null)
+            typeof i18np === "function" ? i18np : null, root.languagePreference)
+        : Translation.translate("No usage windows available", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     readonly property bool showHeaderDetails: !root.compact && !root.summary
     readonly property var paceByKey: root.showHeaderDetails
         ? ProviderDetailsLogic.paceSummaryByKey(root.providerData) : ({})
@@ -62,9 +62,9 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: root.summary ? Kirigami.Units.smallSpacing : Kirigami.Units.largeSpacing * 1.25
     Accessible.name: Translation.translate("%1 provider, %2", [providerText, accessibleState],
-        typeof i18n === "function" ? i18n : null)
+        typeof i18n === "function" ? i18n : null, root.languagePreference)
     Accessible.description: sourceValue.length > 0
-        ? Translation.translate("Source: %1", [sourceValue], typeof i18n === "function" ? i18n : null) : accessibleState
+        ? Translation.translate("Source: %1", [sourceValue], typeof i18n === "function" ? i18n : null, root.languagePreference) : accessibleState
 
     // Overview: icon column | name + bars. Only instantiated in summary mode.
     Loader {
@@ -116,6 +116,7 @@ ColumnLayout {
         id: providerDetails
         visible: root.showHeaderDetails && acceptedDetails.length > 0
         providerData: root.providerData
+        languagePreference: root.languagePreference
         Layout.fillWidth: true
     }
 
@@ -140,7 +141,7 @@ ColumnLayout {
                 Layout.alignment: Qt.AlignVCenter
                 Layout.leftMargin: Kirigami.Units.smallSpacing
                 Accessible.name: Translation.translate("%1 provider icon", [root.providerText],
-                    typeof i18n === "function" ? i18n : null)
+                    typeof i18n === "function" ? i18n : null, root.languagePreference)
             }
 
             ColumnLayout {
@@ -215,7 +216,7 @@ ColumnLayout {
                     && isFinite(root.creditsRemaining)
                     && root.creditsRemaining > 0
                 text: visible
-                    ? Translation.translate("Credits remaining: %1", [root.creditsRemaining], typeof i18n === "function" ? i18n : null)
+                    ? Translation.translate("Credits remaining: %1", [root.creditsRemaining], typeof i18n === "function" ? i18n : null, root.languagePreference)
                     : ""
                 color: Kirigami.Theme.disabledTextColor
                 wrapMode: Text.WordWrap

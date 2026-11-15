@@ -792,6 +792,12 @@ Item {
         assert(typeof headerParent.nowMs === "number" && headerParent.nowMs > 0,
                "ProviderHeader must expose a reactive nowMs timestamp property")
 
+        // Spanish languagePreference propagation to credits and details
+        customLabelPaceRow.languagePreference = "es"
+        assert(customLabelPaceRow.Accessible.name.indexOf("ventana") !== -1,
+               "ProviderRow accessible name must honor Spanish languagePreference")
+        customLabelPaceRow.languagePreference = "en"
+
     }
 
     Timer {

@@ -80,6 +80,16 @@ Item {
         assert(Translation.translate("Refresh", [], null, "es") === "Actualizar", "Refresh translates to Actualizar")
         assert(Translation.translate("Ready", [], null, "es") === "Listo", "Ready translates to Listo")
         assert(Translation.translate("Loading usage…", [], null, "es") === "Cargando uso…", "Loading usage translates to Cargando uso…")
+        assert(Translation.translate("Credits remaining: %1", [7], null, "es") === "Créditos restantes: 7",
+               "Credits remaining template translates to Spanish")
+        assert(Translation.translate("%1 credits expire %2", [2, "2026-12-01"], null, "es") === "2 créditos vencen 2026-12-01",
+               "credits expire template translates to Spanish")
+        assert(Translation.translate("Updated: %1", ["2026-08-01"], null, "es") === "Actualizado: 2026-08-01",
+               "Updated fallback template translates to Spanish")
+        assert(Translation.plural("Show %1 detail", "Show %1 details", 2, null, "es") === "Mostrar 2 detalles",
+               "Show details plural translates to Spanish")
+        assert(Translation.plural("Hide %1 detail", "Hide %1 details", 1, null, "es") === "Ocultar 1 detalle",
+               "Hide detail singular translates to Spanish")
 
         finish()
     }

@@ -84,7 +84,7 @@ ColumnLayout {
             wrapMode: Text.WordWrap
             color: Kirigami.Theme.disabledTextColor
             text: Translation.translate("%1 credits expire %2", [expiryDelegate.modelData.amount, expiryDelegate.modelData.expiresAt],
-                typeof i18n === "function" ? i18n : null)
+                typeof i18n === "function" ? i18n : null, root.languagePreference)
         }
     }
 }

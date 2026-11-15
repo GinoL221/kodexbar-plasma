@@ -92,13 +92,13 @@ ColumnLayout {
         font: windowLabel.font
         // "Monthly" is the longest of the standard Session/Weekly/Monthly
         // window labels; longer CLI-supplied labels still elide safely.
-        text: Translation.translate("Monthly", [], typeof i18n === "function" ? i18n : null)
+        text: Translation.translate("Monthly", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     }
 
     TextMetrics {
         id: percentColumnMetrics
         font: summaryPercentageLabel.font
-        text: Translation.translate("%1% used", [100], typeof i18n === "function" ? i18n : null)
+        text: Translation.translate("%1% used", [100], typeof i18n === "function" ? i18n : null, root.languagePreference)
     }
 
     function valueText(value) {
@@ -106,26 +106,26 @@ ColumnLayout {
     }
 
     Accessible.name: Translation.translate("%1 window", [root.valueText(root.windowData.label)],
-        typeof i18n === "function" ? i18n : null)
+        typeof i18n === "function" ? i18n : null, root.languagePreference)
     Accessible.description: {
         var details = []
         if (root.hasFinitePercent) {
             details.push(Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
-                typeof i18n === "function" ? i18n : null))
+                typeof i18n === "function" ? i18n : null, root.languagePreference))
             if (root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED) {
                 details.push(Translation.translate("Quota exhausted", [],
-                    typeof i18n === "function" ? i18n : null))
+                    typeof i18n === "function" ? i18n : null, root.languagePreference))
             } else if (root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL) {
                 details.push(Translation.translate("Critical usage", [],
-                    typeof i18n === "function" ? i18n : null))
+                    typeof i18n === "function" ? i18n : null, root.languagePreference))
             } else if (root.thresholdLevel === UsageThreshold.LEVEL_WARN) {
                 details.push(Translation.translate("Elevated usage", [],
-                    typeof i18n === "function" ? i18n : null))
+                    typeof i18n === "function" ? i18n : null, root.languagePreference))
             }
         }
         if (root.resetText.length > 0) {
             details.push(Translation.translate("Reset: %1", [root.resetText],
-                typeof i18n === "function" ? i18n : null))
+                typeof i18n === "function" ? i18n : null, root.languagePreference))
         }
         if (root.resetDescriptionText.length > 0) {
             details.push(root.resetDescriptionText)
@@ -190,7 +190,7 @@ ColumnLayout {
             readonly property real value: root.hasFinitePercent ? root.windowData.usedPercent : 0
             Accessible.role: Accessible.ProgressBar
             Accessible.name: Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
-                typeof i18n === "function" ? i18n : null)
+                typeof i18n === "function" ? i18n : null, root.languagePreference)
 
             Rectangle {
                 anchors.fill: parent
@@ -310,7 +310,7 @@ ColumnLayout {
             readonly property real value: root.hasFinitePercent ? root.windowData.usedPercent : 0
             Accessible.role: Accessible.ProgressBar
             Accessible.name: Translation.translate("%1% used", [Math.round(root.windowData.usedPercent)],
-                typeof i18n === "function" ? i18n : null)
+                typeof i18n === "function" ? i18n : null, root.languagePreference)
 
             Rectangle {
                 anchors.fill: parent

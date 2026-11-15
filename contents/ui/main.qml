@@ -112,7 +112,10 @@ PlasmoidItem {
             }
         }
         return root.controller.phase === "loading" || root.controller.phase === "idle"
-            ? i18n("Loading") : root.controller.phase === "error" ? i18n("Error") : i18n("No data")
+            ? Translation.translate("Loading", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+            : root.controller.phase === "error"
+                ? Translation.translate("Error", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+                : Translation.translate("No data", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     }
 
     function panelText() {
@@ -120,7 +123,10 @@ PlasmoidItem {
             return Math.round(root.cycledUsage.usedPercent) + "%"
         }
         return root.controller.phase === "loading" || root.controller.phase === "idle"
-            ? i18n("Loading") : root.controller.phase === "error" ? i18n("Error") : i18n("No data")
+            ? Translation.translate("Loading", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+            : root.controller.phase === "error"
+                ? Translation.translate("Error", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+                : Translation.translate("No data", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     }
 
     UsageController {
@@ -300,7 +306,7 @@ PlasmoidItem {
                      PlasmaComponents.Label {
                         visible: root.controller.phase === "noData" || root.controller.phase === "error"
                         text: root.controller.phase === "noData"
-                            ? i18n("No usage data available")
+                            ? Translation.translate("No usage data available", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
                             : root.controller.errorMessage
                         color: root.controller.phase === "error"
                             ? Kirigami.Theme.negativeTextColor

@@ -135,7 +135,7 @@ ColumnLayout {
         if (provider && provider.provider !== null && provider.provider !== undefined) {
             return ProviderIcons.displayName(provider.provider)
         }
-        return Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null)
+        return Translation.translate("Provider", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     }
 
     function _sourceText(provider) {
@@ -387,7 +387,7 @@ ColumnLayout {
                 focusPolicy: Qt.StrongFocus
                 Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
                 Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
-                Accessible.name: Translation.translate("Show previous providers", [], typeof i18n === "function" ? i18n : null)
+                Accessible.name: Translation.translate("Show previous providers", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
                 onClicked: root._scrollByTabs(-1)
             }
 
@@ -514,18 +514,18 @@ ColumnLayout {
                             padding: Kirigami.Units.smallSpacing
                             Accessible.role: Accessible.PageTab
                             Accessible.name: {
-                                var parts = [Translation.translate("%1 provider", [providerText], typeof i18n === "function" ? i18n : null)]
+                                var parts = [Translation.translate("%1 provider", [providerText], typeof i18n === "function" ? i18n : null, root.languagePreference)]
                                 if (percentText.length > 0) {
-                                    parts.push(Translation.translate("%1 used", [percentText], typeof i18n === "function" ? i18n : null))
+                                    parts.push(Translation.translate("%1 used", [percentText], typeof i18n === "function" ? i18n : null, root.languagePreference))
                                 }
                                 if (sourceText.length > 0) {
-                                    parts.push(Translation.translate("source %1", [sourceText], typeof i18n === "function" ? i18n : null))
+                                    parts.push(Translation.translate("source %1", [sourceText], typeof i18n === "function" ? i18n : null, root.languagePreference))
                                 }
                                 return parts.join(", ")
                             }
                             Accessible.description: sourceText.length > 0
-                                ? Translation.translate("Source: %1", [sourceText], typeof i18n === "function" ? i18n : null)
-                                : Translation.translate("No source provided", [], typeof i18n === "function" ? i18n : null)
+                                ? Translation.translate("Source: %1", [sourceText], typeof i18n === "function" ? i18n : null, root.languagePreference)
+                                : Translation.translate("No source provided", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
 
                             icon.source: root.iconResolver(providerData ? providerData.provider : null)
                             icon.color: Kirigami.Theme.textColor
@@ -657,7 +657,7 @@ ColumnLayout {
                 focusPolicy: Qt.StrongFocus
                 Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
                 Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
-                Accessible.name: Translation.translate("Show next providers", [], typeof i18n === "function" ? i18n : null)
+                Accessible.name: Translation.translate("Show next providers", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
                 onClicked: root._scrollByTabs(1)
             }
         }

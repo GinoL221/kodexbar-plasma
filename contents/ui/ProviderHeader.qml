@@ -60,7 +60,7 @@ RowLayout {
         implicitHeight: Kirigami.Units.iconSizes.smallMedium
         Layout.alignment: Qt.AlignVCenter
         Accessible.name: Translation.translate("%1 provider icon", [root.providerText],
-            typeof i18n === "function" ? i18n : null)
+            typeof i18n === "function" ? i18n : null, root.languagePreference)
     }
 
     ColumnLayout {
