@@ -26,8 +26,51 @@ function openDatabase(localStorageModule, dbName) {
     }
 }
 
+function cloneWithoutIdentityPii(obj) {
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+        return obj
+    }
+    var copy = {}
+    for (var key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            if (key === "accountEmail" || key === "accountOrganization") {
+                continue
+            }
+            copy[key] = obj[key]
+        }
+    }
+    return copy
+}
+
+function sanitizeProviderForStorage(provider) {
+    if (!provider || typeof provider !== "object") {
+        return provider
+    }
+    var sanitized = {}
+    for (var k in provider) {
+        if (Object.prototype.hasOwnProperty.call(provider, k)) {
+            sanitized[k] = provider[k]
+        }
+    }
+    if (provider.raw && typeof provider.raw === "object" && !Array.isArray(provider.raw)) {
+        var rawCopy = cloneWithoutIdentityPii(provider.raw)
+        if (rawCopy.identity && typeof rawCopy.identity === "object" && !Array.isArray(rawCopy.identity)) {
+            rawCopy.identity = cloneWithoutIdentityPii(rawCopy.identity)
+        }
+        if (rawCopy.usage && typeof rawCopy.usage === "object" && !Array.isArray(rawCopy.usage)) {
+            var usageCopy = cloneWithoutIdentityPii(rawCopy.usage)
+            if (usageCopy.identity && typeof usageCopy.identity === "object" && !Array.isArray(usageCopy.identity)) {
+                usageCopy.identity = cloneWithoutIdentityPii(usageCopy.identity)
+            }
+            rawCopy.usage = usageCopy
+        }
+        sanitized.raw = rawCopy
+    }
+    return sanitized
+}
+
 function save(localStorageModule, providers, dbName) {
-    var db, payload, savedAt
+    var db, payload, savedAt, sanitizedProviders, i
     if (!Array.isArray(providers) || providers.length === 0) {
         return false
     }
@@ -35,7 +78,11 @@ function save(localStorageModule, providers, dbName) {
     if (!db) {
         return false
     }
-    payload = JSON.stringify(providers)
+    sanitizedProviders = []
+    for (i = 0; i < providers.length; i++) {
+        sanitizedProviders.push(sanitizeProviderForStorage(providers[i]))
+    }
+    payload = JSON.stringify(sanitizedProviders)
     savedAt = Date.now()
     try {
         db.transaction(function(tx) {
@@ -136,6 +183,21 @@ function saveCost(localStorageModule, provider, costRecord, dbName) {
     }
 }
 
+function isFiniteNonNegative(value) {
+    return typeof value === "number" && isFinite(value) && value >= 0
+}
+
+function isValidCostRecord(record, expectedProvider) {
+    return record !== null
+        && typeof record === "object"
+        && !Array.isArray(record)
+        && record.provider === expectedProvider
+        && isFiniteNonNegative(record.sessionCostUSD)
+        && isFiniteNonNegative(record.sessionTokens)
+        && isFiniteNonNegative(record.last30DaysCostUSD)
+        && isFiniteNonNegative(record.last30DaysTokens)
+}
+
 // Returns { record, savedAt } for the provider's stored cost, or null. The
 // save time lets several widget instances share one CLI scan.
 function loadCostEntry(localStorageModule, provider, dbName) {
@@ -156,7 +218,7 @@ function loadCostEntry(localStorageModule, provider, dbName) {
                 var row = rs.rows.item(0)
                 if (typeof row.payload === "string" && row.payload.length > 0) {
                     var parsed = JSON.parse(row.payload)
-                    if (parsed && typeof parsed === "object" && parsed.provider === provider) {
+                    if (isValidCostRecord(parsed, provider)) {
                         result = { record: parsed, savedAt: Number(row.saved_at) }
                     }
                 }
@@ -190,7 +252,7 @@ function loadAllCosts(localStorageModule, dbName) {
                         var prov = item.id.substring(5)
                         try {
                             var parsed = JSON.parse(item.payload)
-                            if (parsed && typeof parsed === "object" && parsed.provider === prov) {
+                            if (isValidCostRecord(parsed, prov)) {
                                 costs[prov] = parsed
                             }
                         } catch (e) {}

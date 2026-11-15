@@ -22,7 +22,7 @@ codexbar / codexbar-nan CLI (stdout JSON)
    - `UsageModel.normalizeProvider` maps `primary` (`Session`), `secondary` (`Weekly`), and `tertiary` (`Monthly`) windows, applies `rateWindowLabels` overrides, and promotes scoped extra windows (Antigravity `gemini-argon` -> `Argon`; Claude `claude-weekly-scoped-fable` -> `Fable` on `tertiary`).
    - If a poll reports rate-limit errors, `RateLimitPolicy` retains previously committed provider data and stretches the next refresh delay exponentially.
 3. **Multi-instance SQLite persistence ([SnapshotStorage.js](../contents/code/SnapshotStorage.js)):**
-   - Stores the latest usage snapshot under `id = "latest"` and per-provider cost snapshots under `id = "cost:<provider>"` with `saved_at` timestamps.
+   - Scrubs `accountEmail` and `accountOrganization` from `provider.raw` before storing the latest usage snapshot under `id = "latest"`, and stores validated per-provider cost snapshots under `id = "cost:<provider>"` with `saved_at` timestamps.
    - Both `UsageController` and `CostController` hydrate from SQLite on `Component.onCompleted` so the panel and popup render immediately on cold start.
 4. **Bounded cost prefetch & cross-instance cache sharing ([CostController.qml](../contents/ui/CostController.qml), [CostRequestPolicy.js](../contents/code/CostRequestPolicy.js)):**
    - When `committedGeneration` advances, `main.qml` prefetches cost only for supported providers (`codex`, `claude`) targeted by that widget instance (`CostRequestPolicy.prefetchTargets(pinnedProvider, visibleIds)`).

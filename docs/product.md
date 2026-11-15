@@ -60,6 +60,6 @@ Defined in [main.xml](../contents/config/main.xml) and exposed in [configGeneral
 
 ## Privacy & Trust Boundaries
 
-- **UI redaction vs. SQLite cache:** `ProviderDetails.js` and `ProviderHeader.qml` filter sensitive free-form detail rows and keep raw email/organization strings off primary chrome. However, `SnapshotStorage.js` persists the normalized provider array—including `provider.raw` from the CLI—in local SQLite (`QtQuick.LocalStorage`). Treat the user's local XDG data directory as potentially sensitive.
+- **UI & SQLite redaction:** `ProviderDetails.js` and `ProviderHeader.qml` filter sensitive free-form detail rows and keep raw email/organization strings off primary chrome, and `SnapshotStorage.js` strips `accountEmail` and `accountOrganization` before persisting snapshots to local SQLite (`QtQuick.LocalStorage`) while validating cached cost numeric fields on read.
 - **Presentation filtering:** Adding a provider to `excludedProviders` hides it from the panel and popup (`ProviderFilterPolicy.js`), but `UsageController.qml` still runs a single `usage --format json --json-only` query and `NotificationController.qml` evaluates `committedProviders`.
 - **External NaN adapter:** [scripts/codexbar-nan](../scripts/codexbar-nan) reads `NAN_API_KEY` from the environment or `~/.config/codexbar/nan-api-key` (requiring `0600` permissions) and merges NaN Cloud quotas with upstream `codexbar` output.

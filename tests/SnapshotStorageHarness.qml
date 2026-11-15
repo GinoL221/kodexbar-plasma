@@ -160,6 +160,53 @@ Item {
         assert(allCosts["claude"].primaryModel === "claude-opus-5-5",
             "loadAllCosts must preserve model information")
 
+        // 10. PII redaction on save without mutating live in-memory raw object
+        var piiInput = [{
+            provider: "claude",
+            source: "oauth",
+            windows: [{ key: "primary", label: "Session", usedPercent: 20 }],
+            raw: {
+                accountEmail: "top@example.com",
+                accountOrganization: "Top Org",
+                usage: {
+                    accountEmail: "usage@example.com",
+                    accountOrganization: "Usage Org",
+                    updatedAt: "2026-11-15T00:00:00Z",
+                    identity: {
+                        accountEmail: "id@example.com",
+                        accountOrganization: "Id Org",
+                        loginMethod: "max"
+                    }
+                }
+            }
+        }]
+        assert(SnapshotStorage.save(LocalStorage.LocalStorage, piiInput, testDbName),
+            "save with PII provider must succeed")
+        assert(piiInput[0].raw.usage.identity.accountEmail === "id@example.com",
+            "save must not mutate the caller's live in-memory raw object")
+        var piiLoaded = SnapshotStorage.load(LocalStorage.LocalStorage, testDbName)
+        assert(piiLoaded.length === 1 && piiLoaded[0].raw.accountEmail === undefined
+            && piiLoaded[0].raw.accountOrganization === undefined
+            && piiLoaded[0].raw.usage.accountEmail === undefined
+            && piiLoaded[0].raw.usage.accountOrganization === undefined
+            && piiLoaded[0].raw.usage.identity.accountEmail === undefined
+            && piiLoaded[0].raw.usage.identity.accountOrganization === undefined
+            && piiLoaded[0].raw.usage.identity.loginMethod === "max"
+            && piiLoaded[0].raw.usage.updatedAt === "2026-11-15T00:00:00Z",
+            "stored snapshot must strip accountEmail and accountOrganization while preserving non-PII metadata")
+
+        // 11. Invalid numeric fields in cached cost record must fail closed on read
+        var invalidCostDb = "KodexBarInvalidCost_" + Date.now()
+        SnapshotStorage.saveCost(LocalStorage.LocalStorage, "claude", {
+            provider: "claude",
+            sessionCostUSD: -1,
+            sessionTokens: 100,
+            last30DaysCostUSD: 5,
+            last30DaysTokens: 100
+        }, invalidCostDb)
+        assert(SnapshotStorage.loadCost(LocalStorage.LocalStorage, "claude", invalidCostDb) === null,
+            "loadCost must reject cached records with negative or non-finite numeric fields")
+
         finish()
     }
 }

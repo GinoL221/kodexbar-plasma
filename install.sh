@@ -72,7 +72,7 @@ else
                 stty echo 2>/dev/null || true
                 printf '\n'
                 if [ -n "$nan_key" ]; then
-                    printf '%s\n' "$nan_key" > "$NAN_KEY_FILE"
+                    (umask 077 && printf '%s\n' "$nan_key" > "$NAN_KEY_FILE")
                     chmod 600 "$NAN_KEY_FILE"
                     printf '   ✓ Clave guardada de forma segura en %s\n' "$NAN_KEY_FILE"
                 else
