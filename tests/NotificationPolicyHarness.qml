@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/NotificationPolicy.js" as NotificationPolicy
+import "../contents/code/NotificationPolicy.mjs" as NotificationPolicy
 
 Item {
     id: root

@@ -1,21 +1,19 @@
-.pragma library
+export var WARN_AT = 70            // inclusive lower bound of "warn"
+export var CRITICAL_AT = 90        // inclusive lower bound of "critical"
+export var EXHAUSTED_AT = 100      // inclusive lower bound of "exhausted"
+export var LEVEL_NONE = ""         // non-finite or absent usedPercent
+export var LEVEL_OK = "ok"
+export var LEVEL_WARN = "warn"
+export var LEVEL_CRITICAL = "critical"
+export var LEVEL_EXHAUSTED = "exhausted"
 
-var WARN_AT = 70            // inclusive lower bound of "warn"
-var CRITICAL_AT = 90        // inclusive lower bound of "critical"
-var EXHAUSTED_AT = 100      // inclusive lower bound of "exhausted"
-var LEVEL_NONE = ""         // non-finite or absent usedPercent
-var LEVEL_OK = "ok"
-var LEVEL_WARN = "warn"
-var LEVEL_CRITICAL = "critical"
-var LEVEL_EXHAUSTED = "exhausted"
-
-function finiteNumber(value) {
+export function finiteNumber(value) {
     return typeof value === "number" && isFinite(value)
 }
 
 // any -> "" | "ok" | "warn" | "critical" | "exhausted". Bounds are
 // inclusive-lower / exclusive-upper; values are classified, never clamped.
-function level(usedPercent) {
+export function level(usedPercent) {
     if (!finiteNumber(usedPercent)) {
         return LEVEL_NONE
     }
@@ -32,6 +30,6 @@ function level(usedPercent) {
 }
 
 // string -> bool: warn, critical, or exhausted
-function isRisk(levelValue) {
+export function isRisk(levelValue) {
     return levelValue === LEVEL_WARN || levelValue === LEVEL_CRITICAL || levelValue === LEVEL_EXHAUSTED
 }

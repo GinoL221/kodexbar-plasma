@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/RefreshInterval.js" as RefreshInterval
+import "../contents/code/RefreshInterval.mjs" as RefreshInterval
 
 Item {
     property bool assertionFailed: false

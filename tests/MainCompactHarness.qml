@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls as QQC2
-import "../contents/code/UsageModel.js" as UsageModel
-import "../contents/code/ProviderCycle.js" as ProviderCycle
+import "../contents/code/UsageModel.mjs" as UsageModel
+import "../contents/code/ProviderCycle.mjs" as ProviderCycle
 import "../contents/ui" as UsageUi
 
 Item {

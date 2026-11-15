@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import "../contents/ui" as UsageUi
-import "../contents/code/ProviderDetails.js" as ProviderDetails
+import "../contents/code/ProviderDetails.mjs" as ProviderDetails
 
 Item {
     id: root

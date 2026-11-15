@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/RateLimitPolicy.js" as RateLimitPolicy
+import "../contents/code/RateLimitPolicy.mjs" as RateLimitPolicy
 
 Item {
     property bool assertionFailed: false

@@ -1,10 +1,8 @@
-.pragma library
-
-function shellQuote(value) {
+export function shellQuote(value) {
     return "'" + String(value).replace(/'/g, "'\\''") + "'"
 }
 
-function validateAbsolutePath(path) {
+export function validateAbsolutePath(path) {
     var value = String(path || "")
     if (value.indexOf("\n") !== -1 || value.indexOf("\r") !== -1) {
         return { valid: false, error: "The CodexBar CLI path cannot contain a line break." }
@@ -19,12 +17,12 @@ function validateAbsolutePath(path) {
     return { valid: true, error: "", path: value }
 }
 
-function pathCheckCommand(path) {
+export function pathCheckCommand(path) {
     var validation = validateAbsolutePath(path)
     return validation.valid ? "test -x " + shellQuote(validation.path) : ""
 }
 
-function discoveryCommand() {
+export function discoveryCommand() {
     return "if [ -n \"${HOME-}\" ] && [ \"${HOME#/}\" != \"$HOME\" ]; then "
         + "for candidate in \"$HOME/.local/bin/codexbar-nan\" \"$HOME/.local/bin/codexbar\"; do "
         + "if test -x \"$candidate\"; then printf '%s\\n' \"$candidate\"; exit 0; fi; done; fi; "

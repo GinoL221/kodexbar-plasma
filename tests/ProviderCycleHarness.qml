@@ -1,6 +1,6 @@
 import QtQuick
-import "../contents/code/ProviderCycle.js" as ProviderCycle
-import "../contents/code/UsageModel.js" as UsageModel
+import "../contents/code/ProviderCycle.mjs" as ProviderCycle
+import "../contents/code/UsageModel.mjs" as UsageModel
 
 Item {
     id: root

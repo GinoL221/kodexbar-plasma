@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/CostModel.js" as CostModel
+import "../contents/code/CostModel.mjs" as CostModel
 
 Item {
     property bool assertionFailed: false

@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/ProviderFilterPolicy.js" as ProviderFilterPolicy
+import "../contents/code/ProviderFilterPolicy.mjs" as ProviderFilterPolicy
 
 Item {
     id: root

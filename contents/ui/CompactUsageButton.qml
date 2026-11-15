@@ -6,7 +6,7 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/ProviderIcons.js" as ProviderIcons
+import "../code/ProviderIcons.mjs" as ProviderIcons
 
 QQC2.ToolButton {
     id: root

@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/ResetTimeFormatter.js" as ResetTimeFormatter
+import "../contents/code/ResetTimeFormatter.mjs" as ResetTimeFormatter
 
 Item {
     id: root

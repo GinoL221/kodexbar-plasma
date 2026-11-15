@@ -1,5 +1,5 @@
 import QtTest 1.3
-import "../contents/code/UsageModel.js" as UsageModel
+import "../contents/code/UsageModel.mjs" as UsageModel
 
 TestCase {
     name: "UsageModel"

@@ -6,9 +6,9 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/ProviderIcons.js" as ProviderIcons
-import "../code/Translation.js" as Translation
-import "../code/UsageModel.js" as UsageModel
+import "../code/ProviderIcons.mjs" as ProviderIcons
+import "../code/Translation.mjs" as Translation
+import "../code/UsageModel.mjs" as UsageModel
 
 ColumnLayout {
     id: root

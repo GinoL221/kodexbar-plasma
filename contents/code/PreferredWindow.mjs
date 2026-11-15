@@ -1,9 +1,7 @@
-.pragma library
+export var DEFAULT_KEY = "automatic"
+export var VALID_KEYS = ["automatic", "session", "weekly", "monthly"]
 
-var DEFAULT_KEY = "automatic"
-var VALID_KEYS = ["automatic", "session", "weekly", "monthly"]
-
-function parse(value) {
+export function parse(value) {
     if (typeof value !== "string") {
         return null
     }
@@ -15,7 +13,7 @@ function parse(value) {
     return null
 }
 
-function keyOrDefault(value) {
+export function keyOrDefault(value) {
     var parsed = parse(value)
     return parsed === null ? DEFAULT_KEY : parsed
 }

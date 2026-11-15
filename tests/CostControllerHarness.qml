@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.LocalStorage as LocalStorage
 import "../contents/ui" as UsageUi
-import "../contents/code/SnapshotStorage.js" as SnapshotStorage
+import "../contents/code/SnapshotStorage.mjs" as SnapshotStorage
 
 Item {
     id: root

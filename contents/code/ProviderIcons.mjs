@@ -1,6 +1,4 @@
-.pragma library
-
-var knownProviders = [
+export var knownProviders = [
     "abacus", "alibaba", "alibabatokenplan", "amp", "antigravity", "augment",
     "azureopenai", "bedrock", "claude", "codebuff", "codex", "commandcode",
     "copilot", "crof", "cursor", "deepgram", "deepseek", "devin", "doubao",
@@ -11,14 +9,14 @@ var knownProviders = [
     "windsurf", "zai"
 ]
 
-function key(value) {
+export function key(value) {
     var normalized = String(value || "").toLowerCase()
     return knownProviders.indexOf(normalized) !== -1 ? normalized : ""
 }
 
 // Known multi-word / brand spellings. Keys are lowercase CLI provider ids.
 // Unlisted ids fall back to a single leading capital (codex → Codex).
-var displayNames = {
+export var displayNames = {
     "alibabatokenplan": "Alibaba Token Plan",
     "azureopenai": "Azure OpenAI",
     "commandcode": "Command Code",
@@ -34,7 +32,7 @@ var displayNames = {
     "vertexai": "Vertex AI"
 }
 
-function displayName(value) {
+export function displayName(value) {
     if (value === null || value === undefined) {
         return ""
     }
@@ -52,7 +50,7 @@ function displayName(value) {
 // Limited brand accents for tab underline + usage bar fill only.
 // Empty string → call site uses Kirigami.Theme.highlightColor.
 // Tokens are #rrggbb chosen for legibility on both Breeze Light and Dark tracks.
-var accents = {
+export var accents = {
     "antigravity": "#3186FF",
     "claude": "#D97757",
     "codex": "#2AA8A0",
@@ -74,7 +72,7 @@ var accents = {
     "vertexai": "#34A853"
 }
 
-function accent(value) {
+export function accent(value) {
     var k = key(value)
     if (k.length === 0) {
         return ""
@@ -85,9 +83,9 @@ function accent(value) {
     return ""
 }
 
-var defaultOrderCandidates = ["codex", "claude", "antigravity", "grok", "nan"]
+export var defaultOrderCandidates = ["codex", "claude", "antigravity", "grok", "nan"]
 
-function pinnedProviderKeys() {
+export function pinnedProviderKeys() {
     var keys = [""]
     var i
     for (i = 0; i < defaultOrderCandidates.length; i++) {
@@ -101,7 +99,7 @@ function pinnedProviderKeys() {
     return keys
 }
 
-function pinnedProviderLabels(allProvidersLabel) {
+export function pinnedProviderLabels(allProvidersLabel) {
     var keys = pinnedProviderKeys()
     var labels = []
     for (var i = 0; i < keys.length; i++) {

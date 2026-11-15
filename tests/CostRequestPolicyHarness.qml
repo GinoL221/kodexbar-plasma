@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/CostRequestPolicy.js" as CostRequestPolicy
+import "../contents/code/CostRequestPolicy.mjs" as CostRequestPolicy
 
 Item {
     property bool assertionFailed: false

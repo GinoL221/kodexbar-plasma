@@ -33,15 +33,15 @@ def write_fixture_tree(root, providers, svg_files):
     js_dir = root / "contents/code"
     js_dir.mkdir(parents=True, exist_ok=True)
     array = ",\n    ".join('"%s"' % name for name in providers)
-    (js_dir / "ProviderIcons.js").write_text(
-        ".pragma library\n\nvar knownProviders = [\n    %s\n]\n" % array,
+    (js_dir / "ProviderIcons.mjs").write_text(
+        "export var knownProviders = [\n    %s\n]\n" % array,
         encoding="utf-8",
     )
     svg_dir = root / "contents/icons/providers"
     svg_dir.mkdir(parents=True, exist_ok=True)
     for name, content in svg_files.items():
         (svg_dir / ("%s.svg" % name)).write_text(content, encoding="utf-8")
-    return js_dir / "ProviderIcons.js", svg_dir
+    return js_dir / "ProviderIcons.mjs", svg_dir
 
 
 class CheckerUnitTest(unittest.TestCase):

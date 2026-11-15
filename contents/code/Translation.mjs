@@ -1,8 +1,6 @@
-.pragma library
+import * as SpanishDictionary from "./SpanishDictionary.mjs"
 
-.import "SpanishDictionary.js" as SpanishDictionary
-
-function isSpanishActive(languagePreference) {
+export function isSpanishActive(languagePreference) {
     if (languagePreference === "es") {
         return true
     }
@@ -22,7 +20,7 @@ function isSpanishActive(languagePreference) {
     return false
 }
 
-function substitute(text, argumentsList) {
+export function substitute(text, argumentsList) {
     var values = argumentsList instanceof Array ? argumentsList : []
     return String(text).replace(/%([1-9][0-9]*)/g, function(match, index) {
         var valueIndex = Number(index) - 1
@@ -31,7 +29,7 @@ function substitute(text, argumentsList) {
     })
 }
 
-function translate(text, argumentsList, translator, languagePreference) {
+export function translate(text, argumentsList, translator, languagePreference) {
     var values = argumentsList instanceof Array ? argumentsList : []
     if (isSpanishActive(languagePreference)) {
         var esText = SpanishDictionary.translateTerm(text)
@@ -42,21 +40,21 @@ function translate(text, argumentsList, translator, languagePreference) {
     return substitute(translated, values)
 }
 
-function translateReset(text, languagePreference) {
+export function translateReset(text, languagePreference) {
     if (isSpanishActive(languagePreference)) {
         return SpanishDictionary.translateDuration(text)
     }
     return text
 }
 
-function translatePace(text, languagePreference) {
+export function translatePace(text, languagePreference) {
     if (isSpanishActive(languagePreference)) {
         return SpanishDictionary.translatePace(text)
     }
     return text
 }
 
-function plural(singular, pluralText, count, pluralizer, languagePreference) {
+export function plural(singular, pluralText, count, pluralizer, languagePreference) {
     if (isSpanishActive(languagePreference)) {
         var template = count === 1 ? singular : pluralText
         var esTemplate = SpanishDictionary.translateTerm(template)

@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/Translation.js" as Translation
+import "../code/Translation.mjs" as Translation
 
 // Read-only, pinned popup footer: the controller's current phase/status
 // only. No provider/error count, no last-updated timestamp (that is

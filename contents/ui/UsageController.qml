@@ -4,10 +4,10 @@ import QtQuick
 import QtQuick.LocalStorage as LocalStorage
 import org.kde.plasma.plasma5support as Plasma5Support
 
-import "../code/UsageModel.js" as UsageModel
-import "../code/RateLimitPolicy.js" as RateLimitPolicy
-import "../code/CodexBarPathResolver.js" as PathResolver
-import "../code/SnapshotStorage.js" as SnapshotStorage
+import "../code/UsageModel.mjs" as UsageModel
+import "../code/RateLimitPolicy.mjs" as RateLimitPolicy
+import "../code/CodexBarPathResolver.mjs" as PathResolver
+import "../code/SnapshotStorage.mjs" as SnapshotStorage
 
 Item {
     id: root

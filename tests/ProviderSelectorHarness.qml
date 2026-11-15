@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import "../contents/ui" as UsageUi
-import "../contents/code/ProviderIcons.js" as ProviderIcons
+import "../contents/code/ProviderIcons.mjs" as ProviderIcons
 
 Item {
     id: root

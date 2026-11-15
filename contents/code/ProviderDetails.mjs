@@ -1,14 +1,12 @@
-.pragma library
-
-function isNonEmptyString(value) {
+export function isNonEmptyString(value) {
     return typeof value === "string" && value.length > 0
 }
 
-function rawValue(object, key) {
+export function rawValue(object, key) {
     return Object.prototype.hasOwnProperty.call(object, key) ? object[key] : null
 }
 
-function normalizeWords(text) {
+export function normalizeWords(text) {
     if (!isNonEmptyString(text)) {
         return []
     }
@@ -37,13 +35,13 @@ function normalizeWords(text) {
     return result
 }
 
-var emailAddressPattern = /[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+/i
+export var emailAddressPattern = /[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+/i
 
-function containsEmailAddress(text) {
+export function containsEmailAddress(text) {
     return isNonEmptyString(text) && emailAddressPattern.test(text)
 }
 
-var excludedWords = {
+export var excludedWords = {
     "email": true,
     "organization": true,
     "organisation": true,
@@ -56,7 +54,7 @@ var excludedWords = {
     "tokens": true
 }
 
-function containsExcludedWord(words) {
+export function containsExcludedWord(words) {
     for (var i = 0; i < words.length; i++) {
         if (excludedWords[words[i]]) {
             return true
@@ -65,7 +63,7 @@ function containsExcludedWord(words) {
     return false
 }
 
-function isRejectedText(text) {
+export function isRejectedText(text) {
     // Bare email addresses (e.g. "help@example.com") normalize to separate
     // words once "@"/"." are stripped, so they must be matched against the
     // original text before word-normalization discards those characters.
@@ -88,7 +86,7 @@ function isRejectedText(text) {
     return false
 }
 
-function isValidRow(row) {
+export function isValidRow(row) {
     if (!row || typeof row !== "object" || row instanceof Array) {
         return false
     }
@@ -108,7 +106,7 @@ function isValidRow(row) {
     return true
 }
 
-function isValidDetail(detail) {
+export function isValidDetail(detail) {
     if (!detail || typeof detail !== "object" || detail instanceof Array) {
         return null
     }
@@ -139,7 +137,7 @@ function isValidDetail(detail) {
     }
 }
 
-function validVersion(providerData) {
+export function validVersion(providerData) {
     if (!providerData || typeof providerData !== "object" || providerData instanceof Array) {
         return ""
     }
@@ -151,7 +149,7 @@ function validVersion(providerData) {
     return isNonEmptyString(version) ? version : ""
 }
 
-function validLoginMethod(providerData) {
+export function validLoginMethod(providerData) {
     if (!providerData || typeof providerData !== "object" || providerData instanceof Array) {
         return ""
     }
@@ -175,12 +173,12 @@ function validLoginMethod(providerData) {
 // Identity fields prefer `usage.identity`, then the documented `usage`-level
 // fallback observed in the real committed CLI fixture.
 
-var uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-var hexLikePattern = /^[0-9a-f]{16,}$/i
-var opaqueTokenPattern = /^[A-Za-z0-9_-]{20,}$/
-var anchoredEmailPattern = new RegExp("^" + emailAddressPattern.source + "$", "i")
+export var uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+export var hexLikePattern = /^[0-9a-f]{16,}$/i
+export var opaqueTokenPattern = /^[A-Za-z0-9_-]{20,}$/
+export var anchoredEmailPattern = new RegExp("^" + emailAddressPattern.source + "$", "i")
 
-function rawUsage(providerData) {
+export function rawUsage(providerData) {
     if (!providerData || typeof providerData !== "object" || providerData instanceof Array) {
         return null
     }
@@ -192,7 +190,7 @@ function rawUsage(providerData) {
     return usage && typeof usage === "object" && !(usage instanceof Array) ? usage : null
 }
 
-function rawTopLevel(providerData) {
+export function rawTopLevel(providerData) {
     if (!providerData || typeof providerData !== "object" || providerData instanceof Array) {
         return null
     }
@@ -200,7 +198,7 @@ function rawTopLevel(providerData) {
     return raw && typeof raw === "object" && !(raw instanceof Array) ? raw : null
 }
 
-function identityValue(usage, key) {
+export function identityValue(usage, key) {
     if (!usage) {
         return null
     }
@@ -215,16 +213,16 @@ function identityValue(usage, key) {
     return isNonEmptyString(fromUsage) ? fromUsage : null
 }
 
-function validEmail(providerData) {
+export function validEmail(providerData) {
     var email = identityValue(rawUsage(providerData), "accountEmail")
     return email !== null && anchoredEmailPattern.test(email) ? email : ""
 }
 
-function looksOpaque(text) {
+export function looksOpaque(text) {
     return uuidPattern.test(text) || hexLikePattern.test(text) || opaqueTokenPattern.test(text)
 }
 
-function validOrganization(providerData) {
+export function validOrganization(providerData) {
     var organization = identityValue(rawUsage(providerData), "accountOrganization")
     if (organization === null || containsEmailAddress(organization) || looksOpaque(organization)) {
         return ""
@@ -232,13 +230,13 @@ function validOrganization(providerData) {
     return organization
 }
 
-function validUpdatedAt(providerData) {
+export function validUpdatedAt(providerData) {
     var usage = rawUsage(providerData)
     var updatedAt = usage ? rawValue(usage, "updatedAt") : null
     return isNonEmptyString(updatedAt) ? updatedAt : ""
 }
 
-var paceWindowDefinitions = [
+export var paceWindowDefinitions = [
     { key: "primary", label: "Session" },
     { key: "secondary", label: "Weekly" },
     { key: "tertiary", label: "Monthly" }
@@ -248,7 +246,7 @@ var paceWindowDefinitions = [
 // Monthly, keyed by label so callers can attach a pace summary onto the
 // matching usage window. Entries without a human-readable summary are
 // omitted -- never fabricated.
-function paceSummaryByLabel(providerData) {
+export function paceSummaryByLabel(providerData) {
     var raw = rawTopLevel(providerData)
     var pace = raw ? rawValue(raw, "pace") : null
     var result = {}
@@ -265,7 +263,7 @@ function paceSummaryByLabel(providerData) {
     return result
 }
 
-function paceSummaryByKey(providerData) {
+export function paceSummaryByKey(providerData) {
     var raw = rawTopLevel(providerData)
     var pace = raw ? rawValue(raw, "pace") : null
     var result = {}
@@ -282,11 +280,11 @@ function paceSummaryByKey(providerData) {
     return result
 }
 
-function isFiniteNonNegative(value) {
+export function isFiniteNonNegative(value) {
     return typeof value === "number" && isFinite(value) && value >= 0
 }
 
-function validCreditsRemaining(providerData) {
+export function validCreditsRemaining(providerData) {
     var raw = rawTopLevel(providerData)
     var credits = raw ? rawValue(raw, "credits") : null
     if (!credits || typeof credits !== "object" || credits instanceof Array) {
@@ -296,7 +294,7 @@ function validCreditsRemaining(providerData) {
     return isFiniteNonNegative(remaining) ? remaining : null
 }
 
-function validResetCreditEntry(entry) {
+export function validResetCreditEntry(entry) {
     if (!entry || typeof entry !== "object" || entry instanceof Array) {
         return null
     }
@@ -311,7 +309,7 @@ function validResetCreditEntry(entry) {
 // Returns { availableCount, credits: [{amount, expiresAt}] } only when a
 // structurally valid, positive reset-credit inventory exists; otherwise null
 // so the whole section is omitted rather than shown with a placeholder.
-function validResetCredits(providerData) {
+export function validResetCredits(providerData) {
     var usage = rawUsage(providerData)
     var reset = usage ? rawValue(usage, "codexResetCredits") : null
     if (!reset || typeof reset !== "object" || reset instanceof Array) {
@@ -334,7 +332,7 @@ function validResetCredits(providerData) {
     return { availableCount: availableCount, credits: accepted }
 }
 
-function acceptedDetails(providerData) {
+export function acceptedDetails(providerData) {
     if (!providerData || typeof providerData !== "object" || providerData instanceof Array) {
         return []
     }

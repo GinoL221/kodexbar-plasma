@@ -5,10 +5,10 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/ProviderDetails.js" as ProviderDetailsLogic
-import "../code/ProviderIcons.js" as ProviderIcons
-import "../code/RelativeTime.js" as RelativeTime
-import "../code/Translation.js" as Translation
+import "../code/ProviderDetails.mjs" as ProviderDetailsLogic
+import "../code/ProviderIcons.mjs" as ProviderIcons
+import "../code/RelativeTime.mjs" as RelativeTime
+import "../code/Translation.mjs" as Translation
 
 // Detail header hierarchy (reference IA): name + updated left, plan/login
 // badge right. Version/email/org stay off the primary chrome (noise/PII);

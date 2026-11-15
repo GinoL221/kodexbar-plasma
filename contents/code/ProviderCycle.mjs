@@ -1,10 +1,8 @@
-.pragma library
-
 /**
  * Pure policy for cycling active providers via mouse scroll or keyboard.
  */
 
-function nextIndex(currentIndex, delta, totalCount) {
+export function nextIndex(currentIndex, delta, totalCount) {
     if (typeof totalCount !== "number" || totalCount <= 1) {
         return 0
     }
@@ -17,7 +15,7 @@ function nextIndex(currentIndex, delta, totalCount) {
     return cur
 }
 
-function buildCycleTargets(providers, displayNameFn) {
+export function buildCycleTargets(providers, displayNameFn) {
     var targets = [
         {
             id: "all",
@@ -43,7 +41,7 @@ function buildCycleTargets(providers, displayNameFn) {
     return targets
 }
 
-function buildAllSummaryTooltip(providers, preferredWindowKey, selectRepresentativeFn, displayNameFn) {
+export function buildAllSummaryTooltip(providers, preferredWindowKey, selectRepresentativeFn, displayNameFn) {
     var list = Array.isArray(providers) ? providers : []
     var winFn = typeof selectRepresentativeFn === "function" ? selectRepresentativeFn : null
     var getName = typeof displayNameFn === "function" ? displayNameFn : function(id) { return id || "" }
@@ -65,7 +63,7 @@ function buildAllSummaryTooltip(providers, preferredWindowKey, selectRepresentat
     return lines.join("\n")
 }
 
-function resolveCycledUsage(targets, index, preferredWindowKey, selectCompactFn, selectRepresentativeFn, displayNameFn) {
+export function resolveCycledUsage(targets, index, preferredWindowKey, selectCompactFn, selectRepresentativeFn, displayNameFn) {
     var list = Array.isArray(targets) && targets.length > 0 ? targets : [{ id: "all", name: "All", isAll: true, providerData: null }]
     var safeIdx = (index >= 0 && index < list.length) ? index : 0
     var target = list[safeIdx]
@@ -108,7 +106,7 @@ function resolveCycledUsage(targets, index, preferredWindowKey, selectCompactFn,
     }
 }
 
-function resolvePinnedUsage(pinnedProvider, targets, preferredWindowKey, selectRepresentativeFn, displayNameFn) {
+export function resolvePinnedUsage(pinnedProvider, targets, preferredWindowKey, selectRepresentativeFn, displayNameFn) {
     var id = typeof pinnedProvider === "string" ? pinnedProvider.trim() : ""
     var getName = typeof displayNameFn === "function" ? displayNameFn : function(val) { return val || "" }
     var list = Array.isArray(targets) ? targets : []

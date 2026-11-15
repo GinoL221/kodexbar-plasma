@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/UsageModel.js" as UsageModel
+import "../contents/code/UsageModel.mjs" as UsageModel
 
 Item {
     property bool assertionFailed: false

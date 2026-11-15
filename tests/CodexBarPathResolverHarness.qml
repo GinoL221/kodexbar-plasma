@@ -1,6 +1,6 @@
 import QtQuick
 import org.kde.plasma.plasma5support as Plasma5Support
-import "../contents/code/CodexBarPathResolver.js" as Resolver
+import "../contents/code/CodexBarPathResolver.mjs" as Resolver
 
 Item {
     id: root

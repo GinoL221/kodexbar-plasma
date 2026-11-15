@@ -5,10 +5,10 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/UsageModel.js" as UsageModel
-import "../code/ProviderIcons.js" as ProviderIcons
-import "../code/ProviderDetails.js" as ProviderDetailsLogic
-import "../code/Translation.js" as Translation
+import "../code/UsageModel.mjs" as UsageModel
+import "../code/ProviderIcons.mjs" as ProviderIcons
+import "../code/ProviderDetails.mjs" as ProviderDetailsLogic
+import "../code/Translation.mjs" as Translation
 
 ColumnLayout {
     id: root

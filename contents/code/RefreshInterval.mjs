@@ -1,6 +1,4 @@
-.pragma library
-
-function parse(value) {
+export function parse(value) {
     return typeof value === "number"
         && isFinite(value)
         && Math.floor(value) === value
@@ -10,12 +8,12 @@ function parse(value) {
         : null
 }
 
-function valueOrDefault(value, fallback) {
+export function valueOrDefault(value, fallback) {
     var parsed = parse(value)
     return parsed === null ? fallback : parsed
 }
 
-function correctionGuidance(value) {
+export function correctionGuidance(value) {
     return parse(value) === null
         ? "Enter a whole number from 1 to 3600 seconds. Invalid values are restored to the configured default."
         : ""

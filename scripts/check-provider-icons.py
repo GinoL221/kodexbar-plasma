@@ -84,7 +84,7 @@ def _is_banned(value):
 
 
 def parse_known_providers(js_path):
-    """Parse the `knownProviders` string array out of ProviderIcons.js."""
+    """Parse the `knownProviders` string array out of ProviderIcons.mjs (or .js)."""
     text = js_path.read_text(encoding="utf-8")
     match = re.search(r"knownProviders\s*=\s*\[(.*?)\]", text, re.S)
     if not match:
@@ -212,7 +212,9 @@ def check_distinctness(svg_paths, sanctioned_duplicates):
 
 
 def run_checks(repo_root):
-    js_path = repo_root / "contents" / "code" / "ProviderIcons.js"
+    code_dir = repo_root / "contents" / "code"
+    mjs_path = code_dir / "ProviderIcons.mjs"
+    js_path = mjs_path if mjs_path.is_file() else code_dir / "ProviderIcons.js"
     svg_dir = repo_root / "contents" / "icons" / "providers"
     known_providers = parse_known_providers(js_path)
     svg_paths = sorted(svg_dir.glob("*.svg"))

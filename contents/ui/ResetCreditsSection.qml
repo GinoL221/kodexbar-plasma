@@ -6,8 +6,8 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/ProviderDetails.js" as ProviderDetailsLogic
-import "../code/Translation.js" as Translation
+import "../code/ProviderDetails.mjs" as ProviderDetailsLogic
+import "../code/Translation.mjs" as Translation
 
 // Reset-credit availability, shown only when a positive, structurally valid
 // inventory exists. The expiry list is an expandable, keyboard-reachable

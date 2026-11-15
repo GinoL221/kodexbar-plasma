@@ -1,10 +1,8 @@
-.pragma library
-
 /**
  * Static Spanish dictionary for KodexBar Plasma localization.
  */
 
-var DICTIONARY = {
+export var DICTIONARY = {
     // Windows
     "Session": "Sesión",
     "Weekly": "Semanal",
@@ -127,7 +125,7 @@ var DICTIONARY = {
     "Move down": "Bajar"
 }
 
-function translateTerm(term) {
+export function translateTerm(term) {
     if (!term || typeof term !== "string") {
         return term
     }
@@ -137,7 +135,7 @@ function translateTerm(term) {
 /**
  * Translates dynamic duration strings such as "Resets in 2h 53m", "2 hours, 20 minutes", "tomorrow, 12:45 AM"
  */
-function translateDuration(text) {
+export function translateDuration(text) {
     if (typeof text !== "string" || text.length === 0) {
         return text
     }
@@ -173,7 +171,7 @@ function translateDuration(text) {
 /**
  * Normalizes compact CLI duration units: "1h 57m" -> "1 h 57 min", "3d 22h" -> "3 d 22 h"
  */
-function formatDurationUnits(duration) {
+export function formatDurationUnits(duration) {
     var normalized = duration
     normalized = normalized.replace(/(\d+)\s*d\b/g, "$1 d")
     normalized = normalized.replace(/(\d+)\s*h\b/g, "$1 h")
@@ -184,7 +182,7 @@ function formatDurationUnits(duration) {
 /**
  * Translates pace summary text such as "43% in reserve | Expected 75% used | Lasts until reset"
  */
-function translatePace(text) {
+export function translatePace(text) {
     if (typeof text !== "string" || text.length === 0) {
         return text
     }

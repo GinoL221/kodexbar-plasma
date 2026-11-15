@@ -162,6 +162,17 @@ class BaselineTest(unittest.TestCase):
         wrapper = (Path(__file__).parents[1] / "scripts/lint-qml.sh").read_text(encoding="utf-8")
         self.assertIn("check-qml-unqualified-baseline.py", wrapper)
 
+    def test_code_modules_use_standard_mjs_without_pragma_library(self):
+        code_dir = Path(__file__).parents[1] / "contents/code"
+        js_files = sorted(path.name for path in code_dir.glob("*.js"))
+        mjs_files = sorted(path.name for path in code_dir.glob("*.mjs"))
+        self.assertEqual(js_files, [], "contents/code must not use legacy .js files with .pragma library")
+        self.assertGreaterEqual(len(mjs_files), 20)
+        for path in code_dir.glob("*.mjs"):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn(".pragma library", text)
+            self.assertNotIn(".import ", text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,9 +1,7 @@
-.pragma library
-
 /**
  * Triggers the Plasma applet configuration dialog across Plasma 6 versions.
  */
-function triggerConfigure(plasmoidObj) {
+export function triggerConfigure(plasmoidObj) {
     if (!plasmoidObj) {
         return false
     }

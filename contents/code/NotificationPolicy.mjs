@@ -1,11 +1,9 @@
-.pragma library
-
 // Policy for user-facing quota threshold notifications in KDE Plasma.
 // Pure helper: decides when quota transitions require an alert (escalation to
 // critical/exhausted levels or entering rate-limit backoff) and constructs
 // human-scannable notification payloads without spamming across steady polls.
 
-function levelRank(level) {
+export function levelRank(level) {
     if (level === "exhausted") {
         return 4
     }
@@ -21,7 +19,7 @@ function levelRank(level) {
     return 0
 }
 
-function shouldNotifyQuota(previousLevel, currentLevel) {
+export function shouldNotifyQuota(previousLevel, currentLevel) {
     var prevRank = levelRank(previousLevel)
     var currRank = levelRank(currentLevel)
     // Only notify on upward escalation into critical (>=90%) or exhausted (>=100%)
@@ -31,13 +29,13 @@ function shouldNotifyQuota(previousLevel, currentLevel) {
     return currRank > prevRank
 }
 
-function shouldNotifyRateLimit(previousConsecutive, currentConsecutive) {
+export function shouldNotifyRateLimit(previousConsecutive, currentConsecutive) {
     var prev = typeof previousConsecutive === "number" && isFinite(previousConsecutive) ? previousConsecutive : 0
     var curr = typeof currentConsecutive === "number" && isFinite(currentConsecutive) ? currentConsecutive : 0
     return prev === 0 && curr === 1
 }
 
-function buildQuotaNotification(providerDisplayName, windowLabel, usedPercent, resetDescription) {
+export function buildQuotaNotification(providerDisplayName, windowLabel, usedPercent, resetDescription) {
     var isExhausted, title, text, resetSuffix, percent
     percent = Math.round(usedPercent)
     isExhausted = percent >= 100
@@ -60,7 +58,7 @@ function buildQuotaNotification(providerDisplayName, windowLabel, usedPercent, r
     }
 }
 
-function buildRateLimitNotification(providerDisplayName, retryMinutes) {
+export function buildRateLimitNotification(providerDisplayName, retryMinutes) {
     var minutes = typeof retryMinutes === "number" && isFinite(retryMinutes) && retryMinutes > 0
         ? Math.round(retryMinutes) : 2
     return {
@@ -71,7 +69,7 @@ function buildRateLimitNotification(providerDisplayName, retryMinutes) {
     }
 }
 
-function evaluateTransitions(previousState, providers, rateLimitedIds, consecutiveRateLimits, retryMinutes, displayNameFn) {
+export function evaluateTransitions(previousState, providers, rateLimitedIds, consecutiveRateLimits, retryMinutes, displayNameFn) {
     var prev = previousState && typeof previousState === "object" ? previousState : {}
     var next = {}
     var notifications = []

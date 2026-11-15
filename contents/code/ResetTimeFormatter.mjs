@@ -1,8 +1,6 @@
-.pragma library
+import * as Translation from "./Translation.mjs"
 
-.import "Translation.js" as Translation
-
-var MONTH_MAP = {
+export var MONTH_MAP = {
     jan: 0, january: 0,
     feb: 1, february: 1,
     mar: 2, march: 2,
@@ -17,7 +15,7 @@ var MONTH_MAP = {
     dec: 11, december: 11
 }
 
-function parseDuration(text) {
+export function parseDuration(text) {
     if (typeof text !== "string") {
         return null
     }
@@ -58,7 +56,7 @@ function parseDuration(text) {
     }
 }
 
-function parseDate(text, nowMs) {
+export function parseDate(text, nowMs) {
     if (typeof text !== "string") {
         return null
     }
@@ -146,7 +144,7 @@ function parseDate(text, nowMs) {
     return null
 }
 
-function formatCountdown(days, hours, minutes, isLessThanOneMinute, isSpanish) {
+export function formatCountdown(days, hours, minutes, isLessThanOneMinute, isSpanish) {
     if (isLessThanOneMinute) {
         return isSpanish ? "Se reinicia en < 1 min" : "Resets in < 1m"
     }
@@ -165,7 +163,7 @@ function formatCountdown(days, hours, minutes, isLessThanOneMinute, isSpanish) {
         : "Resets in " + minutes + "m"
 }
 
-function formatCountdownFromDiff(diffMs, isSpanish) {
+export function formatCountdownFromDiff(diffMs, isSpanish) {
     if (diffMs <= 0) {
         return ""
     }
@@ -181,7 +179,7 @@ function formatCountdownFromDiff(diffMs, isSpanish) {
     return formatCountdown(days, hours, minutes, false, isSpanish)
 }
 
-function formatResetText(resetsAt, resetDescription, nowMs, languagePreference) {
+export function formatResetText(resetsAt, resetDescription, nowMs, languagePreference) {
     var effectiveNowMs = (typeof nowMs === "number" && !isNaN(nowMs) && nowMs > 0)
         ? nowMs : Date.now()
     var isSpanish = Translation.isSpanishActive(languagePreference)

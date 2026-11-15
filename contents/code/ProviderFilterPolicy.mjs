@@ -1,11 +1,9 @@
-.pragma library
-
 /**
  * Pure policy for parsing excluded provider IDs, filtering provider lists,
  * and applying custom user-defined provider ordering.
  */
 
-function parseExcluded(rawString) {
+export function parseExcluded(rawString) {
     if (typeof rawString !== "string" || rawString.trim().length === 0) {
         return []
     }
@@ -20,11 +18,11 @@ function parseExcluded(rawString) {
     return result
 }
 
-function parseOrder(rawString) {
+export function parseOrder(rawString) {
     return parseExcluded(rawString)
 }
 
-function serializeOrder(orderList) {
+export function serializeOrder(orderList) {
     if (!Array.isArray(orderList) || orderList.length === 0) {
         return ""
     }
@@ -38,7 +36,7 @@ function serializeOrder(orderList) {
     return clean.join(", ")
 }
 
-function isVisible(providerId, excludedList) {
+export function isVisible(providerId, excludedList) {
     if (!providerId || typeof providerId !== "string") {
         return false
     }
@@ -46,7 +44,7 @@ function isVisible(providerId, excludedList) {
     return list.indexOf(providerId.toLowerCase()) === -1
 }
 
-function filterProviders(providers, excludedInput) {
+export function filterProviders(providers, excludedInput) {
     var list = Array.isArray(providers) ? providers : []
     var excluded = Array.isArray(excludedInput) ? excludedInput : parseExcluded(excludedInput)
     if (excluded.length === 0) {
@@ -64,7 +62,7 @@ function filterProviders(providers, excludedInput) {
     return visible
 }
 
-function sortProviders(providers, orderInput) {
+export function sortProviders(providers, orderInput) {
     var list = Array.isArray(providers) ? providers : []
     var order = Array.isArray(orderInput) ? orderInput : parseOrder(orderInput)
     if (order.length === 0 || list.length <= 1) {
@@ -95,11 +93,11 @@ function sortProviders(providers, orderInput) {
     return sorted
 }
 
-function filterAndSortProviders(providers, excludedInput, orderInput) {
+export function filterAndSortProviders(providers, excludedInput, orderInput) {
     return sortProviders(filterProviders(providers, excludedInput), orderInput)
 }
 
-function effectiveOrderList(currentIds, orderInput) {
+export function effectiveOrderList(currentIds, orderInput) {
     var order = Array.isArray(orderInput) ? orderInput.slice() : parseOrder(orderInput)
     var current = Array.isArray(currentIds) ? currentIds : []
     var combined = []
@@ -118,7 +116,7 @@ function effectiveOrderList(currentIds, orderInput) {
     return combined
 }
 
-function moveProviderInOrder(currentIds, orderInput, providerId, delta) {
+export function moveProviderInOrder(currentIds, orderInput, providerId, delta) {
     var target = typeof providerId === "string" ? providerId.trim().toLowerCase() : ""
     var step = delta < 0 ? -1 : delta > 0 ? 1 : 0
     var list = effectiveOrderList(currentIds, orderInput)

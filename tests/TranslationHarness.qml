@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/Translation.js" as Translation
+import "../contents/code/Translation.mjs" as Translation
 
 Item {
     id: root

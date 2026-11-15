@@ -1,24 +1,22 @@
-.pragma library
-
-var windowDefinitions = [
+export var windowDefinitions = [
     { key: "primary", label: "Session" },
     { key: "secondary", label: "Weekly" },
     { key: "tertiary", label: "Monthly" }
 ]
 
-function finiteNumber(value) {
+export function finiteNumber(value) {
     return typeof value === "number" && isFinite(value)
 }
 
-function isUsableWindow(window) {
+export function isUsableWindow(window) {
     return window && finiteNumber(window.usedPercent)
 }
 
-function rawValue(object, key) {
+export function rawValue(object, key) {
     return Object.prototype.hasOwnProperty.call(object, key) ? object[key] : null
 }
 
-function cleanResetDescription(desc) {
+export function cleanResetDescription(desc) {
     if (typeof desc !== "string") {
         return desc
     }
@@ -29,7 +27,7 @@ function cleanResetDescription(desc) {
     return desc
 }
 
-function normalizeWindow(definition, value) {
+export function normalizeWindow(definition, value) {
     if (!value || typeof value !== "object" || value instanceof Array) {
         return null
     }
@@ -44,7 +42,7 @@ function normalizeWindow(definition, value) {
     }
 }
 
-function findExtraWindow(extraRateWindows, idSubstring) {
+export function findExtraWindow(extraRateWindows, idSubstring) {
     if (!(extraRateWindows instanceof Array)) {
         return null
     }
@@ -57,7 +55,7 @@ function findExtraWindow(extraRateWindows, idSubstring) {
     return null
 }
 
-function customWindowLabel(rateWindowLabels, key) {
+export function customWindowLabel(rateWindowLabels, key) {
     if (!rateWindowLabels || typeof rateWindowLabels !== "object" || rateWindowLabels instanceof Array) {
         return null
     }
@@ -68,7 +66,7 @@ function customWindowLabel(rateWindowLabels, key) {
     return label.trim()
 }
 
-function normalizeProvider(entry) {
+export function normalizeProvider(entry) {
     var usage = entry.usage && typeof entry.usage === "object" && !(entry.usage instanceof Array)
         ? entry.usage
         : {}
@@ -168,7 +166,7 @@ function normalizeProvider(entry) {
     }
 }
 
-function normalize(payload) {
+export function normalize(payload) {
     var entries = payload instanceof Array ? payload : [payload]
     var providers = []
     var errors = []
@@ -197,7 +195,7 @@ function normalize(payload) {
     }
 }
 
-function firstFiniteWindow(windows) {
+export function firstFiniteWindow(windows) {
     var rows = windows instanceof Array ? windows : []
 
     for (var i = 0; i < rows.length; i++) {
@@ -210,13 +208,13 @@ function firstFiniteWindow(windows) {
     return null
 }
 
-var preferredWindowKeys = {
+export var preferredWindowKeys = {
     "session": "primary",
     "weekly": "secondary",
     "monthly": "tertiary"
 }
 
-function definitionForPreferred(preferredKey) {
+export function definitionForPreferred(preferredKey) {
     if (typeof preferredKey !== "string"
         || !Object.prototype.hasOwnProperty.call(preferredWindowKeys, preferredKey)) {
         return null
@@ -230,11 +228,11 @@ function definitionForPreferred(preferredKey) {
     return null
 }
 
-function matchesDefinition(window, definition) {
+export function matchesDefinition(window, definition) {
     return window.key === definition.key || window.label === definition.label
 }
 
-function preferredFiniteWindow(windows, definition) {
+export function preferredFiniteWindow(windows, definition) {
     var rows = windows instanceof Array ? windows : []
     for (var i = 0; i < rows.length; i++) {
         if (isUsableWindow(rows[i]) && matchesDefinition(rows[i], definition)) {
@@ -244,7 +242,7 @@ function preferredFiniteWindow(windows, definition) {
     return null
 }
 
-function selectRepresentative(windows, preferredKey) {
+export function selectRepresentative(windows, preferredKey) {
     var definition = definitionForPreferred(preferredKey)
     if (definition !== null) {
         var preferred = preferredFiniteWindow(windows, definition)
@@ -258,7 +256,7 @@ function selectRepresentative(windows, preferredKey) {
 // Overview body: every finite Session/Weekly/Monthly window, in that order.
 // Providers like opencodego often expose all three; dropping Monthly when
 // Session/Weekly exist hid real data. Empty when none are finite.
-function selectOverviewWindows(windows) {
+export function selectOverviewWindows(windows) {
     var result = []
     for (var i = 0; i < windowDefinitions.length; i++) {
         var window = preferredFiniteWindow(windows, windowDefinitions[i])
@@ -269,7 +267,7 @@ function selectOverviewWindows(windows) {
     return result
 }
 
-function selectCompact(providers) {
+export function selectCompact(providers) {
     var best = null
     var rows = providers instanceof Array ? providers : []
 

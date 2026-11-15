@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/UsageThreshold.js" as UsageThreshold
+import "../contents/code/UsageThreshold.mjs" as UsageThreshold
 
 Item {
     id: root

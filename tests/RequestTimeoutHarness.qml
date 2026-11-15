@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/RequestTimeout.js" as RequestTimeout
+import "../contents/code/RequestTimeout.mjs" as RequestTimeout
 
 Item {
     property bool assertionFailed: false

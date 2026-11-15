@@ -1,16 +1,14 @@
-.pragma library
-
 // Persistent storage for the latest committed usage snapshot.
 // Uses QtQuick.LocalStorage (SQLite) in the user's local XDG data path.
 // Pure helper: takes the LocalStorage module reference from callers and
 // degrades cleanly if the database is inaccessible, empty, or unparseable.
 
-var DEFAULT_DB_NAME = "KodexBar"
-var DB_VERSION = "1.0"
-var DB_DESCRIPTION = "KodexBar Plasma Snapshot Storage"
-var DB_ESTIMATED_SIZE = 1000000
+export var DEFAULT_DB_NAME = "KodexBar"
+export var DB_VERSION = "1.0"
+export var DB_DESCRIPTION = "KodexBar Plasma Snapshot Storage"
+export var DB_ESTIMATED_SIZE = 1000000
 
-function openDatabase(localStorageModule, dbName) {
+export function openDatabase(localStorageModule, dbName) {
     var name
     if (!localStorageModule || typeof localStorageModule.openDatabaseSync !== "function") {
         return null
@@ -26,7 +24,7 @@ function openDatabase(localStorageModule, dbName) {
     }
 }
 
-function cloneWithoutIdentityPii(obj) {
+export function cloneWithoutIdentityPii(obj) {
     if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
         return obj
     }
@@ -42,7 +40,7 @@ function cloneWithoutIdentityPii(obj) {
     return copy
 }
 
-function sanitizeProviderForStorage(provider) {
+export function sanitizeProviderForStorage(provider) {
     if (!provider || typeof provider !== "object") {
         return provider
     }
@@ -69,7 +67,7 @@ function sanitizeProviderForStorage(provider) {
     return sanitized
 }
 
-function save(localStorageModule, providers, dbName) {
+export function save(localStorageModule, providers, dbName) {
     var db, payload, savedAt, sanitizedProviders, i
     if (!Array.isArray(providers) || providers.length === 0) {
         return false
@@ -99,14 +97,14 @@ function save(localStorageModule, providers, dbName) {
     }
 }
 
-function isValidProvider(provider) {
+export function isValidProvider(provider) {
     return provider !== null
         && typeof provider === "object"
         && typeof provider.provider === "string"
         && Array.isArray(provider.windows)
 }
 
-function load(localStorageModule, dbName) {
+export function load(localStorageModule, dbName) {
     var db, providers, readFn
     db = openDatabase(localStorageModule, dbName)
     if (!db) {
@@ -141,7 +139,7 @@ function load(localStorageModule, dbName) {
     return providers
 }
 
-function clear(localStorageModule, dbName) {
+export function clear(localStorageModule, dbName) {
     var db
     db = openDatabase(localStorageModule, dbName)
     if (!db) {
@@ -160,7 +158,7 @@ function clear(localStorageModule, dbName) {
     }
 }
 
-function saveCost(localStorageModule, provider, costRecord, dbName) {
+export function saveCost(localStorageModule, provider, costRecord, dbName) {
     if (!costRecord || typeof costRecord !== "object" || typeof provider !== "string" || provider.length === 0) {
         return false
     }
@@ -183,11 +181,11 @@ function saveCost(localStorageModule, provider, costRecord, dbName) {
     }
 }
 
-function isFiniteNonNegative(value) {
+export function isFiniteNonNegative(value) {
     return typeof value === "number" && isFinite(value) && value >= 0
 }
 
-function isValidCostRecord(record, expectedProvider) {
+export function isValidCostRecord(record, expectedProvider) {
     return record !== null
         && typeof record === "object"
         && !Array.isArray(record)
@@ -200,7 +198,7 @@ function isValidCostRecord(record, expectedProvider) {
 
 // Returns { record, savedAt } for the provider's stored cost, or null. The
 // save time lets several widget instances share one CLI scan.
-function loadCostEntry(localStorageModule, provider, dbName) {
+export function loadCostEntry(localStorageModule, provider, dbName) {
     if (typeof provider !== "string" || provider.length === 0) {
         return null
     }
@@ -230,12 +228,12 @@ function loadCostEntry(localStorageModule, provider, dbName) {
     return result
 }
 
-function loadCost(localStorageModule, provider, dbName) {
+export function loadCost(localStorageModule, provider, dbName) {
     var entry = loadCostEntry(localStorageModule, provider, dbName)
     return entry !== null ? entry.record : null
 }
 
-function loadAllCosts(localStorageModule, dbName) {
+export function loadAllCosts(localStorageModule, dbName) {
     var db = openDatabase(localStorageModule, dbName)
     if (!db) {
         return {}

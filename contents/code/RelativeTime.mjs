@@ -1,9 +1,7 @@
-.pragma library
-
 // Formats a CLI ISO-8601 updatedAt for scannable header copy.
 // Returns "" when the value is missing or not parseable — never invents a clock.
 
-function parseIsoMs(value) {
+export function parseIsoMs(value) {
     if (typeof value !== "string" || value.length === 0) {
         return NaN
     }
@@ -13,7 +11,7 @@ function parseIsoMs(value) {
     return typeof ms === "number" && isFinite(ms) ? ms : NaN
 }
 
-function formatUpdatedLabel(updatedAt, nowMs, translateFn) {
+export function formatUpdatedLabel(updatedAt, nowMs, translateFn) {
     var thenMs = parseIsoMs(updatedAt)
     if (!isFinite(thenMs)) {
         return ""

@@ -5,9 +5,9 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/ResetTimeFormatter.js" as ResetTimeFormatter
-import "../code/Translation.js" as Translation
-import "../code/UsageThreshold.js" as UsageThreshold
+import "../code/ResetTimeFormatter.mjs" as ResetTimeFormatter
+import "../code/Translation.mjs" as Translation
+import "../code/UsageThreshold.mjs" as UsageThreshold
 
 ColumnLayout {
     id: root

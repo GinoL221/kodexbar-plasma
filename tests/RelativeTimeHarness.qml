@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/RelativeTime.js" as RelativeTime
+import "../contents/code/RelativeTime.mjs" as RelativeTime
 
 Item {
     id: root

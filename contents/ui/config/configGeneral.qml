@@ -7,10 +7,10 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 import org.kde.plasma.components as PlasmaComponents
 
-import "../../code/PreferredWindow.js" as PreferredWindow
-import "../../code/ProviderFilterPolicy.js" as ProviderFilterPolicy
-import "../../code/ProviderIcons.js" as ProviderIcons
-import "../../code/Translation.js" as Translation
+import "../../code/PreferredWindow.mjs" as PreferredWindow
+import "../../code/ProviderFilterPolicy.mjs" as ProviderFilterPolicy
+import "../../code/ProviderIcons.mjs" as ProviderIcons
+import "../../code/Translation.mjs" as Translation
 
 KCM.SimpleKCM {
     id: page

@@ -4,10 +4,10 @@ import QtQuick
 import QtQuick.LocalStorage as LocalStorage
 import org.kde.plasma.plasma5support as Plasma5Support
 
-import "../code/CostModel.js" as CostModel
-import "../code/CostRequestPolicy.js" as CostRequestPolicy
-import "../code/CodexBarPathResolver.js" as PathResolver
-import "../code/SnapshotStorage.js" as SnapshotStorage
+import "../code/CostModel.mjs" as CostModel
+import "../code/CostRequestPolicy.mjs" as CostRequestPolicy
+import "../code/CodexBarPathResolver.mjs" as PathResolver
+import "../code/SnapshotStorage.mjs" as SnapshotStorage
 
 // Isolated, optional cost lifecycle. Keyed by provider + committed usage
 // generation + an internal request serial so stale, superseded, or timed-out

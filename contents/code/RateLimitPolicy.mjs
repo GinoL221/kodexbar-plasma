@@ -1,14 +1,12 @@
-.pragma library
-
 // Backoff policy for provider endpoints that throttle polling, most notably
 // the Anthropic Claude usage endpoint (HTTP 429 `rate_limit_error` with an
 // unactionable `retry-after: 0`). Pure data only: the controller counts
 // consecutive rate-limited responses and stretches its next poll.
 
-var INITIAL_DELAY_MS = 120000
-var MAX_DELAY_MS = 1800000
+export var INITIAL_DELAY_MS = 120000
+export var MAX_DELAY_MS = 1800000
 
-function isRateLimitError(errorEntry) {
+export function isRateLimitError(errorEntry) {
     if (!errorEntry || typeof errorEntry !== "object") {
         return false
     }
@@ -23,7 +21,7 @@ function isRateLimitError(errorEntry) {
     return /rate[ _-]?limit/i.test(message) || /\b429\b/.test(message)
 }
 
-function hasRateLimitError(errors) {
+export function hasRateLimitError(errors) {
     if (!Array.isArray(errors)) {
         return false
     }
@@ -39,7 +37,7 @@ function hasRateLimitError(errors) {
 // Unique, first-seen provider ids whose entry is a rate limit. The real CLI
 // payload mixes one throttled provider into dozens of unrelated provider
 // errors, so the caller cannot require an all-rate-limit response.
-function rateLimitedProviderIds(errors) {
+export function rateLimitedProviderIds(errors) {
     var ids = []
     if (!Array.isArray(errors)) {
         return ids
@@ -62,7 +60,7 @@ function rateLimitedProviderIds(errors) {
 // Fresh providers always win. A rate-limited provider that did not answer
 // keeps its previous entry so the popup does not blank out mid-session, and
 // a provider that never had an entry is never fabricated.
-function mergeRateLimitedProviders(freshProviders, previousProviders, errors) {
+export function mergeRateLimitedProviders(freshProviders, previousProviders, errors) {
     var merged = Array.isArray(freshProviders) ? freshProviders.slice(0) : []
     var previous = Array.isArray(previousProviders) ? previousProviders : []
     var ids = rateLimitedProviderIds(errors)
@@ -93,7 +91,7 @@ function mergeRateLimitedProviders(freshProviders, previousProviders, errors) {
     return merged
 }
 
-function backoffDelayMs(consecutive) {
+export function backoffDelayMs(consecutive) {
     if (typeof consecutive !== "number" || !isFinite(consecutive) || consecutive <= 0) {
         return 0
     }
@@ -106,7 +104,7 @@ function backoffDelayMs(consecutive) {
 // headers. In current runtime, CodexBar CLI does not expose HTTP response
 // headers in its JSON output (and Anthropic sends an unhelpful `retry-after: 0`),
 // so UsageController passes an empty string into nextDelayMs().
-function parseRetryAfterMs(value) {
+export function parseRetryAfterMs(value) {
     var trimmed, seconds, date, remainingMs
     if (typeof value === "number") {
         if (!isFinite(value) || value <= 0) {
@@ -133,12 +131,12 @@ function parseRetryAfterMs(value) {
     return remainingMs > 0 ? remainingMs : null
 }
 
-function nextDelayMs(baseMs, consecutive, retryAfterValue) {
+export function nextDelayMs(baseMs, consecutive, retryAfterValue) {
     var base = typeof baseMs === "number" && isFinite(baseMs) && baseMs > 0 ? baseMs : 0
     var retryAfter = parseRetryAfterMs(retryAfterValue)
     return Math.max(base, backoffDelayMs(consecutive), retryAfter === null ? 0 : retryAfter)
 }
 
-function retryMinutes(delayMs) {
+export function retryMinutes(delayMs) {
     return Math.max(1, Math.ceil(delayMs / 60000))
 }

@@ -2,8 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
-import "../code/NotificationPolicy.js" as NotificationPolicy
-import "../code/ProviderIcons.js" as ProviderIcons
+import "../code/NotificationPolicy.mjs" as NotificationPolicy
+import "../code/ProviderIcons.mjs" as ProviderIcons
 
 Item {
     id: root

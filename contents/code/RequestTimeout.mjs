@@ -1,10 +1,8 @@
-.pragma library
+export var DEFAULT_SECONDS = 60
+export var MIN_SECONDS = 30
+export var MAX_SECONDS = 600
 
-var DEFAULT_SECONDS = 60
-var MIN_SECONDS = 30
-var MAX_SECONDS = 600
-
-function parse(value) {
+export function parse(value) {
     return typeof value === "number"
         && isFinite(value)
         && Math.floor(value) === value
@@ -14,11 +12,11 @@ function parse(value) {
         : null
 }
 
-function secondsOrDefault(value) {
+export function secondsOrDefault(value) {
     var parsed = parse(value)
     return parsed === null ? DEFAULT_SECONDS : parsed
 }
 
-function millisecondsOrDefault(value) {
+export function millisecondsOrDefault(value) {
     return secondsOrDefault(value) * 1000
 }

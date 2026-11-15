@@ -1,33 +1,33 @@
 # Design: Architecture, Data Flow & Native Plasma UI System
 
-KodexBar Plasma is structured as a thin, reactive QML/Kirigami presentation layer over pure `.pragma library` JavaScript domain modules and an external CLI boundary. For product scope and settings, see [product.md](product.md); for mandatory QML craft gates, see [skills/plasma-kirigami-ui/SKILL.md](../skills/plasma-kirigami-ui/SKILL.md) and [popup-and-layout-invariants.md](../skills/plasma-kirigami-ui/references/popup-and-layout-invariants.md).
+KodexBar Plasma is structured as a thin, reactive QML/Kirigami presentation layer over pure ECMAScript Module (`contents/code/*.mjs`) domain modules and an external CLI boundary. For product scope and settings, see [product.md](product.md); for mandatory QML craft gates, see [skills/plasma-kirigami-ui/SKILL.md](../skills/plasma-kirigami-ui/SKILL.md) and [popup-and-layout-invariants.md](../skills/plasma-kirigami-ui/references/popup-and-layout-invariants.md).
 
 ## Architecture & Data Flow
 
 ```text
 codexbar / codexbar-nan CLI (stdout JSON)
-  ├── UsageController.qml ──► UsageModel.js / RateLimitPolicy.js ──► SnapshotStorage.js (id: "latest")
+  ├── UsageController.qml ──► UsageModel.mjs / RateLimitPolicy.mjs ──► SnapshotStorage.mjs (id: "latest")
   │         │
-  │         ├──► NotificationController.qml ──► NotificationPolicy.js
-  │         └──► main.qml (visibleProviders via ProviderFilterPolicy.js)
-  │                ├── CompactUsageButton.qml (ProviderCycle.js + ProviderIcons.js)
+  │         ├──► NotificationController.qml ──► NotificationPolicy.mjs
+  │         └──► main.qml (visibleProviders via ProviderFilterPolicy.mjs)
+  │                ├── CompactUsageButton.qml (ProviderCycle.mjs + ProviderIcons.mjs)
   │                └── Popup (ProviderSelector.qml + ProviderRow.qml)
-  └── CostController.qml  ──► CostModel.js / CostRequestPolicy.js ──► SnapshotStorage.js (id: "cost:<provider>")
+  └── CostController.qml  ──► CostModel.mjs / CostRequestPolicy.mjs ──► SnapshotStorage.mjs (id: "cost:<provider>")
 ```
 
-1. **Command resolution & usage polling ([UsageController.qml](../contents/ui/UsageController.qml), [CodexBarPathResolver.js](../contents/code/CodexBarPathResolver.js)):**
+1. **Command resolution & usage polling ([UsageController.qml](../contents/ui/UsageController.qml), [CodexBarPathResolver.mjs](../contents/code/CodexBarPathResolver.mjs)):**
    - Validates a configured absolute executable path (`test -x`) or probes bounded discovery locations (`~/.local/bin/codexbar-nan`, `~/.local/bin/codexbar`, `/usr/local/bin/codexbar`, `/usr/bin/codexbar`, `~/.cargo/bin/codexbar`, `/snap/bin/codexbar`, `PATH`), then executes `usage --format json --json-only`.
    - Requests are serialized with `generation`, `activeGeneration`, and a watchdog timer (`timeoutMs`). Stale callbacks and destroyed components disconnect their `Plasma5Support.DataSource` cleanly.
-2. **Normalization & rate-limit resilience ([UsageModel.js](../contents/code/UsageModel.js), [RateLimitPolicy.js](../contents/code/RateLimitPolicy.js)):**
+2. **Normalization & rate-limit resilience ([UsageModel.mjs](../contents/code/UsageModel.mjs), [RateLimitPolicy.mjs](../contents/code/RateLimitPolicy.mjs)):**
    - `UsageModel.normalizeProvider` maps `primary` (`Session`), `secondary` (`Weekly`), and `tertiary` (`Monthly`) windows, applies `rateWindowLabels` overrides, and promotes scoped extra windows (Antigravity `gemini-argon` -> `Argon`; Claude `claude-weekly-scoped-fable` -> `Fable` on `tertiary`).
    - If a poll reports rate-limit errors, `RateLimitPolicy` retains previously committed provider data and stretches the next refresh delay exponentially.
-3. **Multi-instance SQLite persistence ([SnapshotStorage.js](../contents/code/SnapshotStorage.js)):**
+3. **Multi-instance SQLite persistence ([SnapshotStorage.mjs](../contents/code/SnapshotStorage.mjs)):**
    - Scrubs `accountEmail` and `accountOrganization` from `provider.raw` before storing the latest usage snapshot under `id = "latest"`, and stores validated per-provider cost snapshots under `id = "cost:<provider>"` with `saved_at` timestamps.
    - Both `UsageController` and `CostController` hydrate from SQLite on `Component.onCompleted` so the panel and popup render immediately on cold start.
-4. **Bounded cost prefetch & cross-instance cache sharing ([CostController.qml](../contents/ui/CostController.qml), [CostRequestPolicy.js](../contents/code/CostRequestPolicy.js)):**
+4. **Bounded cost prefetch & cross-instance cache sharing ([CostController.qml](../contents/ui/CostController.qml), [CostRequestPolicy.mjs](../contents/code/CostRequestPolicy.mjs)):**
    - When `committedGeneration` advances, `main.qml` prefetches cost only for supported providers (`codex`, `claude`) targeted by that widget instance (`CostRequestPolicy.prefetchTargets(pinnedProvider, visibleIds)`).
    - Before spawning `cost --provider <id> --format json --json-only`, `CostController` checks SQLite for a record younger than `sharedFreshnessMs` (90% of `refreshInterval`). Fresh records written by another widget instance are adopted in memory without rewriting `saved_at`.
-5. **Filtering, cycling & notifications ([ProviderFilterPolicy.js](../contents/code/ProviderFilterPolicy.js), [ProviderCycle.js](../contents/code/ProviderCycle.js), [NotificationPolicy.js](../contents/code/NotificationPolicy.js)):**
+5. **Filtering, cycling & notifications ([ProviderFilterPolicy.mjs](../contents/code/ProviderFilterPolicy.mjs), [ProviderCycle.mjs](../contents/code/ProviderCycle.mjs), [NotificationPolicy.mjs](../contents/code/NotificationPolicy.mjs)):**
    - `ProviderFilterPolicy.filterAndSortProviders` applies `excludedProviders` and `providerOrder`.
    - `ProviderCycle` resolves the compact panel target (`All` or a specific provider, honoring `pinnedProvider`).
    - `NotificationController` evaluates quota thresholds and rate-limit state transitions on each committed generation.
@@ -40,7 +40,7 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
 |-----------------|-------------|
 | **Spacing & density** | Exclusively `Kirigami.Units` (`smallSpacing`, `largeSpacing`, `gridUnit`, `iconSizes.*`). Never hardcode pixel tokens from web tools. |
 | **Typography** | `Kirigami.Theme.defaultFont` and ` Kirigami.Theme.smallFont` with semantic weights (`Font.DemiBold`, `Font.Medium`) and `TabularNumbers` on numeric readouts. |
-| **Colors & contrast** | `Kirigami.Theme.textColor`, `disabledTextColor`, `neutralTextColor`, `negativeTextColor`, `highlightColor`. Threshold percentages use `UsageStatusThreshold.js` semantic bands; progress bars and histogram bars use `ProviderIcons.accent(provider)` with `Kirigami.Theme.highlightColor` fallback. |
+| **Colors & contrast** | `Kirigami.Theme.textColor`, `disabledTextColor`, `neutralTextColor`, `negativeTextColor`, `highlightColor`. Threshold percentages use `UsageThreshold.mjs` semantic bands; progress bars and histogram bars use `ProviderIcons.accent(provider)` with `Kirigami.Theme.highlightColor` fallback. |
 | **Controls** | `org.kde.plasma.components` (`Label`, `ProgressBar`, `ToolButton`), `QtQuick.Controls` (`ScrollView`, `TabBar`), and `Kirigami.FormLayout` in settings. |
 | **Icons** | Bundled vector SVGs under `contents/icons/providers/` rendered via `ProviderIcon.qml` (tinted mask or multi-color SVG); never emojis or web icon fonts. |
 
@@ -64,7 +64,7 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
 
 - **Overview (`summary: true`):** Single-line row (`windowLabel | summaryBar | summaryPercentageLabel`) using `TextMetrics` to align label and percentage columns across sibling rows.
 - **Detail (`summary: false`):** Two-line header + bar stack (`windowLabel` + `detailResetContainer` + `bandPercentageLabel` above full-width `detailBarHost`, followed by optional `paceSummaryLabel`).
-- **Standardized resets ([ResetTimeFormatter.js](../contents/code/ResetTimeFormatter.js)):** Future ISO `resetsAt` timestamps format as `Resets in Xd Yh` / `Resets in Xh Ym` (or Spanish equivalents via `Translation.js`), ticked every 60 seconds while visible.
+- **Standardized resets ([ResetTimeFormatter.mjs](../contents/code/ResetTimeFormatter.mjs)):** Future ISO `resetsAt` timestamps format as `Resets in Xd Yh` / `Resets in Xh Ym` (or Spanish equivalents via `Translation.mjs`), ticked every 60 seconds while visible.
 
 ### 3. Cost Grid & Histogram Contract
 
@@ -73,7 +73,7 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
 
 ## Component & Test Invariants
 
-- **Stateless domain logic:** Every file in `contents/code/*.js` starts with `.pragma library` and receives external dependencies (`LocalStorage`, translator functions, clock timestamps) as arguments.
+- **Stateless ES Modules:** Every file in `contents/code/*.mjs` is a standard ECMAScript module (`export var` / `export function`, imported in QML via `import "../code/<Module>.mjs" as <Module>`) that receives external dependencies (`LocalStorage`, translator functions, clock timestamps) as arguments, preserving Qt 6 shared module state and full IDE JS/TS static analysis without `.pragma library` syntax errors.
 - **Bound QML scopes:** Presentational QML components use `pragma ComponentBehavior: Bound` with explicit `required property var modelData` in delegates.
 - **Static & runtime verification gates:**
   - `./scripts/validate-package.sh` and `python3 scripts/check-provider-icons.py` verify package structure and SVG assets.
@@ -85,4 +85,4 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
 
 - **No web-generic styling:** Never introduce HTML/CSS layouts, fixed hex palettes for surfaces/text, hardcoded `px` spacing tokens, pill-badge clutter, or nested card-in-card borders.
 - **No CLI coupling in UI components:** Presentational QML components (`ProviderRow`, `UsageWindowRow`, `CostSection`, `CostHistogram`) consume normalized JS objects; they must never spawn processes or parse raw CLI stdout.
-- **No PII leakage on primary chrome:** Raw account emails and organization identifiers stay off the Overview and primary header chrome, and free-form detail rows are scrubbed by `ProviderDetails.js`.
+- **No PII leakage on primary chrome:** Raw account emails and organization identifiers stay off the Overview and primary header chrome, and free-form detail rows are scrubbed by `ProviderDetails.mjs`.

@@ -1,6 +1,6 @@
 import QtQuick
-import "../contents/code/PreferredWindow.js" as PreferredWindow
-import "../contents/code/UsageModel.js" as UsageModel
+import "../contents/code/PreferredWindow.mjs" as PreferredWindow
+import "../contents/code/UsageModel.mjs" as UsageModel
 
 Item {
     property bool assertionFailed: false

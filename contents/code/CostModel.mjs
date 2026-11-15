@@ -1,14 +1,12 @@
-.pragma library
-
-function isFiniteNonNegative(value) {
+export function isFiniteNonNegative(value) {
     return typeof value === "number" && isFinite(value) && value >= 0
 }
 
-function rawValue(object, key) {
+export function rawValue(object, key) {
     return Object.prototype.hasOwnProperty.call(object, key) ? object[key] : null
 }
 
-function singleEntry(payload) {
+export function singleEntry(payload) {
     if (payload instanceof Array) {
         return payload.length === 1 ? payload[0] : null
     }
@@ -18,14 +16,14 @@ function singleEntry(payload) {
     return null
 }
 
-function validDailyEntry(day) {
+export function validDailyEntry(day) {
     return day && typeof day === "object" && !(day instanceof Array)
         && typeof day.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(day.date)
         && isFiniteNonNegative(day.totalCost)
         && (day.totalTokens === undefined || isFiniteNonNegative(day.totalTokens))
 }
 
-function normalizeDaily(daily) {
+export function normalizeDaily(daily) {
     if (!(daily instanceof Array)) {
         return []
     }
@@ -41,7 +39,7 @@ function normalizeDaily(daily) {
     return result.slice(-30)
 }
 
-function extractPrimaryModel(daily) {
+export function extractPrimaryModel(daily) {
     if (!(daily instanceof Array)) {
         return ""
     }
@@ -85,7 +83,7 @@ function extractPrimaryModel(daily) {
 // unsupported (error-shaped), for a different provider, or carries any
 // non-finite/negative numeric field. All four numeric fields must be valid
 // or the whole result is discarded — never a partial render.
-function normalize(payload, expectedProvider) {
+export function normalize(payload, expectedProvider) {
     if (typeof expectedProvider !== "string" || expectedProvider.length === 0) {
         return null
     }

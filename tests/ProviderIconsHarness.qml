@@ -1,5 +1,5 @@
 import QtQuick
-import "../contents/code/ProviderIcons.js" as ProviderIcons
+import "../contents/code/ProviderIcons.mjs" as ProviderIcons
 
 Item {
     id: root

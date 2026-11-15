@@ -7,17 +7,17 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/UsageModel.js" as UsageModel
-import "../code/RefreshInterval.js" as RefreshInterval
-import "../code/RequestTimeout.js" as RequestTimeout
-import "../code/PreferredWindow.js" as PreferredWindow
-import "../code/CostRequestPolicy.js" as CostRequestPolicy
-import "../code/RateLimitPolicy.js" as RateLimitPolicy
-import "../code/ProviderCycle.js" as ProviderCycle
-import "../code/ProviderIcons.js" as ProviderIcons
-import "../code/ProviderFilterPolicy.js" as ProviderFilterPolicy
-import "../code/PlatformAction.js" as PlatformAction
-import "../code/Translation.js" as Translation
+import "../code/UsageModel.mjs" as UsageModel
+import "../code/RefreshInterval.mjs" as RefreshInterval
+import "../code/RequestTimeout.mjs" as RequestTimeout
+import "../code/PreferredWindow.mjs" as PreferredWindow
+import "../code/CostRequestPolicy.mjs" as CostRequestPolicy
+import "../code/RateLimitPolicy.mjs" as RateLimitPolicy
+import "../code/ProviderCycle.mjs" as ProviderCycle
+import "../code/ProviderIcons.mjs" as ProviderIcons
+import "../code/ProviderFilterPolicy.mjs" as ProviderFilterPolicy
+import "../code/PlatformAction.mjs" as PlatformAction
+import "../code/Translation.mjs" as Translation
 
 PlasmoidItem {
     id: root
@@ -27,7 +27,7 @@ PlasmoidItem {
     property bool suppressNextCommandRefresh: false
     property int refreshSeconds: RefreshInterval.valueOrDefault(plasmoidConfiguration.refreshInterval, 600)
     // Rate-limit backoff: consecutive throttled responses stretch the poll
-    // from 2 minutes up to 30 minutes (RateLimitPolicy.js), never shrinking
+    // from 2 minutes up to 30 minutes (RateLimitPolicy.mjs), never shrinking
     // the configured interval.
     property int effectiveRefreshSeconds: Math.max(refreshSeconds, Math.ceil(controller.retryDelayMs() / 1000))
     property int requestTimeoutMs: RequestTimeout.millisecondsOrDefault(plasmoidConfiguration.requestTimeout)
@@ -190,7 +190,7 @@ PlasmoidItem {
 
     // Requests cost only for a supported selected provider missing its
     // current-generation snapshot; "All" and unsupported providers never
-    // start cost work or read a cost record (CostRequestPolicy.js).
+    // start cost work or read a cost record (CostRequestPolicy.mjs).
     //
     // Selection state is read by the caller and passed in: the
     // ProviderSelector instance lives inside fullRepresentation's implicit

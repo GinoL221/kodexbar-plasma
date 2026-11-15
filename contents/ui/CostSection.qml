@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
-import "../code/Translation.js" as Translation
+import "../code/Translation.mjs" as Translation
 
 // Optional local token-cost estimate for the selected provider. `snapshot` is
 // a validated CostModel.normalize() result (or null); this component never
