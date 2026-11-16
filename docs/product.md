@@ -36,7 +36,7 @@ KodexBar Plasma (`org.kde.plasma.kodexbar.plasma`) is a native KDE Plasma 6 pane
   - **Header (`ProviderHeader.qml`):** Provider name, relative update timestamp, and plan/login badge.
   - **Usage windows (`UsageWindowRow.qml`):** Full-width progress bars, threshold-colored usage percentages, standardized reset countdowns (`ResetTimeFormatter.mjs`), and optional pace summaries (`ProviderDetails.mjs`).
   - **Credits & resets (`ResetCreditsSection.qml`):** Remaining credits and expandable reset-credit expiration inventory when reported.
-  - **Cost section (`CostSection.qml` & `CostHistogram.qml`):** Shown for `codex` or `claude` when a valid CLI cost snapshot exists; renders a 2x2 summary grid (Today / 30 Days cost and tokens), a 14-day right-aligned daily bar histogram, and the primary model label.
+  - **Cost section (`CostSection.qml` & `CostHistogram.qml`):** Shown for `codex`, `claude`, `antigravity`, or `nan` when a valid CLI cost snapshot exists; renders a 2x2 summary grid (Today / 30 Days cost and tokens), a 14-day right-aligned daily bar histogram, and the primary model label.
   - **Collapsible metadata (`ProviderDetails.qml`):** Sanitized additional provider details, collapsed by default.
 - **Desktop notifications (`NotificationController.qml`):** Optional native Plasma notifications for quota warning/critical thresholds and rate-limit backoff transitions (`NotificationPolicy.mjs`).
 

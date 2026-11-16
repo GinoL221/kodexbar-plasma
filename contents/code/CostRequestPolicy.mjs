@@ -1,4 +1,4 @@
-export var supportedProviders = ["claude", "codex"]
+export var supportedProviders = ["claude", "codex", "antigravity", "nan"]
 
 export function isSupportedProvider(provider) {
     return supportedProviders.indexOf(provider) !== -1

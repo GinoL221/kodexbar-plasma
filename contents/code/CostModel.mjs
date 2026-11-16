@@ -19,7 +19,8 @@ export function singleEntry(payload) {
 export function validDailyEntry(day) {
     return day && typeof day === "object" && !(day instanceof Array)
         && typeof day.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(day.date)
-        && isFiniteNonNegative(day.totalCost)
+        && (day.totalCost !== undefined || day.totalTokens !== undefined)
+        && (day.totalCost === undefined || isFiniteNonNegative(day.totalCost))
         && (day.totalTokens === undefined || isFiniteNonNegative(day.totalTokens))
 }
 
@@ -31,7 +32,8 @@ export function normalizeDaily(daily) {
     for (var i = 0; i < daily.length; ++i) {
         var day = daily[i]
         if (validDailyEntry(day)) {
-            result.push({ date: day.date, totalCost: day.totalCost,
+            result.push({ date: day.date,
+                          totalCost: day.totalCost === undefined ? 0 : day.totalCost,
                           totalTokens: day.totalTokens === undefined ? 0 : day.totalTokens })
         }
     }
@@ -53,7 +55,8 @@ export function extractPrimaryModel(daily) {
         for (var j = 0; j < day.modelBreakdowns.length; ++j) {
             var model = day.modelBreakdowns[j]
             if (!model || typeof model.modelName !== "string" || model.modelName.length === 0
-                || !isFiniteNonNegative(model.cost)
+                || (model.cost === undefined && model.totalTokens === undefined)
+                || (model.cost !== undefined && !isFiniteNonNegative(model.cost))
                 || (model.totalTokens !== undefined && !isFiniteNonNegative(model.totalTokens))) {
                 continue
             }
@@ -62,7 +65,7 @@ export function extractPrimaryModel(daily) {
                 totals[name] = { cost: 0, tokens: 0 }
                 names.push(name)
             }
-            totals[name].cost += model.cost
+            totals[name].cost += model.cost === undefined ? 0 : model.cost
             totals[name].tokens += model.totalTokens === undefined ? 0 : model.totalTokens
         }
     }

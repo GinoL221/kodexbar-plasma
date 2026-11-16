@@ -25,7 +25,7 @@ codexbar / codexbar-nan CLI (stdout JSON)
    - Scrubs `accountOrganization` from `provider.raw` before storing the latest usage snapshot under `id = "latest"` (preserving `accountEmail` for cold-start detail headers), and stores validated per-provider cost snapshots under `id = "cost:<provider>"` with `saved_at` timestamps.
    - Both `UsageController` and `CostController` hydrate from SQLite on `Component.onCompleted` so the panel and popup render immediately on cold start.
 4. **Bounded cost prefetch & cross-instance cache sharing ([CostController.qml](../contents/ui/CostController.qml), [CostRequestPolicy.mjs](../contents/code/CostRequestPolicy.mjs)):**
-   - When `committedGeneration` advances, `main.qml` prefetches cost only for supported providers (`codex`, `claude`) targeted by that widget instance (`CostRequestPolicy.prefetchTargets(pinnedProvider, visibleIds)`).
+   - When `committedGeneration` advances, `main.qml` prefetches cost only for supported providers (`claude`, `codex`, `antigravity`, `nan`) targeted by that widget instance (`CostRequestPolicy.prefetchTargets(pinnedProvider, visibleIds)`).
    - Before spawning `cost --provider <id> --format json --json-only`, `CostController` checks SQLite for a record younger than `sharedFreshnessMs` (90% of `refreshInterval`). Fresh records written by another widget instance are adopted in memory without rewriting `saved_at`.
 5. **Filtering, cycling & notifications ([ProviderFilterPolicy.mjs](../contents/code/ProviderFilterPolicy.mjs), [ProviderCycle.mjs](../contents/code/ProviderCycle.mjs), [NotificationPolicy.mjs](../contents/code/NotificationPolicy.mjs)):**
    - `ProviderFilterPolicy.filterAndSortProviders` applies `excludedProviders` and `providerOrder`.

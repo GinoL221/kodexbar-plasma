@@ -37,6 +37,10 @@ Item {
                "a supported provider missing its snapshot must request cost")
         assert(CostRequestPolicy.shouldRequestCost(false, "claude", 3, false) === true,
                "claude is also a supported provider")
+        assert(CostRequestPolicy.shouldRequestCost(false, "antigravity", 3, false) === true,
+               "antigravity is also a supported cost provider")
+        assert(CostRequestPolicy.shouldRequestCost(false, "nan", 3, false) === true,
+               "nan is also a supported cost provider")
 
         // A fresh existing snapshot must not trigger a duplicate request.
         assert(CostRequestPolicy.shouldRequestCost(false, "codex", 3, true) === false,
@@ -44,15 +48,17 @@ Item {
 
         // Prefetch targets follow what the instance can display.
         var visible = ["claude", "codex", "antigravity", "grok", "nan"]
-        assert(JSON.stringify(CostRequestPolicy.prefetchTargets("", visible)) === JSON.stringify(["claude", "codex"]),
+        assert(JSON.stringify(CostRequestPolicy.prefetchTargets("", visible)) === JSON.stringify(["claude", "codex", "antigravity", "nan"]),
                "an unpinned instance prefetches every visible supported provider")
         assert(JSON.stringify(CostRequestPolicy.prefetchTargets("claude", visible)) === JSON.stringify(["claude"]),
                "an instance pinned to a supported provider prefetches only that provider")
-        assert(CostRequestPolicy.prefetchTargets("antigravity", visible).length === 0,
+        assert(JSON.stringify(CostRequestPolicy.prefetchTargets("antigravity", visible)) === JSON.stringify(["antigravity"]),
+               "an instance pinned to antigravity prefetches antigravity")
+        assert(CostRequestPolicy.prefetchTargets("grok", visible).length === 0,
                "an instance pinned to an unsupported provider prefetches nothing")
         assert(CostRequestPolicy.prefetchTargets("codex", ["claude", "grok"]).length === 0,
                "a pinned provider absent from the visible list prefetches nothing")
-        assert(CostRequestPolicy.prefetchTargets("", ["grok", "nan"]).length === 0,
+        assert(CostRequestPolicy.prefetchTargets("", ["grok"]).length === 0,
                "no visible supported provider means no prefetch")
         assert(CostRequestPolicy.prefetchTargets("", null).length === 0,
                "an invalid visible list means no prefetch")

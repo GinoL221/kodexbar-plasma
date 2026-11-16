@@ -10,7 +10,8 @@ One provider, **NaN Cloud**, with one bar per model. Bars are labeled with the m
 
 | Behavior | Detail |
 | --- | --- |
-| Other commands | `cost`, `--version`, text output, and any `--provider` other than `all`/`nan` are passed to the real `codexbar` untouched. |
+| Other commands | `--version`, text output, and any `--provider` other than `all`/`nan` for `usage` (or other than `nan` for `cost --json`) are passed to the real `codexbar` untouched. |
+| Cost breakdown | `cost --provider nan --json` aggregates 30 days of `GET /v1/usage` rows and estimates USD equivalence via built-in model list pricing (`source: "local"`). |
 | Exit code | The real CLI's exit code is preserved. With `--provider nan` the adapter exits `1` when the NaN request fails. |
 | Failure isolation | Any NaN problem (missing key, HTTP error, timeout, bad config) becomes an `error` entry for `nan`; the other providers still render. |
 | Secrets | The key is sent only as a bearer header and is never printed. |

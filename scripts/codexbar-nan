@@ -11,6 +11,7 @@ so the plasmoid renders it like any other provider. See docs/nan-adapter.md.
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,11 @@ DEFAULT_MODELS = [
     {"id": "deepseek-v4-flash", "label": "DS V4", "quota": 1_000_000_000},
     {"id": "glm5.3-flash", "label": "GLM", "quota": 500_000_000},
 ]
+DEFAULT_MODEL_PRICING = {
+    "deepseek-v4-flash": {"input": 0.27, "cached": 0.07, "output": 1.10},
+    "glm5.3-flash": {"input": 0.10, "cached": 0.025, "output": 0.40},
+}
+DEFAULT_FALLBACK_PRICING = {"input": 0.15, "cached": 0.04, "output": 0.60}
 WINDOW_KEYS = ("primary", "secondary", "tertiary")
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
@@ -178,25 +184,120 @@ def error_entry(error):
     }
 
 
+def fetch_usage_with_fallback(start):
+    key = resolve_api_key()
+    try:
+        return fetch_usage(key, start)
+    except NanError as error:
+        pi_key = resolve_pi_nan_key() if "HTTP 401" in error.message else ""
+        if pi_key and pi_key != key:
+            return fetch_usage(pi_key, start)
+        raise
+
+
+def estimate_row_cost_usd(row):
+    credits_val = row.get("credits")
+    if isinstance(credits_val, (int, float)) and not isinstance(credits_val, bool) and credits_val > 0:
+        return float(credits_val)
+    rates = DEFAULT_MODEL_PRICING.get(row.get("model"), DEFAULT_FALLBACK_PRICING)
+    total_tokens = row.get("total_tokens")
+    prompt = row.get("prompt_tokens")
+    cached = row.get("cached_tokens", 0)
+    completion = row.get("completion_tokens")
+    if isinstance(prompt, int) and not isinstance(prompt, bool) and isinstance(completion, int) and not isinstance(completion, bool):
+        cached_val = cached if isinstance(cached, int) and not isinstance(cached, bool) and cached > 0 else 0
+        uncached = max(0, prompt - cached_val)
+        return (uncached * rates["input"] + cached_val * rates["cached"] + max(0, completion) * rates["output"]) / 1_000_000.0
+    return (max(0, total_tokens) * rates["input"]) / 1_000_000.0
+
+
 def collect_nan_entry():
     try:
         models, renewal_day = load_models_config()
-        key = resolve_api_key()
         now = utc_now()
         start, end = billing_period(now, renewal_day)
-        try:
-            report = fetch_usage(key, start)
-        except NanError as error:
-            pi_key = resolve_pi_nan_key() if "HTTP 401" in error.message else ""
-            if pi_key and pi_key != key:
-                report = fetch_usage(pi_key, start)
-            else:
-                raise
+        report = fetch_usage_with_fallback(start)
         return build_entry(report, models, start, end, now)
     except NanError as error:
         return error_entry(error)
     except Exception as error:  # never let NaN break the other providers
         return error_entry(NanError("runtime", "NaN adapter failed: %s" % error))
+
+
+def collect_nan_cost_entry():
+    try:
+        now = utc_now()
+        start = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
+        start_day = start.strftime("%Y-%m-%d")
+        today_str = now.strftime("%Y-%m-%d")
+        report = fetch_usage_with_fallback(start)
+        rows = report.get("data") if isinstance(report, dict) else None
+        by_day = {}
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            date = row.get("date")
+            model = row.get("model")
+            total_tokens = row.get("total_tokens")
+            if (
+                not isinstance(date, str)
+                or not re.match(r"^\d{4}-\d{2}-\d{2}$", date)
+                or not (start_day <= date <= today_str)
+                or not isinstance(model, str)
+                or not model
+                or isinstance(total_tokens, bool)
+                or not isinstance(total_tokens, int)
+                or total_tokens < 0
+            ):
+                continue
+            cost_usd = estimate_row_cost_usd(row)
+            day_bucket = by_day.setdefault(date, {"tokens": 0, "cost": 0.0, "models": {}})
+            day_bucket["tokens"] += total_tokens
+            day_bucket["cost"] += cost_usd
+            model_bucket = day_bucket["models"].setdefault(model, {"tokens": 0, "cost": 0.0})
+            model_bucket["tokens"] += total_tokens
+            model_bucket["cost"] += cost_usd
+
+        daily = []
+        total_cost = 0.0
+        total_tokens_sum = 0
+        for date in sorted(by_day.keys()):
+            day_bucket = by_day[date]
+            breakdowns = [
+                {
+                    "modelName": model_name,
+                    "cost": round(mb["cost"], 6),
+                    "totalTokens": mb["tokens"],
+                }
+                for model_name, mb in day_bucket["models"].items()
+            ]
+            day_cost = round(day_bucket["cost"], 6)
+            daily.append(
+                {
+                    "date": date,
+                    "totalCost": day_cost,
+                    "totalTokens": day_bucket["tokens"],
+                    "modelBreakdowns": breakdowns,
+                }
+            )
+            total_cost += day_bucket["cost"]
+            total_tokens_sum += day_bucket["tokens"]
+
+        today_entry = next((item for item in daily if item["date"] == today_str), None)
+        session_entry = today_entry if today_entry is not None else (daily[-1] if daily else None)
+        return {
+            "provider": "nan",
+            "source": "local",
+            "sessionCostUSD": session_entry["totalCost"] if session_entry else 0.0,
+            "sessionTokens": session_entry["totalTokens"] if session_entry else 0,
+            "last30DaysCostUSD": round(total_cost, 6),
+            "last30DaysTokens": total_tokens_sum,
+            "daily": daily,
+        }
+    except NanError as error:
+        return error_entry(error)
+    except Exception as error:  # never let NaN break the other providers
+        return error_entry(NanError("runtime", "NaN cost adapter failed: %s" % error))
 
 
 def find_real_codexbar():
@@ -301,6 +402,11 @@ def main(args):
         return 127
 
     provider = option_value(args, "--provider")
+    if bool(args) and args[0] == "cost" and wants_json(args) and provider == "nan":
+        entry = collect_nan_cost_entry()
+        print(json.dumps([entry]))
+        return 1 if "error" in entry else 0
+
     if bool(args) and args[0] == "usage" and provider in (None, "all", "claude"):
         maybe_refresh_claude_oauth()
 

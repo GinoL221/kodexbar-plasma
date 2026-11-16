@@ -146,6 +146,29 @@ Item {
         }]
         assert(CostModel.normalize(mixedPayload, "codex") === null, "nonzero payload with one invalid field must be hidden, not partially rendered")
 
+        // Antigravity cost payloads omit totalCost/cost on unpriced experimental models/days
+        var antigravityPayload = [{
+            provider: "antigravity",
+            source: "local",
+            sessionCostUSD: 19.37,
+            sessionTokens: 140076422,
+            last30DaysCostUSD: 32.45,
+            last30DaysTokens: 264063215,
+            daily: [
+                {
+                    date: "2026-11-07",
+                    totalTokens: 149968,
+                    modelBreakdowns: [{ modelName: "gemini-3.8-flash-n", totalTokens: 149968 }]
+                }
+            ]
+        }]
+        var agNormalized = CostModel.normalize(antigravityPayload, "antigravity")
+        assert(agNormalized !== null && agNormalized.daily.length === 1
+               && agNormalized.daily[0].totalCost === 0
+               && agNormalized.daily[0].totalTokens === 149968
+               && agNormalized.primaryModel === "gemini-3.8-flash-n",
+               "Antigravity daily/model entries without cost must default cost to 0 while keeping tokens and primaryModel")
+
         finish()
     }
 }

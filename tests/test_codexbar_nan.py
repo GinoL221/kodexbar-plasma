@@ -309,6 +309,64 @@ class UsageMergeTest(AdapterTestCase):
         self.assertAlmostEqual(nan["usage"]["primary"]["usedPercent"], 25.0)
         self.assertEqual([req["auth"] for req in server.requests], ["Bearer " + API_KEY])
 
+    def test_cost_provider_nan_returns_normalized_cost_payload(self):
+        cost_body = {
+            "object": "usage.report",
+            "data": [
+                {
+                    "date": "2026-11-03",
+                    "model": "deepseek-v4-flash",
+                    "prompt_tokens": 140_000_000,
+                    "cached_tokens": 100_000_000,
+                    "completion_tokens": 10_000_000,
+                    "total_tokens": 150_000_000,
+                    "credits": 0,
+                },
+                {
+                    "date": "2026-11-04",
+                    "model": "deepseek-v4-flash",
+                    "prompt_tokens": 90_000_000,
+                    "cached_tokens": 40_000_000,
+                    "completion_tokens": 10_000_000,
+                    "total_tokens": 100_000_000,
+                    "credits": 0,
+                },
+                {
+                    "date": "2026-11-04",
+                    "model": "glm5.3-flash",
+                    "prompt_tokens": 45_000_000,
+                    "cached_tokens": 20_000_000,
+                    "completion_tokens": 5_000_000,
+                    "total_tokens": 50_000_000,
+                    "credits": 0,
+                },
+            ],
+        }
+        real = self.fake_codexbar("[]")
+        with FakeNanServer(body=cost_body) as server:
+            result = self.run_adapter(
+                ["cost", "--provider", "nan", "--format", "json", "--json-only"], server, real
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.real_calls(), [])
+        entries = json.loads(result.stdout)
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(entry["provider"], "nan")
+        self.assertEqual(entry["source"], "local")
+        self.assertEqual(entry["last30DaysTokens"], 300_000_000)
+        self.assertEqual(entry["sessionTokens"], 150_000_000)
+        self.assertGreater(entry["last30DaysCostUSD"], 0)
+        self.assertGreater(entry["sessionCostUSD"], 0)
+        self.assertEqual(len(entry["daily"]), 2)
+        self.assertEqual(entry["daily"][0]["date"], "2026-11-03")
+        self.assertEqual(entry["daily"][1]["date"], "2026-11-04")
+        self.assertEqual(
+            [m["modelName"] for m in entry["daily"][1]["modelBreakdowns"]],
+            ["deepseek-v4-flash", "glm5.3-flash"],
+        )
+
 
 def load_adapter_module():
     import importlib.machinery
