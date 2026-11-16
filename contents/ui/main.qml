@@ -163,21 +163,6 @@ PlasmoidItem {
         notificationsEnabled: root.enableQuotaNotifications
     }
 
-    AccountSwitchController {
-        id: accountSwitchController
-        onSwitchSucceeded: root.refresh()
-    }
-
-    function hasAntigravityProvider() {
-        for (var i = 0; i < root.visibleProviders.length; i++) {
-            var item = root.visibleProviders[i]
-            if (item && item.provider === "antigravity") {
-                return true
-            }
-        }
-        return false
-    }
-
     function checkNotifications() {
         var throttledIds = RateLimitPolicy.rateLimitedProviderIds(root.controller.committedErrors)
         var retryMinutes = RateLimitPolicy.retryMinutes(root.controller.retryDelayMs())
@@ -238,13 +223,6 @@ PlasmoidItem {
             icon.name: "view-refresh"
             enabled: root.controller.phase !== "loading"
             onTriggered: root.refresh()
-        },
-        PlasmaCore.Action {
-            text: Translation.translate("Switch Antigravity account", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
-            icon.name: "system-switch-user"
-            visible: accountSwitchController.available && root.hasAntigravityProvider()
-            enabled: !accountSwitchController.switching && root.controller.phase !== "loading"
-            onTriggered: accountSwitchController.switchNext()
         }
     ]
 
@@ -448,10 +426,7 @@ PlasmoidItem {
                             costSnapshot: (root.pinnedProvider.length > 0 ? root.pinnedProviderData : providerSelector.selectedProvider)
                                 ? costController.snapshotFor((root.pinnedProvider.length > 0 ? root.pinnedProviderData.provider : providerSelector.selectedProvider.provider), root.controller.committedGeneration)
                                 : null
-                            canSwitchAccount: accountSwitchController.available
-                            switchBusy: accountSwitchController.switching || root.controller.phase === "loading"
                             Layout.fillWidth: true
-                            onAccountSwitchRequested: accountSwitchController.switchNext()
                         }
 
                         PlasmaComponents.Label {

@@ -33,7 +33,7 @@ Short post-parity backlog. Product behavior for usage, selected-provider enrichm
 ## Explicit non-goals
 
 - Web design tooling as UI authority (OpenPencil / Impeccable-style stacks)
-- Auth, Add Account, Quit, or redeeming reset credits inside the plasmoid (account credentials and switching logic remain external to QML)
+- Auth, Add Account, Quit, or redeeming reset credits inside the plasmoid
 - Computing token prices in QML
 - Full `plasmawindowed` screenshot CI on GitHub-hosted runners
 

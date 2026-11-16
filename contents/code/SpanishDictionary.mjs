@@ -119,8 +119,6 @@ export var DICTIONARY = {
     // Chrome & actions
     "Refresh": "Actualizar",
     "Refresh now": "Actualizar ahora",
-    "Switch Antigravity account": "Cambiar cuenta de Antigravity",
-    "Switching Antigravity account…": "Cambiando cuenta de Antigravity…",
     "Configure...": "Configurar...",
     "Configure": "Configurar",
     "Refresh usage": "Actualizar uso",

@@ -87,39 +87,6 @@ TestCase {
             }
 
             UsageUi.ProviderRow {
-                id: antigravitySwitchRow
-                width: parent.width
-                canSwitchAccount: true
-                property int switchCount: 0
-                onAccountSwitchRequested: switchCount += 1
-                providerData: ({
-                    provider: "antigravity",
-                    source: "local",
-                    windows: [{ label: "Session", usedPercent: 10 }],
-                    raw: {
-                        version: "1.0.0",
-                        usage: {
-                            loginMethod: "Pro",
-                            identity: { accountEmail: "gilardgino@gmail.com" },
-                            details: []
-                        }
-                    }
-                })
-            }
-
-            UsageUi.ProviderRow {
-                id: claudeNonSwitchRow
-                width: parent.width
-                canSwitchAccount: true
-                providerData: ({
-                    provider: "claude",
-                    source: "oauth",
-                    windows: [{ label: "Session", usedPercent: 10 }],
-                    raw: { usage: { loginMethod: "Claude Pro", details: [] } }
-                })
-            }
-
-            UsageUi.ProviderRow {
                 id: malformedRow
                 y: validRow.height
                 width: parent.width
@@ -593,28 +560,5 @@ TestCase {
         verify(incidentLabel !== null)
         verify(incidentLabel.visible)
         verify(incidentLabel.text.indexOf("Partial API outage") !== -1)
-    }
-
-    function test_antigravitySwitchButtonRendersOnlyForAntigravityDetailAndFiresSignal() {
-        var nonSwitchBtn = findByObjectName(claudeNonSwitchRow, "switchAccountButton")
-        verify(nonSwitchBtn === null || !nonSwitchBtn.visible,
-               "non-antigravity providers must never display switchAccountButton")
-
-        var summaryBtn = findByObjectName(summaryIncidentRow, "switchAccountButton")
-        verify(summaryBtn === null || !summaryBtn.visible,
-               "summary overview rows must never display switchAccountButton")
-
-        var switchBtn = findByObjectName(antigravitySwitchRow, "switchAccountButton")
-        verify(switchBtn !== null && switchBtn.visible,
-               "Antigravity detail header must display switchAccountButton when canSwitchAccount is true")
-        verify(switchBtn.enabled, "switchAccountButton starts enabled")
-
-        mouseClick(switchBtn)
-        compare(antigravitySwitchRow.switchCount, 1,
-                "clicking switchAccountButton must emit accountSwitchRequested")
-
-        antigravitySwitchRow.switchBusy = true
-        verify(!switchBtn.enabled, "switchAccountButton must disable while switching")
-        antigravitySwitchRow.switchBusy = false
     }
 }

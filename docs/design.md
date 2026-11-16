@@ -58,7 +58,7 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
    - `ResetCreditsSection.qml` (when `availableCount > 0`)
    - `CostSection.qml` + `CostHistogram.qml` (when a valid cost snapshot exists for the selected provider, with daily hover tooltips)
    - `ProviderDetails.qml` (collapsed-by-default disclosure for sanitized `usage.details[]`)
-5. **Pinned bottom footer (`bottomChromeRow`) & panel context menu (`Plasmoid.contextualActions`):** Refresh action (`Loading` indicator while active) and Configure button in the popup footer, plus native panel right-click **Refresh now** and optional **Switch Antigravity account** `PlasmaCore.Action` entries (`AccountSwitchController.qml`).
+5. **Pinned bottom footer (`bottomChromeRow`) & panel context menu (`Plasmoid.contextualActions`):** Refresh action (`Loading` indicator while active) and Configure button in the popup footer, plus a native panel right-click **Refresh now** `PlasmaCore.Action`.
 
 ### 2. `UsageWindowRow` Layout Contract
 
