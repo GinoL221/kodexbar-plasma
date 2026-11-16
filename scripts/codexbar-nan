@@ -92,6 +92,18 @@ def load_models_config():
     return models, day
 
 
+def resolve_pi_nan_key():
+    try:
+        auth_path = os.path.join(os.path.expanduser("~"), ".pi", "agent", "auth.json")
+        with open(auth_path, encoding="utf-8") as handle:
+            data = json.load(handle)
+        nan_entry = data.get("nan") if isinstance(data, dict) else None
+        key = nan_entry.get("key") if isinstance(nan_entry, dict) else None
+        return key.strip() if isinstance(key, str) else ""
+    except Exception:
+        return ""
+
+
 def resolve_api_key():
     key = os.environ.get("NAN_API_KEY", "").strip()
     if key:
@@ -100,6 +112,9 @@ def resolve_api_key():
     try:
         mode = os.stat(path).st_mode
     except OSError:
+        pi_key = resolve_pi_nan_key()
+        if pi_key:
+            return pi_key
         raise NanError("config", "NAN_API_KEY is not set and no key file was found at %s" % path)
     if mode & 0o077:
         raise NanError("config", "Key file %s is readable by other users; run chmod 600 on it" % path)
@@ -169,7 +184,15 @@ def collect_nan_entry():
         key = resolve_api_key()
         now = utc_now()
         start, end = billing_period(now, renewal_day)
-        return build_entry(fetch_usage(key, start), models, start, end, now)
+        try:
+            report = fetch_usage(key, start)
+        except NanError as error:
+            pi_key = resolve_pi_nan_key() if "HTTP 401" in error.message else ""
+            if pi_key and pi_key != key:
+                report = fetch_usage(pi_key, start)
+            else:
+                raise
+        return build_entry(report, models, start, end, now)
     except NanError as error:
         return error_entry(error)
     except Exception as error:  # never let NaN break the other providers

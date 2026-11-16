@@ -28,16 +28,23 @@ USAGE_REPORT = {
 
 
 class FakeNanServer:
-    def __init__(self, status=200, body=None):
+    def __init__(self, status=200, body=None, required_token=None):
         self.requests = []
         outer = self
         payload = USAGE_REPORT if body is None else body
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
-                outer.requests.append({"path": self.path, "auth": self.headers.get("Authorization")})
-                data = json.dumps(payload).encode()
-                self.send_response(status)
+                auth = self.headers.get("Authorization")
+                outer.requests.append({"path": self.path, "auth": auth})
+                if required_token is not None and auth != "Bearer " + required_token:
+                    resp_status = 401
+                    resp_payload = {"error": {"message": "Invalid authentication credentials"}}
+                else:
+                    resp_status = status
+                    resp_payload = payload
+                data = json.dumps(resp_payload).encode()
+                self.send_response(resp_status)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
@@ -264,6 +271,43 @@ class UsageMergeTest(AdapterTestCase):
         ag = [entry for entry in entries if entry.get("provider") == "antigravity"][0]
         self.assertEqual(ag["usage"]["accountEmail"], "active@example.com")
         self.assertEqual(ag["usage"]["identity"]["accountEmail"], "active@example.com")
+
+    def write_pi_auth(self, key_value):
+        pi_dir = self.home / ".pi" / "agent"
+        pi_dir.mkdir(parents=True, exist_ok=True)
+        (pi_dir / "auth.json").write_text(json.dumps({"nan": {"type": "api_key", "key": key_value}}))
+
+    def test_pi_auth_json_key_is_used_when_primary_key_returns_401(self):
+        self.write_pi_auth(API_KEY)
+        real = self.fake_codexbar("[]")
+        with FakeNanServer(required_token=API_KEY) as server:
+            result = self.run_adapter(
+                ["usage", "--provider", "nan", "--json"],
+                server,
+                real,
+                env_extra={"NAN_API_KEY": "stale-key"},
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        nan = json.loads(result.stdout)[0]
+        self.assertAlmostEqual(nan["usage"]["primary"]["usedPercent"], 25.0)
+        self.assertEqual([req["auth"] for req in server.requests], ["Bearer stale-key", "Bearer " + API_KEY])
+
+    def test_pi_auth_json_key_is_used_when_no_env_or_key_file_exists(self):
+        self.write_pi_auth(API_KEY)
+        real = self.fake_codexbar("[]")
+        with FakeNanServer(required_token=API_KEY) as server:
+            result = self.run_adapter(
+                ["usage", "--provider", "nan", "--json"],
+                server,
+                real,
+                drop_key=True,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        nan = json.loads(result.stdout)[0]
+        self.assertAlmostEqual(nan["usage"]["primary"]["usedPercent"], 25.0)
+        self.assertEqual([req["auth"] for req in server.requests], ["Bearer " + API_KEY])
 
 
 def load_adapter_module():
