@@ -57,6 +57,7 @@ Defined in [main.xml](../contents/config/main.xml) and exposed in [configGeneral
 | `excludedProviders` | `""` | Comma-separated provider IDs hidden from presentation. |
 | `providerOrder` | `""` | Custom ordering of visible providers (reorderable via settings or tab bar). |
 | `language` | `"auto"` | UI translation override (`auto`, `en`, `es` via `Translation.mjs` and `SpanishDictionary.mjs`). |
+| `codexRemoteHosts` | `""` | Optional comma-separated SSH hosts passed to `codexbar cost --provider codex --remote <host>` for multi-PC Codex cost aggregation. |
 
 ## Privacy & Trust Boundaries
 

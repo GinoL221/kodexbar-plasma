@@ -37,3 +37,33 @@ export function shouldRequestCost(isAllSelected, provider, usageGeneration, hasS
     }
     return !hasSnapshot
 }
+
+export function parseRemoteHosts(rawHosts) {
+    var tokens
+    if (Array.isArray(rawHosts)) {
+        tokens = rawHosts
+    } else if (typeof rawHosts === "string") {
+        tokens = rawHosts.split(",")
+    } else {
+        return []
+    }
+    var seen = Object.create(null)
+    var hosts = []
+    for (var i = 0; i < tokens.length; i++) {
+        if (typeof tokens[i] !== "string") {
+            continue
+        }
+        var host = tokens[i].trim()
+        if (host.length === 0 || host.toLowerCase() === "local") {
+            continue
+        }
+        if (!/^[A-Za-z0-9][A-Za-z0-9._:@-]*$/.test(host)) {
+            continue
+        }
+        if (!seen[host]) {
+            seen[host] = true
+            hosts.push(host)
+        }
+    }
+    return hosts
+}

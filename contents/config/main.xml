@@ -42,5 +42,8 @@
     <entry name="language" type="String">
       <default>auto</default>
     </entry>
+    <entry name="codexRemoteHosts" type="String">
+      <default></default>
+    </entry>
   </group>
 </kcfg>

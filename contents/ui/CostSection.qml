@@ -189,9 +189,14 @@ ColumnLayout {
     PlasmaComponents.Label {
         id: costLocalEstimateLabel
         objectName: "costLocalEstimateLabel"
-        visible: root.hasSnapshot && root.snapshot.source === "local"
+        visible: root.hasSnapshot && (root.snapshot.source === "local" || root.snapshot.source === "remote")
         text: visible
-            ? Translation.translate("Local token-cost estimate", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+            ? Translation.translate(
+                root.snapshot.source === "remote" ? "Local + remote SSH token-cost estimate" : "Local token-cost estimate",
+                [],
+                typeof i18n === "function" ? i18n : null,
+                root.languagePreference
+            )
             : ""
         color: Kirigami.Theme.disabledTextColor
         font.pointSize: Kirigami.Theme.smallFont.pointSize

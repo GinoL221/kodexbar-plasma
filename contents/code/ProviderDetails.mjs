@@ -368,7 +368,7 @@ function computeLocalPaceInfo(rawWindow, fallbackUsedPercent, nowMs) {
         return null
     }
     var windowMinutes = rawValue(rawWindow, "windowMinutes")
-    if (typeof windowMinutes !== "number" || !isFinite(windowMinutes) || windowMinutes < 1440) {
+    if (typeof windowMinutes !== "number" || !isFinite(windowMinutes) || windowMinutes < 300) {
         return null
     }
     var rawUsed = rawValue(rawWindow, "usedPercent")

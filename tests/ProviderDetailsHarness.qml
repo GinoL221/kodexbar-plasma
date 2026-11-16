@@ -227,28 +227,34 @@ Item {
         assert(paceByKey.primary === "42% used" && paceByKey.secondary === "67% used" && paceByKey.tertiary === "10% in reserve",
                "paceSummaryByKey must preserve window keys regardless of custom labels")
 
-        // Universal pace computation fallback when CLI omits pace on >=1d windows
+        // Universal pace computation fallback when CLI omits pace on >=5h (300m) windows
         var fakeNow = Date.parse("2026-11-16T01:00:00Z")
         var localPaceInfo = ProviderDetails.paceInfoByKey({
             provider: "codex",
             windows: [
                 { key: "primary", label: "Session", usedPercent: 10 },
-                { key: "secondary", label: "Weekly", usedPercent: 40 }
+                { key: "secondary", label: "Weekly", usedPercent: 40 },
+                { key: "tertiary", label: "Burst", usedPercent: 20 }
             ],
             raw: {
                 provider: "codex",
                 usage: {
                     primary: { usedPercent: 10, windowMinutes: 300, resetsAt: "2026-11-16T04:00:00Z" },
-                    secondary: { usedPercent: 40, windowMinutes: 10080, resetsAt: "2026-11-18T01:00:00Z" }
+                    secondary: { usedPercent: 40, windowMinutes: 10080, resetsAt: "2026-11-18T01:00:00Z" },
+                    tertiary: { usedPercent: 20, windowMinutes: 60, resetsAt: "2026-11-16T01:30:00Z" }
                 }
             }
         }, fakeNow)
-        assert(localPaceInfo.primary === undefined,
-               "5h session windows (<1440m) must not invent a pace estimate")
+        assert(localPaceInfo.primary !== undefined
+               && localPaceInfo.primary.expectedUsedPercent === 40
+               && localPaceInfo.primary.summary === "30% in reserve | Expected 40% used | Lasts until reset",
+               "5h session windows (300m) must compute local pace matching Claude")
         assert(localPaceInfo.secondary !== undefined
                && localPaceInfo.secondary.expectedUsedPercent === 71
                && localPaceInfo.secondary.summary === "31% in reserve | Expected 71% used | Lasts until reset",
                "weekly codex window must compute local expectedUsedPercent and reserve summary")
+        assert(localPaceInfo.tertiary === undefined,
+               "sub-5h burst windows (<300m) must not invent a pace estimate")
 
         var cliPaceInfo = ProviderDetails.paceInfoByKey({
             provider: "claude",

@@ -42,6 +42,8 @@ KCM.SimpleKCM {
     property string cfg_providerOrderDefault
     property alias cfg_language: languageControl.selectedKey
     property string cfg_languageDefault
+    property alias cfg_codexRemoteHosts: codexRemoteHosts.text
+    property string cfg_codexRemoteHostsDefault
 
     readonly property var preferredWindowKeys: PreferredWindow.VALID_KEYS
     readonly property var defaultOrderCandidates: ProviderIcons.defaultOrderCandidates
@@ -274,6 +276,16 @@ KCM.SimpleKCM {
                     placeholderText: i18n("e.g. grok, synthetic (comma-separated)")
                     Accessible.name: i18n("Excluded provider IDs")
                     Accessible.description: i18n("Comma-separated list of provider IDs to hide from the panel summary and popup list.")
+                    Layout.preferredWidth: Kirigami.Units.gridUnit * 24
+                }
+
+                QQC2.TextField {
+                    id: codexRemoteHosts
+                    objectName: "codexRemoteHosts"
+                    Kirigami.FormData.label: Translation.translate("Codex remote hosts:", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
+                    placeholderText: Translation.translate("e.g. desktop, user@laptop.local (SSH hosts, comma-separated)", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
+                    Accessible.name: Translation.translate("Codex remote SSH hosts", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
+                    Accessible.description: Translation.translate("Optional comma-separated SSH hosts passed to 'codexbar cost --provider codex --remote <host>' for multi-machine Codex cost aggregation.", [], typeof i18n === "function" ? i18n : null, languageControl.selectedKey)
                     Layout.preferredWidth: Kirigami.Units.gridUnit * 24
                 }
 
