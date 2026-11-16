@@ -12,7 +12,6 @@ Item {
     property var disabled: null
     property var draining: null
     property var preempting: null
-    property var remoteCtrl: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -232,55 +231,6 @@ Item {
                && preempting.activeGeneration === 30 && preempting.activeIsPrefetch === true,
                "preempted prefetch must be re-queued and resume after interactive request completes")
         preempting.destroy()
-
-        remoteCtrl = controllerComponent.createObject(root, {
-            commandPath: "/tmp/codexbar",
-            remoteHosts: "desktop, user@laptop.local",
-            testMode: true,
-            cacheEnabled: false
-        })
-        remoteCtrl.request("codex", 40, false)
-        assert(remoteCtrl.activeSource === "'/tmp/codexbar' cost --provider 'codex' --remote 'desktop' --remote 'user@laptop.local' --format json --json-only",
-               "codex cost command must include validated --remote SSH hosts")
-        remoteCtrl.completeForTest(remoteCtrl.activeSerial, JSON.stringify([
-            {
-                host: "local",
-                source: "local",
-                summary: {
-                    provider: "codex",
-                    today: { costUSD: 1.5, totalTokens: 100 },
-                    history: { costUSD: 10, totalTokens: 1000 }
-                }
-            },
-            {
-                host: "desktop",
-                source: "ssh",
-                summary: {
-                    provider: "codex",
-                    today: { costUSD: 2.5, totalTokens: 200 },
-                    history: { costUSD: 20, totalTokens: 2000 }
-                }
-            }
-        ]), 0)
-        var remoteSnap = remoteCtrl.exactSnapshotFor("codex", 40)
-        assert(remoteSnap !== null && remoteSnap.sessionCostUSD === 4 && remoteSnap.last30DaysCostUSD === 30 && remoteSnap.source === "remote",
-               "codex remote controller must commit aggregated SSH cost snapshot")
-
-        remoteCtrl.request("claude", 40, false)
-        assert(remoteCtrl.activeSource === "'/tmp/codexbar' cost --provider 'claude' --format json --json-only",
-               "non-codex providers must ignore remoteHosts")
-        remoteCtrl.completeForTest(remoteCtrl.activeSerial, payloadFor("claude", 5), 0)
-
-        var invalidationSignals = 0
-        remoteCtrl.remoteHostsInvalidated.connect(function() { invalidationSignals += 1 })
-        remoteCtrl.remoteHosts = "workstation"
-        assert(invalidationSignals === 1,
-               "changing remoteHosts must emit remoteHostsInvalidated after invalidating codex cache")
-        assert(remoteCtrl.exactSnapshotFor("codex", 40) === null,
-               "changing remoteHosts must clear stale in-memory codex snapshots")
-        assert(remoteCtrl.exactSnapshotFor("claude", 40) !== null,
-               "changing remoteHosts must leave non-codex snapshots untouched")
-        remoteCtrl.destroy()
 
         finish()
     }

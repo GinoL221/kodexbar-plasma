@@ -90,6 +90,8 @@ Item {
                "Show details plural translates to Spanish")
         assert(Translation.plural("Hide %1 detail", "Hide %1 details", 1, null, "es") === "Ocultar 1 detalle",
                "Hide detail singular translates to Spanish")
+        assert(Translation.translate("Partially Degraded Service", [], null, "es") === "Servicio parcialmente degradado",
+               "Partially Degraded Service incident description translates to Spanish")
 
         finish()
     }

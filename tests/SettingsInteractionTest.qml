@@ -247,12 +247,4 @@ TestCase {
         settings.cfg_tintPanelIcon = true
         compare(settings.cfg_tintPanelIcon, true, "tintPanelIcon can be enabled")
     }
-
-    function test_codexRemoteHostsSettingsEditing() {
-        var control = findByProperty(settings, "objectName", "codexRemoteHosts")
-        verify(control !== null, "codexRemoteHosts text field must be discoverable")
-        compare(settings.cfg_codexRemoteHosts, "")
-        settings.cfg_codexRemoteHosts = "desktop, laptop.local"
-        compare(settings.cfg_codexRemoteHosts, "desktop, laptop.local")
-    }
 }

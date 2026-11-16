@@ -169,65 +169,6 @@ Item {
                && agNormalized.primaryModel === "gemini-3.8-flash-n",
                "Antigravity daily/model entries without cost must default cost to 0 while keeping tokens and primaryModel")
 
-        // Remote SSH cost payloads (`codexbar cost --provider codex --remote <host>`)
-        var remoteMixedPayload = [
-            {
-                host: "local",
-                source: "local",
-                summary: {
-                    provider: "codex",
-                    today: { costUSD: 1.25, totalTokens: 1000 },
-                    history: { costUSD: 12.5, totalTokens: 50000 }
-                }
-            },
-            {
-                host: "desktop",
-                source: "ssh",
-                summary: {
-                    provider: "codex",
-                    today: { costUSD: 2.75, totalTokens: 3000 },
-                    history: { costUSD: 17.5, totalTokens: 150000 }
-                }
-            },
-            {
-                host: "offline-laptop",
-                source: "ssh",
-                error: "Could not read remote costs."
-            }
-        ]
-        var remoteNormalized = CostModel.normalize(remoteMixedPayload, "codex")
-        assert(remoteNormalized !== null
-               && remoteNormalized.provider === "codex"
-               && remoteNormalized.source === "remote"
-               && remoteNormalized.sessionCostUSD === 4.0
-               && remoteNormalized.sessionTokens === 4000
-               && remoteNormalized.last30DaysCostUSD === 30.0
-               && remoteNormalized.last30DaysTokens === 200000
-               && Array.isArray(remoteNormalized.daily) && remoteNormalized.daily.length === 0
-               && remoteNormalized.primaryModel === "",
-               "remote summary arrays must aggregate reachable local+SSH rows and tolerate unreachable hosts")
-
-        var remoteAllErrored = [
-            { host: "offline-a", source: "ssh", error: "timeout" },
-            { host: "offline-b", source: "ssh", error: "connection refused" }
-        ]
-        assert(CostModel.normalize(remoteAllErrored, "codex") === null,
-               "remote array where all hosts failed must return null")
-
-        var remoteInvalidNumber = [
-            {
-                host: "local",
-                source: "local",
-                summary: {
-                    provider: "codex",
-                    today: { costUSD: -1, totalTokens: 1000 },
-                    history: { costUSD: 10, totalTokens: 5000 }
-                }
-            }
-        ]
-        assert(CostModel.normalize(remoteInvalidNumber, "codex") === null,
-               "remote summary with negative numeric fields must be rejected")
-
         finish()
     }
 }

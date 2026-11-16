@@ -80,95 +80,15 @@ export function extractPrimaryModel(daily) {
     return best
 }
 
-function isRemoteSummaryArray(payload) {
-    if (!(payload instanceof Array) || payload.length === 0) {
-        return false
-    }
-    var first = payload[0]
-    if (!first || typeof first !== "object" || first instanceof Array) {
-        return false
-    }
-    return typeof first.host === "string" && first.sessionCostUSD === undefined
-}
-
-function normalizeRemoteSummaries(payload, expectedProvider) {
-    var sessionCostUSD = 0
-    var sessionTokens = 0
-    var last30DaysCostUSD = 0
-    var last30DaysTokens = 0
-    var validCount = 0
-    var hasSsh = false
-
-    for (var i = 0; i < payload.length; ++i) {
-        var row = payload[i]
-        if (!row || typeof row !== "object" || row instanceof Array) {
-            return null
-        }
-        if (row.error !== undefined && row.error !== null) {
-            continue
-        }
-        var summary = rawValue(row, "summary")
-        if (!summary || typeof summary !== "object" || summary instanceof Array) {
-            return null
-        }
-        if (summary.provider !== expectedProvider) {
-            return null
-        }
-        var today = rawValue(summary, "today")
-        var history = rawValue(summary, "history")
-        if (!today || typeof today !== "object" || today instanceof Array
-            || !history || typeof history !== "object" || history instanceof Array) {
-            return null
-        }
-        var todayCost = rawValue(today, "costUSD")
-        var todayTokens = rawValue(today, "totalTokens")
-        var historyCost = rawValue(history, "costUSD")
-        var historyTokens = rawValue(history, "totalTokens")
-        if (!isFiniteNonNegative(todayCost)
-            || !isFiniteNonNegative(todayTokens)
-            || !isFiniteNonNegative(historyCost)
-            || !isFiniteNonNegative(historyTokens)) {
-            return null
-        }
-        sessionCostUSD += todayCost
-        sessionTokens += todayTokens
-        last30DaysCostUSD += historyCost
-        last30DaysTokens += historyTokens
-        validCount += 1
-        if (row.source === "ssh") {
-            hasSsh = true
-        }
-    }
-
-    if (validCount === 0) {
-        return null
-    }
-
-    return {
-        provider: expectedProvider,
-        source: hasSsh ? "remote" : "local",
-        sessionCostUSD: sessionCostUSD,
-        sessionTokens: sessionTokens,
-        last30DaysCostUSD: last30DaysCostUSD,
-        last30DaysTokens: last30DaysTokens,
-        daily: [],
-        primaryModel: ""
-    }
-}
-
 // Normalizes exactly one `cost --provider {provider} --format json --json-only`
-// response (or a `--remote` host-summary array) for the given expected provider.
-// Returns a copied, validated snapshot on success, or null when the payload is
-// empty, malformed, unsupported (error-shaped), for a different provider, or
-// carries any non-finite/negative numeric field. All four numeric fields must
-// be valid or the whole result is discarded — never a partial render.
+// response for the given expected provider. Returns a copied, validated
+// snapshot on success, or null when the payload is empty, malformed,
+// unsupported (error-shaped), for a different provider, or carries any
+// non-finite/negative numeric field. All four numeric fields must be valid
+// or the whole result is discarded — never a partial render.
 export function normalize(payload, expectedProvider) {
     if (typeof expectedProvider !== "string" || expectedProvider.length === 0) {
         return null
-    }
-
-    if (isRemoteSummaryArray(payload)) {
-        return normalizeRemoteSummaries(payload, expectedProvider)
     }
 
     var entry = singleEntry(payload)

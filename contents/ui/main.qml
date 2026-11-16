@@ -36,7 +36,6 @@ PlasmoidItem {
     property string excludedProviders: plasmoidConfiguration.excludedProviders || ""
     property string providerOrder: plasmoidConfiguration.providerOrder || ""
     property string languagePreference: plasmoidConfiguration.language || "auto"
-    property string codexRemoteHosts: plasmoidConfiguration.codexRemoteHosts || ""
     property string pinnedProvider: plasmoidConfiguration.pinnedProvider || ""
     property string panelDisplayStyle: plasmoidConfiguration.panelDisplayStyle || "iconOnly"
     property alias controller: controller
@@ -151,16 +150,10 @@ PlasmoidItem {
     CostController {
         id: costController
         commandPath: root.codexbarCommand
-        remoteHosts: root.codexRemoteHosts
         cacheEnabled: true
         // Instances share one scan per cycle: a record another instance saved
         // within 90% of the refresh interval is reused instead of rescanned.
         sharedFreshnessMs: Math.floor(root.refreshSeconds * 900)
-        onRemoteHostsInvalidated: {
-            if (root.controller.committedGeneration > 0) {
-                root.prefetchSupportedCosts()
-            }
-        }
     }
 
     NotificationController {

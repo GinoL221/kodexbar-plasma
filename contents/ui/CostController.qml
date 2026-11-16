@@ -18,7 +18,6 @@ Item {
     readonly property var allowedProviders: CostRequestPolicy.supportedProviders
 
     property string commandPath: ""
-    property string remoteHosts: ""
     property int timeoutMs: 60000
     property bool testMode: false
     property bool cacheEnabled: false
@@ -27,11 +26,6 @@ Item {
     // instead of spawning a CLI scan, so several widget instances share one
     // scan per refresh cycle. 0 disables sharing.
     property int sharedFreshnessMs: 0
-    property string _appliedRemoteHostsKey: ""
-    property bool _initialized: false
-    property string _bypassSharedCacheProvider: ""
-
-    signal remoteHostsInvalidated()
 
     readonly property string effectiveCommandPath: _effectiveCommandPath
     property string _effectiveCommandPath: ""
@@ -51,55 +45,9 @@ Item {
     readonly property int activeRequestCount: requestActive ? 1 : 0
 
     Component.onCompleted: {
-        root._appliedRemoteHostsKey = CostRequestPolicy.parseRemoteHosts(root.remoteHosts).join(",")
-        root._initialized = true
         if (root.cacheEnabled) {
             root.hydrateFromCache()
         }
-    }
-
-    onRemoteHostsChanged: {
-        if (!root._initialized) {
-            return
-        }
-        var nextKey = CostRequestPolicy.parseRemoteHosts(root.remoteHosts).join(",")
-        if (nextKey === root._appliedRemoteHostsKey) {
-            return
-        }
-        root._appliedRemoteHostsKey = nextKey
-        root.invalidateProvider("codex")
-        root.remoteHostsInvalidated()
-    }
-
-    function invalidateProvider(provider) {
-        if (requestActive && activeProvider === provider) {
-            releaseActive()
-        }
-        var keptQueue = []
-        for (var i = 0; i < pendingQueue.length; ++i) {
-            if (pendingQueue[i].provider !== provider) {
-                keptQueue.push(pendingQueue[i])
-            }
-        }
-        pendingQueue = keptQueue
-
-        var prefix = provider + ":"
-        var nextSnapshots = {}
-        for (var key in snapshots) {
-            if (key.indexOf(prefix) !== 0) {
-                nextSnapshots[key] = snapshots[key]
-            }
-        }
-        snapshots = nextSnapshots
-
-        var nextCached = {}
-        for (var p in cachedSnapshots) {
-            if (p !== provider) {
-                nextCached[p] = cachedSnapshots[p]
-            }
-        }
-        cachedSnapshots = nextCached
-        root._bypassSharedCacheProvider = provider
     }
 
     function hydrateFromCache() {
@@ -122,15 +70,9 @@ Item {
     }
 
     function commandLineFor(provider) {
-        var cmd = PathResolver.shellQuote(effectiveCommandPath)
+        return PathResolver.shellQuote(effectiveCommandPath)
             + " cost --provider " + PathResolver.shellQuote(provider)
-        if (provider === "codex") {
-            var hosts = CostRequestPolicy.parseRemoteHosts(root.remoteHosts)
-            for (var i = 0; i < hosts.length; ++i) {
-                cmd += " --remote " + PathResolver.shellQuote(hosts[i])
-            }
-        }
-        return cmd + " --format json --json-only"
+            + " --format json --json-only"
     }
 
     // Returns a validated snapshot: exact generation match if present,
@@ -166,8 +108,7 @@ Item {
             return
         }
 
-        var bypassCache = root._bypassSharedCacheProvider === provider
-        var shared = bypassCache ? null : sharedFreshRecord(provider)
+        var shared = sharedFreshRecord(provider)
         if (shared !== null) {
             // Reuse never re-persists, so the record keeps its original age
             // and a later cycle still triggers a real scan.
@@ -178,9 +119,6 @@ Item {
         var validation = validatePath(commandPath)
         if (!validation.valid) {
             return
-        }
-        if (bypassCache) {
-            root._bypassSharedCacheProvider = ""
         }
 
         if (requestActive) {

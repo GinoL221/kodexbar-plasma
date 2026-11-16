@@ -63,12 +63,6 @@ Item {
         assert(CostRequestPolicy.prefetchTargets("", null).length === 0,
                "an invalid visible list means no prefetch")
 
-        // Remote SSH host parsing for Codex cost queries
-        assert(JSON.stringify(CostRequestPolicy.parseRemoteHosts("")) === JSON.stringify([]),
-               "empty remote hosts string must return []")
-        assert(JSON.stringify(CostRequestPolicy.parseRemoteHosts(" desktop, user@laptop.local , desktop, local, --bad-flag, bad;cmd ")) === JSON.stringify(["desktop", "user@laptop.local"]),
-               "parseRemoteHosts must trim, deduplicate, omit 'local', and reject flags or unsafe characters")
-
         finish()
     }
 }
