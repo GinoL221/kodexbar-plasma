@@ -107,20 +107,27 @@ printf 'Para añadir el widget a tu panel:\n'
 printf '1. Hacé clic derecho en tu panel de Plasma -> "Añadir elementos gráficos..."\n'
 printf '2. Buscá "KodexBar Plasma" y arrastralo a la barra de tareas.\n'
 
-RESTART_OPT="${1:-}"
-if [ "$RESTART_OPT" = "--restart" ]; then
-    printf '\nReiniciando plasmashell...\n'
+restart_plasmashell() {
+    if command -v systemctl >/dev/null 2>&1 \
+        && systemctl --user restart plasma-plasmashell.service >/dev/null 2>&1; then
+        printf '✓ plasma-plasmashell.service reiniciado.\n'
+        return 0
+    fi
     nohup plasmashell --replace >/dev/null 2>&1 &
     sleep 2
     printf '✓ plasmashell reiniciado.\n'
+}
+
+RESTART_OPT="${1:-}"
+if [ "$RESTART_OPT" = "--restart" ]; then
+    printf '\nReiniciando plasmashell...\n'
+    restart_plasmashell
 elif [ -t 0 ]; then
     printf '\n¿Deseás reiniciar plasmashell ahora para aplicar los cambios al panel? [s/N]: '
     read -r rst || rst="n"
     case "$rst" in
         [sS]|[yY])
-            nohup plasmashell --replace >/dev/null 2>&1 &
-            sleep 2
-            printf '✓ plasmashell reiniciado.\n'
+            restart_plasmashell
             ;;
     esac
 fi
