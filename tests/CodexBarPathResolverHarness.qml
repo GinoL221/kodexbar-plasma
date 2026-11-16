@@ -72,6 +72,13 @@ Item {
         assert(discovery.indexOf("PATH") === -1 && discovery.indexOf("command -v") === -1
                     && discovery.indexOf("find ") === -1 && discovery.indexOf("findExecutable") === -1,
                 "discovery must not use PATH lookup or filesystem scanning")
+
+        var agSwitch = Resolver.antigravitySwitchDiscoveryCommand()
+        assert(agSwitch.indexOf("cpa-antigravity") !== -1 && agSwitch.indexOf("test -x") !== -1,
+               "Antigravity switch discovery must probe $HOME/.local/bin/cpa-antigravity with test -x")
+        assert(agSwitch.indexOf("PATH") === -1 && agSwitch.indexOf("command -v") === -1,
+               "Antigravity switch discovery must not scan PATH")
+
         runNextRuntimeScenario()
     }
 

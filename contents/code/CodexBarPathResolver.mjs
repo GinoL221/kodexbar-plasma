@@ -31,3 +31,9 @@ export function discoveryCommand() {
         + "if [ -n \"${HOMEBREW_PREFIX-}\" ] && [ \"${HOMEBREW_PREFIX#/}\" != \"$HOMEBREW_PREFIX\" ]; then "
         + "candidate=\"$HOMEBREW_PREFIX/bin/codexbar\"; if test -x \"$candidate\"; then printf '%s\\n' \"$candidate\"; exit 0; fi; fi; exit 1"
 }
+
+export function antigravitySwitchDiscoveryCommand() {
+    return "if [ -n \"${HOME-}\" ] && [ \"${HOME#/}\" != \"$HOME\" ]; then "
+        + "candidate=\"$HOME/.local/bin/cpa-antigravity\"; "
+        + "if test -x \"$candidate\"; then printf '%s\\n' \"$candidate\"; exit 0; fi; fi; exit 1"
+}

@@ -59,10 +59,6 @@ ColumnLayout {
         ? (root.titleText + " — " + root.todayLabelText + ", " + root.monthlyLabelText)
         : ""
 
-    Kirigami.Separator {
-        Layout.fillWidth: true
-    }
-
     RowLayout {
         Layout.fillWidth: true
         spacing: Kirigami.Units.largeSpacing

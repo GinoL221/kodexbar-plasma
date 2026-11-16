@@ -21,9 +21,13 @@ ColumnLayout {
     // ever bound for the single selected-detail row; summary/All rows never
     // receive one, so CostSection never renders for them.
     property var costSnapshot: null
+    property bool canSwitchAccount: false
+    property bool switchBusy: false
     property string languagePreference: "en"
     readonly property alias providerDetails: providerDetails
     readonly property alias resetCreditsSection: resetCreditsSection
+
+    signal accountSwitchRequested()
 
     readonly property var windows: providerData && providerData.windows instanceof Array
         ? providerData.windows : []
@@ -215,9 +219,12 @@ ColumnLayout {
             ProviderHeader {
                 providerData: root.providerData
                 detailed: root.showHeaderDetails
+                canSwitchAccount: root.showHeaderDetails && root.canSwitchAccount && root.providerValue === "antigravity"
+                switchBusy: root.switchBusy
                 languagePreference: root.languagePreference
                 iconResolver: root.iconResolver
                 Layout.fillWidth: true
+                onAccountSwitchRequested: root.accountSwitchRequested()
             }
 
             Kirigami.Separator {

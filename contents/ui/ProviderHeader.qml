@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
@@ -18,9 +19,13 @@ RowLayout {
 
     property var providerData: ({})
     property bool detailed: false
+    property bool canSwitchAccount: false
+    property bool switchBusy: false
     property string languagePreference: "en"
     property var iconResolver: function(value) { return "dialog-information" }
     property real nowMs: Date.now()
+
+    signal accountSwitchRequested()
 
     readonly property string providerValue: providerData && providerData.provider !== null
         && providerData.provider !== undefined ? String(providerData.provider) : ""
@@ -144,7 +149,7 @@ RowLayout {
 
     ColumnLayout {
         Layout.alignment: Qt.AlignTop | Qt.AlignRight
-        visible: root.detailed && (root.headerLogin.length > 0 || root.headerEmail.length > 0)
+        visible: root.detailed && (root.headerLogin.length > 0 || root.headerEmail.length > 0 || root.canSwitchAccount)
         spacing: Math.max(1, Math.round(Kirigami.Units.smallSpacing / 3))
 
         PlasmaComponents.Label {
@@ -158,16 +163,50 @@ RowLayout {
             Layout.alignment: Qt.AlignRight
         }
 
-        PlasmaComponents.Label {
-            id: emailLabel
-            objectName: "emailLabel"
-            visible: root.detailed && root.headerEmail.length > 0
-            text: root.headerEmail
-            color: Kirigami.Theme.disabledTextColor
-            font.pointSize: Kirigami.Theme.smallFont.pointSize
-            elide: Text.ElideRight
-            horizontalAlignment: Text.AlignRight
+        RowLayout {
             Layout.alignment: Qt.AlignRight
+            visible: root.detailed && (root.headerEmail.length > 0 || root.canSwitchAccount)
+            spacing: Math.max(2, Math.round(Kirigami.Units.smallSpacing / 2))
+
+            PlasmaComponents.Label {
+                id: emailLabel
+                objectName: "emailLabel"
+                visible: root.detailed && root.headerEmail.length > 0
+                text: root.headerEmail
+                color: Kirigami.Theme.disabledTextColor
+                font.pointSize: Kirigami.Theme.smallFont.pointSize
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignRight
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+            }
+
+            QQC2.ToolButton {
+                id: switchAccountButton
+                objectName: "switchAccountButton"
+                visible: root.detailed && root.canSwitchAccount
+                enabled: !root.switchBusy
+                icon.name: "system-switch-user"
+                display: QQC2.AbstractButton.IconOnly
+                flat: true
+                implicitWidth: Kirigami.Units.iconSizes.small + Kirigami.Units.smallSpacing
+                implicitHeight: Kirigami.Units.iconSizes.small + Kirigami.Units.smallSpacing
+                QQC2.ToolTip.visible: hovered
+                QQC2.ToolTip.delay: 250
+                QQC2.ToolTip.text: Translation.translate(
+                    root.switchBusy ? "Switching Antigravity account…" : "Switch Antigravity account",
+                    [],
+                    typeof i18n === "function" ? i18n : null,
+                    root.languagePreference
+                )
+                Accessible.name: Translation.translate(
+                    "Switch Antigravity account",
+                    [],
+                    typeof i18n === "function" ? i18n : null,
+                    root.languagePreference
+                )
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: root.accountSwitchRequested()
+            }
         }
     }
 

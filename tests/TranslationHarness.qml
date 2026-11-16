@@ -100,6 +100,8 @@ Item {
                "Today summary template translates to Spanish")
         assert(Translation.translate("30 days: %1", ["$61,73"], null, "es") === "30 días: $61,73",
                "30 days summary template translates to Spanish")
+        assert(Translation.translate("Switch Antigravity account", [], null, "es") === "Cambiar cuenta de Antigravity",
+               "Switch Antigravity account translates to Spanish")
 
         finish()
     }

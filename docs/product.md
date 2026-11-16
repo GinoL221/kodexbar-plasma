@@ -12,7 +12,7 @@ KodexBar Plasma (`org.kde.plasma.kodexbar.plasma`) is a native KDE Plasma 6 pane
 
 ## Product Commitments & Non-Goals
 
-1. **Read-only CLI consumer:** The widget never stores API keys, manages cookies, switches accounts, redeems credits, or triggers remote resets.
+1. **Read-only CLI consumer (with optional external Antigravity helper):** The widget never stores API keys, manages cookies, redeems credits, or triggers remote resets. When `~/.local/bin/cpa-antigravity` is installed, users can optionally trigger an Antigravity account toggle via the external script and immediately poll updated usage.
 2. **Native Plasma ergonomics first:** Every surface uses Plasma 6 and Kirigami primitives, `Kirigami.Theme` palettes, and `Kirigami.Units` spacing—never web-dashboard cards or macOS glass clones.
 3. **Flexible panel topology:** Users can run one unified widget cycling across all visible providers, or pin multiple independent widget instances (`pinnedProvider`) to specific providers with configurable panel labels (`iconOnly`, `iconAndPercent`, `iconNameAndPercent`).
 4. **Resilient local state:** Startup hydrates immediately from local SQLite (`SnapshotStorage.mjs`). Timeouts, CLI errors, or rate-limit responses preserve the last committed snapshot and apply exponential rate-limit backoff (`RateLimitPolicy.mjs`).
@@ -32,7 +32,7 @@ KodexBar Plasma (`org.kde.plasma.kodexbar.plasma`) is a native KDE Plasma 6 pane
 ### Popup Representation (`main.qml`)
 
 - **Overview (`All` tab):** Compact list of all visible usable providers (`ProviderRow.qml` in summary mode). Each card renders the provider icon, display name, and single-line usage bars (`Session`, `Weekly`, `Monthly`, or mapped tertiary windows such as Antigravity `Argon` and Claude `Fable`), followed by a combined `Total cost` footer (`OverviewCostSummary.qml`) when any visible provider has cached/live cost snapshots.
-- **Panel context menu (`Plasmoid.contextualActions`):** Right-clicking the panel widget exposes a native **Refresh now** action without opening the popup.
+- **Panel context menu (`Plasmoid.contextualActions`):** Right-clicking the panel widget exposes a native **Refresh now** action and (when `~/.local/bin/cpa-antigravity` is present) **Switch Antigravity account** without opening the popup.
 - **Provider detail (Selected tab or Pinned mode):**
   - **Header (`ProviderHeader.qml`):** Provider name, relative update timestamp, active provider incident status when reported (`--status`), plan/login badge, and optional account email.
   - **Usage windows (`UsageWindowRow.qml`):** Full-width progress bars with an expected-usage pace marker when window timing allows, threshold-colored usage percentages, standardized reset countdowns (`ResetTimeFormatter.mjs`), and pace summaries (`ProviderDetails.mjs`).
