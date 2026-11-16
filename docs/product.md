@@ -60,6 +60,6 @@ Defined in [main.xml](../contents/config/main.xml) and exposed in [configGeneral
 
 ## Privacy & Trust Boundaries
 
-- **UI & SQLite redaction:** `ProviderDetails.mjs` and `ProviderHeader.qml` filter sensitive free-form detail rows and keep raw email/organization strings off primary chrome, and `SnapshotStorage.mjs` strips `accountEmail` and `accountOrganization` before persisting snapshots to local SQLite (`QtQuick.LocalStorage`) while validating cached cost numeric fields on read.
+- **UI & SQLite privacy:** `ProviderDetails.mjs` filters sensitive free-form detail rows and keeps `accountOrganization` off UI chrome, `ProviderHeader.qml` shows validated `accountEmail` only in the detailed provider header (never in `All` overview), and `SnapshotStorage.mjs` strips `accountOrganization` before persisting snapshots to local SQLite (`QtQuick.LocalStorage`) while preserving `accountEmail` and validating cached cost numeric fields on read.
 - **Presentation filtering:** Adding a provider to `excludedProviders` hides it from the panel and popup (`ProviderFilterPolicy.mjs`), but `UsageController.qml` still runs a single `usage --format json --json-only` query and `NotificationController.qml` evaluates `committedProviders`.
 - **External NaN adapter:** [scripts/codexbar-nan](../scripts/codexbar-nan) reads `NAN_API_KEY` from the environment or `~/.config/codexbar/nan-api-key` (requiring `0600` permissions) and merges NaN Cloud quotas with upstream `codexbar` output.

@@ -11,7 +11,7 @@ import "../code/RelativeTime.mjs" as RelativeTime
 import "../code/Translation.mjs" as Translation
 
 // Detail header hierarchy (reference IA): name + updated left, plan/login
-// badge right. Version/email/org stay off the primary chrome (noise/PII);
+// + email right. Version/org stay off the primary chrome (noise/PII);
 // objectNames remain for harness discovery with visible:false.
 RowLayout {
     id: root
@@ -101,16 +101,6 @@ RowLayout {
         }
 
         PlasmaComponents.Label {
-            id: emailLabel
-            objectName: "emailLabel"
-            visible: false
-            text: root.headerEmail
-            color: Kirigami.Theme.disabledTextColor
-            elide: Text.ElideRight
-            Layout.fillWidth: true
-        }
-
-        PlasmaComponents.Label {
             id: organizationLabel
             objectName: "organizationLabel"
             visible: false
@@ -135,8 +125,8 @@ RowLayout {
 
     ColumnLayout {
         Layout.alignment: Qt.AlignTop | Qt.AlignRight
-        visible: root.detailed && root.headerLogin.length > 0
-        spacing: 0
+        visible: root.detailed && (root.headerLogin.length > 0 || root.headerEmail.length > 0)
+        spacing: Math.max(1, Math.round(Kirigami.Units.smallSpacing / 3))
 
         PlasmaComponents.Label {
             id: loginLabel
@@ -146,6 +136,19 @@ RowLayout {
             color: Kirigami.Theme.disabledTextColor
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignRight
+            Layout.alignment: Qt.AlignRight
+        }
+
+        PlasmaComponents.Label {
+            id: emailLabel
+            objectName: "emailLabel"
+            visible: root.detailed && root.headerEmail.length > 0
+            text: root.headerEmail
+            color: Kirigami.Theme.disabledTextColor
+            font.pointSize: Kirigami.Theme.smallFont.pointSize
+            elide: Text.ElideRight
+            horizontalAlignment: Text.AlignRight
+            Layout.alignment: Qt.AlignRight
         }
     }
 

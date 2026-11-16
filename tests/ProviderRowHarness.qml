@@ -619,11 +619,11 @@ Item {
         var costFailureCostLabel = findObject(costFailureRow, "costLabel")
         assert(costFailureCostLabel === null || !costFailureCostLabel.visible, "Cost section must be absent without a snapshot")
 
-        // Detail chrome: name/updated/badge + usage/cost. Email/version/org stay off
-        // the primary header; credits only when > 0 (enriched has 7).
+        // Detail chrome: name/updated/plan+email badge + usage/cost. Org/version
+        // stay off the primary header; credits only when > 0 (enriched has 7).
         assert(findObject(enrichedDetailRow, "emailLabel") !== null
-               && !findObject(enrichedDetailRow, "emailLabel").visible,
-               "detail header must not show email in primary chrome")
+               && findObject(enrichedDetailRow, "emailLabel").visible,
+               "detail header must show validated email in detailed mode")
         assert(findObject(enrichedDetailRow, "organizationLabel") !== null
                && !findObject(enrichedDetailRow, "organizationLabel").visible,
                "detail header must not show organization in primary chrome")

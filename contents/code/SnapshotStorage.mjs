@@ -31,7 +31,7 @@ export function cloneWithoutIdentityPii(obj) {
     var copy = {}
     for (var key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            if (key === "accountEmail" || key === "accountOrganization") {
+            if (key === "accountOrganization") {
                 continue
             }
             copy[key] = obj[key]

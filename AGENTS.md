@@ -26,7 +26,7 @@
 
 - Keep line `151` (`width: root.width`) of `contents/ui/UsageWindowRow.qml` aligned with `LAYOUT_POSITIONING_EXCEPTIONS` in `scripts/check-qml-unqualified-baseline.py` (or update the exception intentionally if that binding moves).
 - Preserve the locked comma-decimal and dot-thousands number formatting contract in `contents/ui/CostSection.qml` (`formatUsd`, `formatTokensAbbreviated`), asserted by `tests/ProviderRowHarness.qml` and visual goldens.
-- Strip `accountEmail` and `accountOrganization` before persisting snapshots in `contents/code/SnapshotStorage.mjs`, and keep raw identity PII off primary UI chrome (`contents/code/ProviderDetails.mjs`, `contents/ui/ProviderHeader.qml`).
+- Strip `accountOrganization` before persisting snapshots in `contents/code/SnapshotStorage.mjs`, keep `accountOrganization` and free-form PII off UI chrome (`contents/code/ProviderDetails.mjs`), and display `accountEmail` only in the detailed header (`contents/ui/ProviderHeader.qml`), never in `All` overview.
 - Route user-facing strings through `contents/code/Translation.mjs` with `languagePreference`, and keep Spanish translations in `contents/code/SpanishDictionary.mjs` complete and deduplicated.
 
 ## External Knowledge & Vault Triggers

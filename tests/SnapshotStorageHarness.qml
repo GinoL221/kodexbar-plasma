@@ -185,15 +185,15 @@ Item {
         assert(piiInput[0].raw.usage.identity.accountEmail === "id@example.com",
             "save must not mutate the caller's live in-memory raw object")
         var piiLoaded = SnapshotStorage.load(LocalStorage.LocalStorage, testDbName)
-        assert(piiLoaded.length === 1 && piiLoaded[0].raw.accountEmail === undefined
+        assert(piiLoaded.length === 1 && piiLoaded[0].raw.accountEmail === "top@example.com"
             && piiLoaded[0].raw.accountOrganization === undefined
-            && piiLoaded[0].raw.usage.accountEmail === undefined
+            && piiLoaded[0].raw.usage.accountEmail === "usage@example.com"
             && piiLoaded[0].raw.usage.accountOrganization === undefined
-            && piiLoaded[0].raw.usage.identity.accountEmail === undefined
+            && piiLoaded[0].raw.usage.identity.accountEmail === "id@example.com"
             && piiLoaded[0].raw.usage.identity.accountOrganization === undefined
             && piiLoaded[0].raw.usage.identity.loginMethod === "max"
             && piiLoaded[0].raw.usage.updatedAt === "2026-11-15T00:00:00Z",
-            "stored snapshot must strip accountEmail and accountOrganization while preserving non-PII metadata")
+            "stored snapshot must strip accountOrganization while preserving accountEmail and non-PII metadata")
 
         // 11. Invalid numeric fields in cached cost record must fail closed on read
         var invalidCostDb = "KodexBarInvalidCost_" + Date.now()

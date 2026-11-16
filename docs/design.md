@@ -22,7 +22,7 @@ codexbar / codexbar-nan CLI (stdout JSON)
    - `UsageModel.normalizeProvider` maps `primary` (`Session`), `secondary` (`Weekly`), and `tertiary` (`Monthly`) windows, applies `rateWindowLabels` overrides, and promotes scoped extra windows (Antigravity `gemini-argon` -> `Argon`; Claude `claude-weekly-scoped-fable` -> `Fable` on `tertiary`).
    - If a poll reports rate-limit errors, `RateLimitPolicy` retains previously committed provider data and stretches the next refresh delay exponentially.
 3. **Multi-instance SQLite persistence ([SnapshotStorage.mjs](../contents/code/SnapshotStorage.mjs)):**
-   - Scrubs `accountEmail` and `accountOrganization` from `provider.raw` before storing the latest usage snapshot under `id = "latest"`, and stores validated per-provider cost snapshots under `id = "cost:<provider>"` with `saved_at` timestamps.
+   - Scrubs `accountOrganization` from `provider.raw` before storing the latest usage snapshot under `id = "latest"` (preserving `accountEmail` for cold-start detail headers), and stores validated per-provider cost snapshots under `id = "cost:<provider>"` with `saved_at` timestamps.
    - Both `UsageController` and `CostController` hydrate from SQLite on `Component.onCompleted` so the panel and popup render immediately on cold start.
 4. **Bounded cost prefetch & cross-instance cache sharing ([CostController.qml](../contents/ui/CostController.qml), [CostRequestPolicy.mjs](../contents/code/CostRequestPolicy.mjs)):**
    - When `committedGeneration` advances, `main.qml` prefetches cost only for supported providers (`codex`, `claude`) targeted by that widget instance (`CostRequestPolicy.prefetchTargets(pinnedProvider, visibleIds)`).
@@ -85,4 +85,4 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
 
 - **No web-generic styling:** Never introduce HTML/CSS layouts, fixed hex palettes for surfaces/text, hardcoded `px` spacing tokens, pill-badge clutter, or nested card-in-card borders.
 - **No CLI coupling in UI components:** Presentational QML components (`ProviderRow`, `UsageWindowRow`, `CostSection`, `CostHistogram`) consume normalized JS objects; they must never spawn processes or parse raw CLI stdout.
-- **No PII leakage on primary chrome:** Raw account emails and organization identifiers stay off the Overview and primary header chrome, and free-form detail rows are scrubbed by `ProviderDetails.mjs`.
+- **Bounded identity display & free-form scrubbing:** Organization identifiers stay off primary chrome (`All` overview remains free of emails/identity badges, while `ProviderHeader.qml` shows validated `accountEmail` only under the plan badge in detailed view), and free-form detail rows are scrubbed by `ProviderDetails.mjs`.

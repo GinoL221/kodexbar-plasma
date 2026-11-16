@@ -245,6 +245,26 @@ class UsageMergeTest(AdapterTestCase):
         self.assertEqual(result.returncode, 0)
         self.assertFalse(claude_calls.exists())
 
+    def test_antigravity_entry_is_enriched_with_active_cli_proxy_email(self):
+        proxy_dir = self.home / ".cli-proxy-api"
+        proxy_dir.mkdir(parents=True, exist_ok=True)
+        (proxy_dir / "antigravity-1.json").write_text(json.dumps({"email": "inactive@example.com", "disabled": True}))
+        (proxy_dir / "antigravity-2.json").write_text(json.dumps({"email": "active@example.com", "disabled": False}))
+        antigravity_entry = {
+            "provider": "antigravity",
+            "source": "cli",
+            "usage": {"identity": {"providerID": "antigravity"}},
+        }
+        real = self.fake_codexbar(json.dumps([antigravity_entry]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        ag = [entry for entry in entries if entry.get("provider") == "antigravity"][0]
+        self.assertEqual(ag["usage"]["accountEmail"], "active@example.com")
+        self.assertEqual(ag["usage"]["identity"]["accountEmail"], "active@example.com")
+
 
 def load_adapter_module():
     import importlib.machinery

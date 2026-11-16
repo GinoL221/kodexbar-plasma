@@ -292,7 +292,7 @@ TestCase {
         var updatedAt = findByObjectName(validRow, "updatedAtLabel")
         var creditsRemaining = findByObjectName(validRow, "creditsRemainingLabel")
         var resetAvailable = findByObjectName(validRow, "resetAvailableLabel")
-        verify(!email.visible)
+        verify(email.visible)
         compare(email.text, "synthetic@example.invalid")
         verify(!organization.visible)
         compare(organization.text, "Synthetic Labs Inc.")
@@ -383,7 +383,7 @@ TestCase {
         verify(findText(details, "Support") === null)
 
         var email = findByObjectName(maliciousRow, "emailLabel")
-        verify(!email.visible)
+        verify(email.visible)
         compare(email.text, "authorized@example.invalid")
         verify(!findByObjectName(maliciousRow, "organizationLabel").visible)
         verify(!maliciousRow.resetCreditsSection.visible)
@@ -397,8 +397,8 @@ TestCase {
 
     function test_fixturePiiRemainsFailClosedForRealCapturedShape() {
         var email = findByObjectName(codexFixtureRow, "emailLabel")
-        // Email is validated but kept off primary chrome (PII / density).
-        verify(!email.visible)
+        // Email is displayed below plan badge in detailed mode; org stays off chrome.
+        verify(email.visible)
         compare(email.text, "gxxxxxxxxxxxx@gmail.com")
         verify(!findByObjectName(codexFixtureRow, "organizationLabel").visible)
         verify(!codexFixtureRow.resetCreditsSection.visible)

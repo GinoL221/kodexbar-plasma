@@ -8,6 +8,7 @@ The NaN entry follows the codexbar usage contract (provider/source/usage windows
 so the plasmoid renders it like any other provider. See docs/nan-adapter.md.
 """
 
+import glob
 import json
 import os
 import shutil
@@ -233,6 +234,43 @@ def maybe_refresh_claude_oauth():
         pass
 
 
+def resolve_antigravity_email():
+    try:
+        pattern = os.path.join(os.path.expanduser("~"), ".cli-proxy-api", "antigravity-*.json")
+        for path in sorted(glob.glob(pattern)):
+            with open(path, encoding="utf-8") as handle:
+                data = json.load(handle)
+            if isinstance(data, dict) and not bool(data.get("disabled", False)):
+                email = data.get("email")
+                if isinstance(email, str) and email.strip():
+                    return email.strip()
+    except Exception:
+        return None
+    return None
+
+
+def enrich_antigravity_entries(entries):
+    if not isinstance(entries, list):
+        return
+    email = None
+    resolved = False
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get("provider") != "antigravity":
+            continue
+        usage = entry.get("usage")
+        if not isinstance(usage, dict):
+            continue
+        if not usage.get("accountEmail"):
+            if not resolved:
+                email = resolve_antigravity_email()
+                resolved = True
+            if email:
+                usage["accountEmail"] = email
+                identity = usage.get("identity")
+                if isinstance(identity, dict) and not identity.get("accountEmail"):
+                    identity["accountEmail"] = email
+
+
 def main(args):
     real = find_real_codexbar()
     if real is None:
@@ -266,6 +304,7 @@ def main(args):
     if not isinstance(entries, list):
         sys.stdout.write(result.stdout)
         return result.returncode
+    enrich_antigravity_entries(entries)
     entries.append(holder["entry"])
     print(json.dumps(entries))
     return result.returncode
