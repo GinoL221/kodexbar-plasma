@@ -7,6 +7,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
 import "../code/ProviderIcons.mjs" as ProviderIcons
+import "../code/UsageThreshold.mjs" as UsageThreshold
 
 QQC2.ToolButton {
     id: root
@@ -18,8 +19,20 @@ QQC2.ToolButton {
     property string displayStyle: "iconOnly"
     property string accentColor: ""
     property bool tintPanelIcon: true
+    property real usedPercent: NaN
 
     readonly property string providerKey: ProviderIcons.key(root.providerId)
+    readonly property string thresholdLevel: UsageThreshold.level(root.usedPercent)
+    readonly property color effectivePercentColor: {
+        if (root.thresholdLevel === UsageThreshold.LEVEL_CRITICAL
+                || root.thresholdLevel === UsageThreshold.LEVEL_EXHAUSTED) {
+            return Kirigami.Theme.negativeTextColor
+        }
+        if (root.thresholdLevel === UsageThreshold.LEVEL_WARN) {
+            return Kirigami.Theme.neutralTextColor
+        }
+        return Kirigami.Theme.textColor
+    }
     readonly property url effectiveIconSource: root.providerKey.length > 0
         ? Qt.resolvedUrl("../icons/providers/" + root.providerKey + ".svg")
         : Qt.resolvedUrl("../icons/kodexbar-monochrome.svg")
@@ -105,7 +118,7 @@ QQC2.ToolButton {
             objectName: "compactPanelLabel"
             visible: root.displayStyle !== "iconOnly" && root.displayText.length > 0
             text: root.displayText
-            color: Kirigami.Theme.textColor
+            color: root.effectivePercentColor
             font.pointSize: Kirigami.Theme.defaultFont.pointSize
             anchors.left: compactIcon.right
             anchors.leftMargin: Kirigami.Units.smallSpacing

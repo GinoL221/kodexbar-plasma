@@ -1,4 +1,5 @@
 import QtQuick
+import org.kde.kirigami as Kirigami
 import "../contents/ui" as UsageUi
 
 Item {
@@ -120,6 +121,27 @@ Item {
         assert(button.displayText === "", "iconOnly button must have empty displayText")
         assert(percentOnlyButton.displayText === "36%", "iconAndPercent must show percentage only")
         assert(nameAndPercentButton.displayText === "Claude 36%", "iconNameAndPercent must show provider name and percentage")
+
+        // Semantic threshold coloring on panel label
+        function findChildByName(item, name) {
+            if (!item) return null
+            if (item.objectName === name) return item
+            for (var idx = 0; idx < item.children.length; idx++) {
+                var found = findChildByName(item.children[idx], name)
+                if (found) return found
+            }
+            return null
+        }
+        var label = findChildByName(percentOnlyButton, "compactPanelLabel")
+        assert(label !== null, "compactPanelLabel must exist")
+        percentOnlyButton.usedPercent = 40
+        assert(Qt.colorEqual(label.color, Kirigami.Theme.textColor), "ok usage must keep standard theme textColor")
+        percentOnlyButton.usedPercent = 75
+        assert(Qt.colorEqual(label.color, Kirigami.Theme.neutralTextColor), "warn (>=70%) usage must use neutralTextColor")
+        percentOnlyButton.usedPercent = 95
+        assert(Qt.colorEqual(label.color, Kirigami.Theme.negativeTextColor), "critical (>=90%) usage must use negativeTextColor")
+        percentOnlyButton.usedPercent = NaN
+        assert(Qt.colorEqual(label.color, Kirigami.Theme.textColor), "non-finite usage must fall back to theme textColor")
 
         finish()
     })

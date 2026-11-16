@@ -231,6 +231,7 @@ PlasmoidItem {
         providerId: root.cycledUsage.isAll ? "" : root.cycledUsage.targetId
         providerName: root.cycledUsage.isAll ? "" : root.cycledUsage.targetName
         percentText: root.cycledUsage.usedPercent !== null ? Math.round(root.cycledUsage.usedPercent) + "%" : ""
+        usedPercent: root.cycledUsage.usedPercent !== null ? root.cycledUsage.usedPercent : NaN
         displayStyle: root.panelDisplayStyle
         accentColor: root.cycledUsage.isAll ? "" : ProviderIcons.accent(root.cycledUsage.targetId)
         tintPanelIcon: root.plasmoidConfiguration.tintPanelIcon !== false
