@@ -204,6 +204,35 @@ def wants_json(args):
     return "--json" in args or "--json-only" in args or option_value(args, "--format") == "json"
 
 
+def maybe_refresh_claude_oauth():
+    try:
+        cred_path = os.path.join(os.path.expanduser("~"), ".claude", ".credentials.json")
+        if not os.path.isfile(cred_path):
+            return
+        with open(cred_path, encoding="utf-8") as handle:
+            cred = json.load(handle)
+        oauth = cred.get("claudeAiOauth") if isinstance(cred, dict) else None
+        if not isinstance(oauth, dict) or not oauth.get("refreshToken"):
+            return
+        expires_at = oauth.get("expiresAt")
+        if not isinstance(expires_at, (int, float)) or expires_at > int(utc_now().timestamp() * 1000):
+            return
+        claude_bin = (
+            os.environ.get("CLAUDE_BIN")
+            or shutil.which("claude")
+            or os.path.join(os.path.expanduser("~"), ".local", "bin", "claude")
+        )
+        if claude_bin and os.access(claude_bin, os.X_OK):
+            subprocess.run(
+                [claude_bin, "auth", "status"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+    except Exception:
+        pass
+
+
 def main(args):
     real = find_real_codexbar()
     if real is None:
@@ -211,6 +240,9 @@ def main(args):
         return 127
 
     provider = option_value(args, "--provider")
+    if bool(args) and args[0] == "usage" and provider in (None, "all", "claude"):
+        maybe_refresh_claude_oauth()
+
     merges = bool(args) and args[0] == "usage" and wants_json(args) and provider in (None, "all", "nan")
     if not merges:
         os.execv(real, [real] + args)

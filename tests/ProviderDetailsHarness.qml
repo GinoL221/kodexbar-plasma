@@ -90,6 +90,28 @@ Item {
                "non-string usage loginMethod must be omitted")
         assert(ProviderDetails.validLoginMethod({ raw: { usage: { identity: { loginMethod: "conflict" }, loginMethod: "winner" } } }) === "winner",
                "conflicting identity loginMethod must lose to usage loginMethod")
+        assert(ProviderDetails.validLoginMethod({ raw: { usage: { identity: { loginMethod: "Gentle" } } } }) === "Gentle",
+               "usage.identity loginMethod must be used when usage loginMethod is absent")
+        assert(ProviderDetails.validLoginMethod({
+            provider: "antigravity",
+            raw: {
+                provider: "antigravity",
+                usage: {
+                    identity: { providerID: "antigravity" },
+                    extraRateWindows: [{ id: "antigravity-quota-summary-gemini-argon-wtu-weekly", title: "Gemini 4 Argon weekly", window: { usedPercent: 47.5 } }]
+                }
+            }
+        }) === "Pro", "antigravity CLI snapshot with separate Argon bucket must infer Pro plan")
+        assert(ProviderDetails.validLoginMethod({
+            provider: "antigravity",
+            raw: {
+                provider: "antigravity",
+                usage: {
+                    identity: { providerID: "antigravity" },
+                    extraRateWindows: [{ id: "antigravity-quota-summary-gemini-5h", title: "Gemini 5-hour", window: { usedPercent: 10 } }]
+                }
+            }
+        }) === "", "antigravity snapshot without explicit plan or Argon bucket must remain empty")
 
         assert(ProviderDetails.acceptedDetails({ raw: {} }).length === 0, "missing details must be omitted")
         assert(ProviderDetails.acceptedDetails({ raw: { usage: {} } }).length === 0, "missing details in usage must be omitted")

@@ -205,6 +205,46 @@ class UsageMergeTest(AdapterTestCase):
         self.assertEqual(result.returncode, 1)
         self.assertEqual([entry["provider"] for entry in json.loads(result.stdout)], ["claude", "nan"])
 
+    def write_claude_setup(self, expires_at):
+        claude_dir = self.home / ".claude"
+        claude_dir.mkdir(parents=True, exist_ok=True)
+        (claude_dir / ".credentials.json").write_text(json.dumps({
+            "claudeAiOauth": {"refreshToken": "rt", "expiresAt": expires_at}
+        }))
+        claude_calls = Path(self.tmp.name) / "claude_calls.txt"
+        claude_bin = Path(self.tmp.name) / "claude"
+        claude_bin.write_text("#!/bin/sh\necho \"$@\" >> \"%s\"\n" % claude_calls)
+        claude_bin.chmod(claude_bin.stat().st_mode | stat.S_IXUSR)
+        return claude_bin, claude_calls
+
+    def test_expired_claude_oauth_triggers_claude_auth_status_before_real_cli(self):
+        real = self.fake_codexbar(json.dumps([CLAUDE_ENTRY]))
+        claude_bin, claude_calls = self.write_claude_setup(expires_at=1000)
+        with FakeNanServer() as server:
+            result = self.run_adapter(
+                ["usage", "--format", "json", "--json-only"],
+                server,
+                real,
+                env_extra={"CLAUDE_BIN": str(claude_bin)},
+            )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(claude_calls.read_text().splitlines(), ["auth status"])
+
+    def test_valid_claude_oauth_does_not_invoke_claude_cli(self):
+        real = self.fake_codexbar(json.dumps([CLAUDE_ENTRY]))
+        claude_bin, claude_calls = self.write_claude_setup(expires_at=9999999999999)
+        with FakeNanServer() as server:
+            result = self.run_adapter(
+                ["usage", "--format", "json", "--json-only"],
+                server,
+                real,
+                env_extra={"CLAUDE_BIN": str(claude_bin)},
+            )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse(claude_calls.exists())
+
 
 def load_adapter_module():
     import importlib.machinery

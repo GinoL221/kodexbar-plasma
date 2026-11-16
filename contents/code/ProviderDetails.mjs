@@ -162,7 +162,29 @@ export function validLoginMethod(providerData) {
         return ""
     }
     var login = rawValue(usage, "loginMethod")
-    return isNonEmptyString(login) ? login : ""
+    if (isNonEmptyString(login)) {
+        return login
+    }
+    var identity = rawValue(usage, "identity")
+    if (identity && typeof identity === "object" && !(identity instanceof Array)) {
+        var identityLogin = rawValue(identity, "loginMethod")
+        if (isNonEmptyString(identityLogin)) {
+            return identityLogin
+        }
+    }
+    var providerId = rawValue(providerData, "provider") || rawValue(raw, "provider")
+    if (providerId === "antigravity") {
+        var extra = rawValue(usage, "extraRateWindows")
+        if (Array.isArray(extra)) {
+            for (var i = 0; i < extra.length; i++) {
+                var item = extra[i]
+                if (item && typeof item.id === "string" && item.id.indexOf("gemini-argon") !== -1) {
+                    return "Pro"
+                }
+            }
+        }
+    }
+    return ""
 }
 
 // --- Phase 3: selected-provider enrichment extractors -----------------
