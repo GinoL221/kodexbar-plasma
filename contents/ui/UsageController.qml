@@ -17,6 +17,7 @@ Item {
     property int activeTimeoutMs: timeoutMs
     property bool testMode: false
     property bool cacheEnabled: false
+    property bool includeStatus: false
     property string storageDbName: ""
     property bool pathExecutableForTest: true
     property string discoveryOutputForTest: ""
@@ -70,7 +71,8 @@ Item {
     }
 
     function commandLine() {
-        return PathResolver.shellQuote(effectiveCommandPath) + " usage --format json --json-only"
+        return PathResolver.shellQuote(effectiveCommandPath)
+            + (includeStatus ? " usage --status --format json --json-only" : " usage --format json --json-only")
     }
 
     function pathCheckCommand() {

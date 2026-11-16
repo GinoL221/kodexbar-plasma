@@ -56,6 +56,11 @@ export var DICTIONARY = {
     // Pace & status
     "runs until reset": "Dura hasta el reinicio",
     "on track": "A buen ritmo",
+    "Service incident": "Incidente en el servicio",
+    "Major outage": "Interrupción mayor",
+    "Critical outage": "Interrupción crítica",
+    "Partial outage": "Degradación parcial",
+    "Service maintenance": "Mantenimiento del servicio",
 
     // Reset credits
     "Reset credits": "Créditos de reinicio de límite",

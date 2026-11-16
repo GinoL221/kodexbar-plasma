@@ -16,7 +16,7 @@ codexbar / codexbar-nan CLI (stdout JSON)
 ```
 
 1. **Command resolution & usage polling ([UsageController.qml](../contents/ui/UsageController.qml), [CodexBarPathResolver.mjs](../contents/code/CodexBarPathResolver.mjs)):**
-   - Validates a configured absolute executable path (`test -x`) or probes bounded discovery locations (`~/.local/bin/codexbar-nan`, `~/.local/bin/codexbar`, `/usr/local/bin/codexbar`, `/usr/bin/codexbar`, `~/.cargo/bin/codexbar`, `/snap/bin/codexbar`, `PATH`), then executes `usage --format json --json-only`.
+   - Validates a configured absolute executable path (`test -x`) or probes bounded discovery locations (`~/.local/bin/codexbar-nan`, `~/.local/bin/codexbar`, `/usr/local/bin/codexbar`, `/usr/bin/codexbar`, `~/.cargo/bin/codexbar`, `/snap/bin/codexbar`, `PATH`), then executes `usage --format json --json-only` (with `--status` enabled by `main.qml` via `includeStatus`).
    - Requests are serialized with `generation`, `activeGeneration`, and a watchdog timer (`timeoutMs`). Stale callbacks and destroyed components disconnect their `Plasma5Support.DataSource` cleanly.
 2. **Normalization & rate-limit resilience ([UsageModel.mjs](../contents/code/UsageModel.mjs), [RateLimitPolicy.mjs](../contents/code/RateLimitPolicy.mjs)):**
    - `UsageModel.normalizeProvider` maps `primary` (`Session`), `secondary` (`Weekly`), and `tertiary` (`Monthly`) windows, applies `rateWindowLabels` overrides, and promotes scoped extra windows (Antigravity `gemini-argon` -> `Argon`; Claude `claude-weekly-scoped-fable` -> `Fable` on `tertiary`).
@@ -52,24 +52,24 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
 2. **Provider selector (`ProviderSelector.qml`):** Hidden when `pinnedProvider` is set; otherwise displays `All` plus usable visible providers with wheel scroll and keyboard reorder (`Alt+Left` / `Alt+Right`).
 3. **Overview list (`Repeater` of `ProviderRow` with `summary: true`):** Active only when unpinned and `All` is selected.
 4. **Detail view (`ProviderRow` with `summary: false`):** Active when a provider tab is selected or `pinnedProvider` is configured:
-   - `ProviderHeader.qml` (provider title, relative updated time, plan/login badge)
+   - `ProviderHeader.qml` (provider title, relative updated time, incident status indicator, plan/login badge, and validated account email)
    - `creditsRemainingLabel` (when finite and `> 0`)
-   - `UsageWindowRow.qml` repeater (window title, standardized reset countdown, threshold-colored percentage, full-width progress bar, optional pace summary)
+   - `UsageWindowRow.qml` repeater (window title, standardized reset countdown, threshold-colored percentage, full-width progress bar with expected-usage pace marker, and pace summary)
    - `ResetCreditsSection.qml` (when `availableCount > 0`)
-   - `CostSection.qml` + `CostHistogram.qml` (when a valid cost snapshot exists for the selected provider)
+   - `CostSection.qml` + `CostHistogram.qml` (when a valid cost snapshot exists for the selected provider, with daily hover tooltips)
    - `ProviderDetails.qml` (collapsed-by-default disclosure for sanitized `usage.details[]`)
 5. **Pinned bottom footer (`bottomChromeRow`):** Refresh action (`Loading` indicator while active) and Configure button.
 
 ### 2. `UsageWindowRow` Layout Contract
 
 - **Overview (`summary: true`):** Single-line row (`windowLabel | summaryBar | summaryPercentageLabel`) using `TextMetrics` to align label and percentage columns across sibling rows.
-- **Detail (`summary: false`):** Two-line header + bar stack (`windowLabel` + `detailResetContainer` + `bandPercentageLabel` above full-width `detailBarHost`, followed by optional `paceSummaryLabel`).
+- **Detail (`summary: false`):** Two-line header + bar stack (`windowLabel` + `detailResetContainer` + `bandPercentageLabel` above full-width `detailBarHost` with expected-usage `paceMarker`, followed by optional `paceSummaryLabel`).
 - **Standardized resets ([ResetTimeFormatter.mjs](../contents/code/ResetTimeFormatter.mjs)):** Future ISO `resetsAt` timestamps format as `Resets in Xd Yh` / `Resets in Xh Ym` (or Spanish equivalents via `Translation.mjs`), ticked every 60 seconds while visible.
 
 ### 3. Cost Grid & Histogram Contract
 
 - **2x2 metric grid ([CostSection.qml](../contents/ui/CostSection.qml)):** Pairs Today Cost / Today Tokens and 30-Day Cost / 30-Day Tokens inside subtle `Kirigami.Theme` cards.
-- **14-day right-aligned bar chart ([CostHistogram.qml](../contents/ui/CostHistogram.qml)):** Slices up to the 14 most recent daily entries (`validDaily.slice(-14)`), anchors the latest day to the right edge with bounded bar widths (`10–18px`), and scales homogeneously in either USD (`isCostMode`) or tokens so units are never mixed.
+- **14-day right-aligned bar chart ([CostHistogram.qml](../contents/ui/CostHistogram.qml)):** Slices up to the 14 most recent daily entries (`validDaily.slice(-14)`), anchors the latest day to the right edge with bounded bar widths (`10–18px`), shows localized hover tooltips (`date · $USD · tokens`), and scales homogeneously in either USD (`isCostMode`) or tokens so units are never mixed.
 
 ## Component & Test Invariants
 

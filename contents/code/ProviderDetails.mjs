@@ -258,6 +258,29 @@ export function validUpdatedAt(providerData) {
     return isNonEmptyString(updatedAt) ? updatedAt : ""
 }
 
+export function validStatus(providerData) {
+    var raw = rawTopLevel(providerData)
+    var status = raw ? rawValue(raw, "status") : null
+    if (!status || typeof status !== "object") {
+        return null
+    }
+    var indicator = rawValue(status, "indicator")
+    if (!isNonEmptyString(indicator)) {
+        return null
+    }
+    var normalized = indicator.trim().toLowerCase()
+    if (normalized === "none") {
+        return null
+    }
+    var description = rawValue(status, "description")
+    var url = rawValue(status, "url")
+    return {
+        indicator: normalized,
+        description: isNonEmptyString(description) ? description.trim() : "Service incident",
+        url: isNonEmptyString(url) ? url.trim() : ""
+    }
+}
+
 export var paceWindowDefinitions = [
     { key: "primary", label: "Session" },
     { key: "secondary", label: "Weekly" },

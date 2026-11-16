@@ -24,8 +24,8 @@ KodexBar Plasma (`org.kde.plasma.kodexbar.plasma`) is a native KDE Plasma 6 pane
 
 - **Display styles (`panelDisplayStyle`):**
   - `iconOnly` (default): provider or KodexBar SVG mark with optional accent tint (`tintPanelIcon`).
-  - `iconAndPercent`: icon plus representative window percentage (e.g., `42%`).
-  - `iconNameAndPercent`: icon, provider display name, and percentage (e.g., `Claude 42%`).
+  - `iconAndPercent`: icon plus representative window percentage (e.g., `42%`), colored using `UsageThreshold.mjs` warning/critical bands.
+  - `iconNameAndPercent`: icon, provider display name, and threshold-colored percentage (e.g., `Claude 42%`).
 - **Wheel cycling:** Scrolling over an unpinned panel button cycles between `All` (highest-usage window across visible providers) and individual visible providers, updating the panel icon, inline text, and tooltip live.
 - **Pinned mode (`pinnedProvider`):** Locks the panel button and popup to a single provider, hiding the multi-provider tab bar and disabling wheel cycling.
 
@@ -33,10 +33,10 @@ KodexBar Plasma (`org.kde.plasma.kodexbar.plasma`) is a native KDE Plasma 6 pane
 
 - **Overview (`All` tab):** Compact list of all visible usable providers (`ProviderRow.qml` in summary mode). Each card renders the provider icon, display name, and single-line usage bars (`Session`, `Weekly`, `Monthly`, or mapped tertiary windows such as Antigravity `Argon` and Claude `Fable`).
 - **Provider detail (Selected tab or Pinned mode):**
-  - **Header (`ProviderHeader.qml`):** Provider name, relative update timestamp, and plan/login badge.
-  - **Usage windows (`UsageWindowRow.qml`):** Full-width progress bars, threshold-colored usage percentages, standardized reset countdowns (`ResetTimeFormatter.mjs`), and optional pace summaries (`ProviderDetails.mjs`).
+  - **Header (`ProviderHeader.qml`):** Provider name, relative update timestamp, active provider incident status when reported (`--status`), plan/login badge, and optional account email.
+  - **Usage windows (`UsageWindowRow.qml`):** Full-width progress bars with an expected-usage pace marker when window timing allows, threshold-colored usage percentages, standardized reset countdowns (`ResetTimeFormatter.mjs`), and pace summaries (`ProviderDetails.mjs`).
   - **Credits & resets (`ResetCreditsSection.qml`):** Remaining credits and expandable reset-credit expiration inventory when reported.
-  - **Cost section (`CostSection.qml` & `CostHistogram.qml`):** Shown for `codex`, `claude`, `antigravity`, or `nan` when a valid CLI cost snapshot exists; renders a 2x2 summary grid (Today / 30 Days cost and tokens), a 14-day right-aligned daily bar histogram, and the primary model label.
+  - **Cost section (`CostSection.qml` & `CostHistogram.qml`):** Shown for `codex`, `claude`, `antigravity`, or `nan` when a valid CLI cost snapshot exists; renders a 2x2 summary grid (Today / 30 Days cost and tokens), a 14-day right-aligned daily bar histogram with interactive hover tooltips (date, USD, and tokens), and the primary model label.
   - **Collapsible metadata (`ProviderDetails.qml`):** Sanitized additional provider details, collapsed by default.
 - **Desktop notifications (`NotificationController.qml`):** Optional native Plasma notifications for quota warning/critical thresholds and rate-limit backoff transitions (`NotificationPolicy.mjs`).
 

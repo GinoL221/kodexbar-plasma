@@ -29,6 +29,13 @@ Item {
                "command must quote only the configured path and append fixed arguments")
         assert(controller.commandLine() === controller.activeSource,
                "commandLine must use the validated effective path")
+
+        controller.includeStatus = true
+        assert(controller.commandLine().indexOf(" usage --status --format json --json-only") !== -1,
+               "includeStatus must append --status flag in commandLine")
+        controller.includeStatus = false
+        assert(controller.commandLine() === controller.activeSource,
+               "disabling includeStatus must restore default commandLine")
         assert(!controller.validatePath("codexbar").valid, "relative paths must be rejected")
 
         controller.timeoutForTest(controller.generation)

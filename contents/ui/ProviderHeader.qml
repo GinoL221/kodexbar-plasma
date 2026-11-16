@@ -34,6 +34,9 @@ RowLayout {
     readonly property string headerEmail: root.detailed ? ProviderDetailsLogic.validEmail(root.providerData) : ""
     readonly property string headerOrganization: root.detailed ? ProviderDetailsLogic.validOrganization(root.providerData) : ""
     readonly property string headerUpdatedAt: root.detailed ? ProviderDetailsLogic.validUpdatedAt(root.providerData) : ""
+    readonly property var headerStatus: root.detailed ? ProviderDetailsLogic.validStatus(root.providerData) : null
+    readonly property bool headerStatusIsSevere: root.headerStatus !== null
+        && (root.headerStatus.indicator === "major" || root.headerStatus.indicator === "critical")
     // A present-but-unparseable updatedAt (validUpdatedAt only checks
     // non-empty, not ISO validity) must stay omitted rather than leak the
     // raw CLI string -- never invent or expose an unformatted timestamp.
@@ -120,6 +123,22 @@ RowLayout {
             font.weight: Font.Normal
             elide: Text.ElideRight
             Layout.fillWidth: true
+        }
+
+        PlasmaComponents.Label {
+            id: statusIncidentLabel
+            objectName: "statusIncidentLabel"
+            visible: root.headerStatus !== null
+            text: visible
+                ? Translation.translate(root.headerStatus.description, [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+                : ""
+            textFormat: Text.PlainText
+            color: root.headerStatusIsSevere ? Kirigami.Theme.negativeTextColor : Kirigami.Theme.neutralTextColor
+            font.pointSize: Kirigami.Theme.smallFont.pointSize
+            font.weight: Font.Medium
+            elide: Text.ElideRight
+            Layout.fillWidth: true
+            Accessible.name: text
         }
     }
 

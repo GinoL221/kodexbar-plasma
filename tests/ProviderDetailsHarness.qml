@@ -304,6 +304,28 @@ Item {
 
         assert(!detailsEmpty.visible, "component with no accepted details must be hidden")
 
+        assert(ProviderDetails.validStatus({ raw: {} }) === null, "missing status must return null")
+        assert(ProviderDetails.validStatus({ raw: { status: { indicator: "none", description: "All Systems Operational" } } }) === null,
+            "operational indicator 'none' must return null")
+        var minorStatus = ProviderDetails.validStatus({
+            raw: {
+                status: {
+                    indicator: "minor",
+                    description: "Partial API degradation",
+                    url: "https://status.example.com"
+                }
+            }
+        })
+        assert(minorStatus !== null && minorStatus.indicator === "minor", "minor status must return indicator")
+        assert(minorStatus.description === "Partial API degradation", "minor status must preserve description")
+        assert(minorStatus.url === "https://status.example.com", "minor status must preserve url")
+
+        var criticalFallback = ProviderDetails.validStatus({ raw: { status: { indicator: "critical" } } })
+        assert(criticalFallback !== null && criticalFallback.indicator === "critical",
+            "critical status without description must still return object")
+        assert(criticalFallback.description === "Service incident",
+            "critical status without description must provide localized-ready fallback text")
+
         detailsNarrow.providerData = {
             raw: {
                 usage: {

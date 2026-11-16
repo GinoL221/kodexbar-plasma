@@ -135,6 +135,7 @@ PlasmoidItem {
         timeoutMs: root.requestTimeoutMs
         baseRefreshMs: root.refreshSeconds * 1000
         cacheEnabled: true
+        includeStatus: true
         onPathDiscovered: function(path) {
             if (root.codexbarCommand === path) {
                 return

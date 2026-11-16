@@ -61,6 +61,32 @@ TestCase {
             }
 
             UsageUi.ProviderRow {
+                id: statusIncidentRow
+                width: parent.width
+                providerData: ({
+                    provider: "incident-provider",
+                    source: "synthetic-source",
+                    windows: [{ label: "Session", usedPercent: 30 }],
+                    raw: {
+                        version: "1.0.0",
+                        status: {
+                            indicator: "major",
+                            description: "Partial API outage",
+                            url: "https://status.example.com"
+                        },
+                        usage: { loginMethod: "pro", details: [] }
+                    }
+                })
+            }
+
+            UsageUi.ProviderRow {
+                id: summaryIncidentRow
+                width: parent.width
+                summary: true
+                providerData: statusIncidentRow.providerData
+            }
+
+            UsageUi.ProviderRow {
                 id: malformedRow
                 y: validRow.height
                 width: parent.width
@@ -521,5 +547,18 @@ TestCase {
             verify(findText(footer, "Add Account") === null)
             verify(findText(footer, "Updated") === null)
         }
+    }
+
+    function test_statusIncidentRendersOnlyInDetailedHeader() {
+        var absentStatusLabel = findByObjectName(validRow, "statusIncidentLabel")
+        verify(absentStatusLabel === null || !absentStatusLabel.visible)
+
+        var summaryStatusLabel = findByObjectName(summaryIncidentRow, "statusIncidentLabel")
+        verify(summaryStatusLabel === null || !summaryStatusLabel.visible)
+
+        var incidentLabel = findByObjectName(statusIncidentRow, "statusIncidentLabel")
+        verify(incidentLabel !== null)
+        verify(incidentLabel.visible)
+        verify(incidentLabel.text.indexOf("Partial API outage") !== -1)
     }
 }
