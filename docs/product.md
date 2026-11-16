@@ -31,7 +31,8 @@ KodexBar Plasma (`org.kde.plasma.kodexbar.plasma`) is a native KDE Plasma 6 pane
 
 ### Popup Representation (`main.qml`)
 
-- **Overview (`All` tab):** Compact list of all visible usable providers (`ProviderRow.qml` in summary mode). Each card renders the provider icon, display name, and single-line usage bars (`Session`, `Weekly`, `Monthly`, or mapped tertiary windows such as Antigravity `Argon` and Claude `Fable`).
+- **Overview (`All` tab):** Compact list of all visible usable providers (`ProviderRow.qml` in summary mode). Each card renders the provider icon, display name, and single-line usage bars (`Session`, `Weekly`, `Monthly`, or mapped tertiary windows such as Antigravity `Argon` and Claude `Fable`), followed by a combined `Total cost` footer (`OverviewCostSummary.qml`) when any visible provider has cached/live cost snapshots.
+- **Panel context menu (`Plasmoid.contextualActions`):** Right-clicking the panel widget exposes a native **Refresh now** action without opening the popup.
 - **Provider detail (Selected tab or Pinned mode):**
   - **Header (`ProviderHeader.qml`):** Provider name, relative update timestamp, active provider incident status when reported (`--status`), plan/login badge, and optional account email.
   - **Usage windows (`UsageWindowRow.qml`):** Full-width progress bars with an expected-usage pace marker when window timing allows, threshold-colored usage percentages, standardized reset countdowns (`ResetTimeFormatter.mjs`), and pace summaries (`ProviderDetails.mjs`).

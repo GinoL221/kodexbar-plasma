@@ -92,6 +92,14 @@ Item {
                "Hide detail singular translates to Spanish")
         assert(Translation.translate("Partially Degraded Service", [], null, "es") === "Servicio parcialmente degradado",
                "Partially Degraded Service incident description translates to Spanish")
+        assert(Translation.translate("Refresh now", [], null, "es") === "Actualizar ahora",
+               "Refresh now contextual action translates to Spanish")
+        assert(Translation.translate("Total cost", [], null, "es") === "Costo total",
+               "Total cost overview heading translates to Spanish")
+        assert(Translation.translate("Today: %1", ["$2,46"], null, "es") === "Hoy: $2,46",
+               "Today summary template translates to Spanish")
+        assert(Translation.translate("30 days: %1", ["$61,73"], null, "es") === "30 días: $61,73",
+               "30 days summary template translates to Spanish")
 
         finish()
     }

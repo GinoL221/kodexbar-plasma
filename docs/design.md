@@ -50,7 +50,7 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
 
 1. **Terminal status banner:** Shown only when `phase === "noData"` or `phase === "error"`.
 2. **Provider selector (`ProviderSelector.qml`):** Hidden when `pinnedProvider` is set; otherwise displays `All` plus usable visible providers with wheel scroll and keyboard reorder (`Alt+Left` / `Alt+Right`).
-3. **Overview list (`Repeater` of `ProviderRow` with `summary: true`):** Active only when unpinned and `All` is selected.
+3. **Overview list (`Repeater` of `ProviderRow` with `summary: true`) & `OverviewCostSummary.qml`:** Active only when unpinned and `All` is selected; aggregates today and 30-day USD/token totals across visible providers that have validated cost snapshots.
 4. **Detail view (`ProviderRow` with `summary: false`):** Active when a provider tab is selected or `pinnedProvider` is configured:
    - `ProviderHeader.qml` (provider title, relative updated time, incident status indicator, plan/login badge, and validated account email)
    - `creditsRemainingLabel` (when finite and `> 0`)
@@ -58,7 +58,7 @@ Implementation authority resides in [SKILL.md](../skills/plasma-kirigami-ui/SKIL
    - `ResetCreditsSection.qml` (when `availableCount > 0`)
    - `CostSection.qml` + `CostHistogram.qml` (when a valid cost snapshot exists for the selected provider, with daily hover tooltips)
    - `ProviderDetails.qml` (collapsed-by-default disclosure for sanitized `usage.details[]`)
-5. **Pinned bottom footer (`bottomChromeRow`):** Refresh action (`Loading` indicator while active) and Configure button.
+5. **Pinned bottom footer (`bottomChromeRow`) & panel context menu (`Plasmoid.contextualActions`):** Refresh action (`Loading` indicator while active) and Configure button in the popup footer, plus a native panel right-click **Refresh now** `PlasmaCore.Action`.
 
 ### 2. `UsageWindowRow` Layout Contract
 

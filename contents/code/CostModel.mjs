@@ -205,3 +205,48 @@ export function formatDailyTooltip(entry, isSpanish) {
     }
     return dateLabel + ": $0,00"
 }
+
+export function summarizeSnapshots(visibleProviders, snapshotLookup) {
+    if (!Array.isArray(visibleProviders) || typeof snapshotLookup !== "function") {
+        return null
+    }
+    var seen = Object.create(null)
+    var count = 0
+    var sessionCostUSD = 0
+    var sessionTokens = 0
+    var last30DaysCostUSD = 0
+    var last30DaysTokens = 0
+
+    for (var i = 0; i < visibleProviders.length; ++i) {
+        var entry = visibleProviders[i]
+        var provider = entry && typeof entry.provider === "string" ? entry.provider : ""
+        if (provider.length === 0 || seen[provider]) {
+            continue
+        }
+        seen[provider] = true
+        var snap = snapshotLookup(provider)
+        if (!snap || typeof snap !== "object"
+            || !isFiniteNonNegative(snap.sessionCostUSD)
+            || !isFiniteNonNegative(snap.sessionTokens)
+            || !isFiniteNonNegative(snap.last30DaysCostUSD)
+            || !isFiniteNonNegative(snap.last30DaysTokens)) {
+            continue
+        }
+        count += 1
+        sessionCostUSD += snap.sessionCostUSD
+        sessionTokens += snap.sessionTokens
+        last30DaysCostUSD += snap.last30DaysCostUSD
+        last30DaysTokens += snap.last30DaysTokens
+    }
+
+    if (count === 0) {
+        return null
+    }
+    return {
+        count: count,
+        sessionCostUSD: sessionCostUSD,
+        sessionTokens: sessionTokens,
+        last30DaysCostUSD: last30DaysCostUSD,
+        last30DaysTokens: last30DaysTokens
+    }
+}

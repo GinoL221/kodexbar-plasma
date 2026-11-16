@@ -169,6 +169,31 @@ Item {
                && agNormalized.primaryModel === "gemini-3.8-flash-n",
                "Antigravity daily/model entries without cost must default cost to 0 while keeping tokens and primaryModel")
 
+        // Combined All-overview cost aggregation
+        var visibleList = [
+            { provider: "claude" },
+            { provider: "antigravity" },
+            { provider: "grok" },
+            { provider: "claude" } // duplicate must be ignored
+        ]
+        var fakeStore = {
+            claude: { sessionCostUSD: 0.50, sessionTokens: 1000, last30DaysCostUSD: 25.50, last30DaysTokens: 49000000 },
+            antigravity: { sessionCostUSD: 1.96, sessionTokens: 14900000, last30DaysCostUSD: 36.23, last30DaysTokens: 300700000 }
+        }
+        var totalSummary = CostModel.summarizeSnapshots(visibleList, function(id) {
+            return fakeStore[id] || null
+        })
+        assert(totalSummary !== null
+               && totalSummary.count === 2
+               && Math.abs(totalSummary.sessionCostUSD - 2.46) < 0.0001
+               && totalSummary.sessionTokens === 14901000
+               && Math.abs(totalSummary.last30DaysCostUSD - 61.73) < 0.0001
+               && totalSummary.last30DaysTokens === 349700000,
+               "summarizeSnapshots must sum distinct visible providers with valid cost snapshots")
+
+        assert(CostModel.summarizeSnapshots([{ provider: "grok" }], function() { return null }) === null,
+               "summarizeSnapshots must return null when no provider has a cost snapshot")
+
         finish()
     }
 }

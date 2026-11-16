@@ -4,10 +4,12 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents
 
 import "../code/UsageModel.mjs" as UsageModel
+import "../code/CostModel.mjs" as CostModel
 import "../code/RefreshInterval.mjs" as RefreshInterval
 import "../code/RequestTimeout.mjs" as RequestTimeout
 import "../code/PreferredWindow.mjs" as PreferredWindow
@@ -205,7 +207,24 @@ PlasmoidItem {
         }
     }
 
+    function overviewTotalCostSummary(providers, snapshotsMap, cachedMap, usageGeneration) {
+        // Explicit map parameters keep the QML binding reactive whenever CostController commits a snapshot.
+        void snapshotsMap
+        void cachedMap
+        return CostModel.summarizeSnapshots(providers, function(id) {
+            return costController.snapshotFor(id, usageGeneration)
+        })
+    }
+
     Plasmoid.configurationRequired: root.controller.configurationRequired
+    Plasmoid.contextualActions: [
+        PlasmaCore.Action {
+            text: Translation.translate("Refresh now", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
+            icon.name: "view-refresh"
+            enabled: root.controller.phase !== "loading"
+            onTriggered: root.refresh()
+        }
+    ]
 
     function refresh() {
         root.controller.requestRefresh()
@@ -376,6 +395,20 @@ PlasmoidItem {
                                 iconResolver: providerSelector.iconResolver
                                 Layout.fillWidth: true
                             }
+                        }
+
+                        OverviewCostSummary {
+                            visible: root.pinnedProvider.length === 0 && providerSelector.allSelected && summaryData !== null
+                            languagePreference: root.languagePreference
+                            summaryData: (root.pinnedProvider.length === 0 && providerSelector.allSelected)
+                                ? root.overviewTotalCostSummary(
+                                    providerSelector.usableProviders,
+                                    costController.snapshots,
+                                    costController.cachedSnapshots,
+                                    root.controller.committedGeneration
+                                )
+                                : null
+                            Layout.fillWidth: true
                         }
 
                         ProviderRow {

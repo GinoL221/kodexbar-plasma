@@ -91,8 +91,11 @@ export var DICTIONARY = {
     // Cost & Tokens
     "source: local": "origen: local",
     "Cost": "Costo",
+    "Total cost": "Costo total",
     "Today": "Hoy",
+    "Today: %1": "Hoy: %1",
     "Last 30 days": "Últimos 30 días",
+    "30 days: %1": "30 días: %1",
     "Local token-cost estimate": "Estimado desde los logs locales",
     "Last 30 days cost": "Costo de los últimos 30 días",
     "Last 30 days tokens": "Tokens de los últimos 30 días",
@@ -115,6 +118,7 @@ export var DICTIONARY = {
 
     // Chrome & actions
     "Refresh": "Actualizar",
+    "Refresh now": "Actualizar ahora",
     "Configure...": "Configurar...",
     "Configure": "Configurar",
     "Refresh usage": "Actualizar uso",
