@@ -15,9 +15,9 @@ ColumnLayout {
     property var windowData: ({})
     property bool compact: false
     property bool summary: false
-    // Selected-provider-only pace summary text (e.g. "42% in deficit | Expected 18% used"),
-    // attached by the caller when this window's label matches a valid pace entry.
+    // Selected-provider-only pace summary text and expected-used percent (0..100 or NaN).
     property string paceSummary: ""
+    property real paceExpectedPercent: NaN
     // Optional brand accent (#rrggbb). Empty → Kirigami.Theme.highlightColor.
     property string accentColor: ""
     property string languagePreference: "en"
@@ -326,6 +326,25 @@ ColumnLayout {
                 width: parent.width > 0 ? Math.round(parent.width * root.barRatio) : 0
                 radius: height / 2
                 color: root.barFillColor
+            }
+
+            Rectangle {
+                id: paceMarker
+                objectName: "paceMarker"
+                visible: typeof root.paceExpectedPercent === "number"
+                    && isFinite(root.paceExpectedPercent)
+                    && root.paceExpectedPercent >= 0
+                    && root.paceExpectedPercent <= 100
+                    && parent.width > 0
+                width: 2
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                x: visible
+                    ? Math.round((parent.width - width) * Math.max(0, Math.min(1, root.paceExpectedPercent / 100)))
+                    : 0
+                color: Kirigami.Theme.textColor
+                opacity: 0.75
+                z: 2
             }
         }
     }

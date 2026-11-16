@@ -42,12 +42,30 @@ ColumnLayout {
             typeof i18np === "function" ? i18np : null, root.languagePreference)
         : Translation.translate("No usage windows available", [], typeof i18n === "function" ? i18n : null, root.languagePreference)
     readonly property bool showHeaderDetails: !root.compact && !root.summary
+    property real paceNowMs: Date.now()
     readonly property var paceByKey: root.showHeaderDetails
-        ? ProviderDetailsLogic.paceSummaryByKey(root.providerData) : ({})
+        ? ProviderDetailsLogic.paceInfoByKey(root.providerData, root.paceNowMs) : ({})
     readonly property var paceByLabel: root.showHeaderDetails
         ? ProviderDetailsLogic.paceSummaryByLabel(root.providerData) : ({})
     readonly property var creditsRemaining: root.showHeaderDetails
         ? ProviderDetailsLogic.validCreditsRemaining(root.providerData) : null
+
+    function paceSummaryFor(windowData) {
+        if (!windowData) {
+            return ""
+        }
+        if (windowData.key && root.paceByKey[windowData.key]) {
+            return root.paceByKey[windowData.key].summary
+        }
+        return root.paceByLabel[windowData.label] || ""
+    }
+
+    function paceExpectedFor(windowData) {
+        if (windowData && windowData.key && root.paceByKey[windowData.key]) {
+            return root.paceByKey[windowData.key].expectedUsedPercent
+        }
+        return NaN
+    }
 
     function iconSource(value) {
         return root.iconResolver(value)
@@ -233,9 +251,8 @@ ColumnLayout {
                         compact: root.compact
                         summary: false
                         languagePreference: root.languagePreference
-                        paceSummary: (modelData.key && root.paceByKey[modelData.key])
-                            ? root.paceByKey[modelData.key]
-                            : (root.paceByLabel[modelData.label] || "")
+                        paceSummary: root.paceSummaryFor(modelData)
+                        paceExpectedPercent: root.paceExpectedFor(modelData)
                         accentColor: root.providerAccent
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
@@ -243,5 +260,12 @@ ColumnLayout {
                     }
                 }
         }
+    }
+
+    Timer {
+        interval: 60000
+        repeat: true
+        running: root.showHeaderDetails && root.visible
+        onTriggered: root.paceNowMs = Date.now()
     }
 }

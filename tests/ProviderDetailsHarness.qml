@@ -227,6 +227,45 @@ Item {
         assert(paceByKey.primary === "42% used" && paceByKey.secondary === "67% used" && paceByKey.tertiary === "10% in reserve",
                "paceSummaryByKey must preserve window keys regardless of custom labels")
 
+        // Universal pace computation fallback when CLI omits pace on >=1d windows
+        var fakeNow = Date.parse("2026-11-16T01:00:00Z")
+        var localPaceInfo = ProviderDetails.paceInfoByKey({
+            provider: "codex",
+            windows: [
+                { key: "primary", label: "Session", usedPercent: 10 },
+                { key: "secondary", label: "Weekly", usedPercent: 40 }
+            ],
+            raw: {
+                provider: "codex",
+                usage: {
+                    primary: { usedPercent: 10, windowMinutes: 300, resetsAt: "2026-11-16T04:00:00Z" },
+                    secondary: { usedPercent: 40, windowMinutes: 10080, resetsAt: "2026-11-18T01:00:00Z" }
+                }
+            }
+        }, fakeNow)
+        assert(localPaceInfo.primary === undefined,
+               "5h session windows (<1440m) must not invent a pace estimate")
+        assert(localPaceInfo.secondary !== undefined
+               && localPaceInfo.secondary.expectedUsedPercent === 71
+               && localPaceInfo.secondary.summary === "31% in reserve | Expected 71% used | Lasts until reset",
+               "weekly codex window must compute local expectedUsedPercent and reserve summary")
+
+        var cliPaceInfo = ProviderDetails.paceInfoByKey({
+            provider: "claude",
+            windows: [{ key: "secondary", label: "Weekly", usedPercent: 44 }],
+            raw: {
+                provider: "claude",
+                pace: {
+                    secondary: { expectedUsedPercent: 70, summary: "26% in reserve | Expected 70% used | Lasts until reset" }
+                },
+                usage: {
+                    secondary: { usedPercent: 44, windowMinutes: 10080, resetsAt: "2026-11-18T03:59:59Z" }
+                }
+            }
+        }, fakeNow)
+        assert(cliPaceInfo.secondary !== undefined && cliPaceInfo.secondary.expectedUsedPercent === 70,
+               "CLI-provided pace.expectedUsedPercent must be preserved")
+
         var resetCredits = ProviderDetails.validResetCredits({
             raw: { usage: { codexResetCredits: { availableCount: 2, credits: [
                 { amount: 1, expiresAt: "2026-09-01T00:00:00Z" }, { amount: 1, expiresAt: "2026-10-01T00:00:00Z" }

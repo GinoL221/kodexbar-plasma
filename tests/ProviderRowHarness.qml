@@ -786,6 +786,9 @@ Item {
         var customPaceLabel = findObject(customLabelPaceRow, "paceSummaryLabel")
         assert(customPaceLabel !== null && customPaceLabel.visible && customPaceLabel.text === "10% in reserve",
                "custom-labeled window must match pace summary by window key")
+        var paceMarker = findObject(customLabelPaceRow, "paceMarker")
+        assert(paceMarker !== null && !paceMarker.visible,
+               "paceMarker must stay hidden when expectedUsedPercent is absent")
         var customHeader = findObject(customLabelPaceRow, "updatedAtLabel")
         assert(customHeader !== null && customHeader.parent !== null, "updatedAtLabel must exist in detail header")
         var headerParent = customHeader.parent.parent
@@ -816,6 +819,12 @@ Item {
                 root.assertResponsiveGeometry(constrainedSummaryWindowRow, 600, "summary constrained row")
                 root.assertSummaryInlineOrder(constrainedSummaryWindowRow, "summary constrained row inline order")
                 root.assertDetailPercentAboveBar(constrainedWindowRow, "direct constrained row detail lock")
+                constrainedWindowRow.paceExpectedPercent = 50
+                var constrainedMarker = root.findObject(constrainedWindowRow, "paceMarker")
+                root.assert(constrainedMarker !== null && constrainedMarker.visible && constrainedMarker.x > 0,
+                            "paceMarker must render inside detailBar when paceExpectedPercent is set")
+                constrainedWindowRow.paceExpectedPercent = NaN
+                root.assert(!constrainedMarker.visible, "paceMarker must hide when paceExpectedPercent is NaN")
                 root.assertProviderPopupGeometry(constrainedProviderRow, providerWindowRow, popupComposition, popupColumn,
                                             "narrow popup composition")
                 narrowBarWidth = providerWindowRow.progressBar.width

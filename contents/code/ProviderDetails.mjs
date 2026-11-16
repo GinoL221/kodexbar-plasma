@@ -302,6 +302,119 @@ export function paceSummaryByKey(providerData) {
     return result
 }
 
+function findRawWindowForKey(providerData, windowKey) {
+    var usage = rawUsage(providerData)
+    if (!usage || !isNonEmptyString(windowKey)) {
+        return null
+    }
+    var raw = rawTopLevel(providerData)
+    var providerId = rawValue(providerData, "provider") || (raw ? rawValue(raw, "provider") : null)
+    var extras = rawValue(usage, "extraRateWindows")
+    var i
+    if (providerId === "antigravity" && Array.isArray(extras)) {
+        var fragment = windowKey === "primary" ? "gemini-5h"
+            : windowKey === "secondary" ? "gemini-weekly"
+            : windowKey === "tertiary" ? "gemini-argon"
+            : windowKey
+        for (i = 0; i < extras.length; i++) {
+            var agExtra = extras[i]
+            if (agExtra && typeof agExtra.id === "string" && agExtra.id.indexOf(fragment) !== -1 && agExtra.window) {
+                return agExtra.window
+            }
+        }
+    }
+    var direct = rawValue(usage, windowKey)
+    if (direct && typeof direct === "object" && !(direct instanceof Array)) {
+        return direct
+    }
+    if (Array.isArray(extras)) {
+        for (i = 0; i < extras.length; i++) {
+            var extra = extras[i]
+            if (extra && typeof extra.id === "string" && extra.window) {
+                if (extra.id === windowKey || (windowKey === "tertiary" && extra.id === "claude-weekly-scoped-fable")) {
+                    return extra.window
+                }
+            }
+        }
+    }
+    return null
+}
+
+function computeLocalPaceInfo(rawWindow, fallbackUsedPercent, nowMs) {
+    if (!rawWindow || typeof rawWindow !== "object" || rawWindow instanceof Array) {
+        return null
+    }
+    var windowMinutes = rawValue(rawWindow, "windowMinutes")
+    if (typeof windowMinutes !== "number" || !isFinite(windowMinutes) || windowMinutes < 1440) {
+        return null
+    }
+    var rawUsed = rawValue(rawWindow, "usedPercent")
+    var usedPercent = (typeof rawUsed === "number" && isFinite(rawUsed)) ? rawUsed : fallbackUsedPercent
+    if (typeof usedPercent !== "number" || !isFinite(usedPercent)) {
+        return null
+    }
+    var resetsAt = rawValue(rawWindow, "resetsAt")
+    if (!isNonEmptyString(resetsAt)) {
+        return null
+    }
+    var resetsAtMs = Date.parse(resetsAt)
+    var now = (typeof nowMs === "number" && isFinite(nowMs)) ? nowMs : Date.now()
+    var totalMs = windowMinutes * 60000
+    var remainingMs = resetsAtMs - now
+    if (!isFinite(resetsAtMs) || remainingMs <= 0 || remainingMs >= totalMs) {
+        return null
+    }
+    var elapsedRatio = (totalMs - remainingMs) / totalMs
+    if (elapsedRatio < 0.02 || elapsedRatio > 0.99) {
+        return null
+    }
+    var expected = Math.round(elapsedRatio * 100)
+    var actual = Math.round(usedPercent)
+    var delta = actual - expected
+    var summary
+    if (delta <= -3) {
+        summary = Math.abs(delta) + "% in reserve | Expected " + expected + "% used | Lasts until reset"
+    } else if (delta >= 3) {
+        summary = delta + "% in deficit | Expected " + expected + "% used"
+    } else {
+        summary = "On pace | Expected " + expected + "% used"
+    }
+    return { summary: summary, expectedUsedPercent: expected }
+}
+
+export function paceInfoByKey(providerData, nowMs) {
+    var result = {}
+    var raw = rawTopLevel(providerData)
+    var pace = raw ? rawValue(raw, "pace") : null
+    var i
+    if (pace && typeof pace === "object" && !(pace instanceof Array)) {
+        for (i = 0; i < paceWindowDefinitions.length; i++) {
+            var key = paceWindowDefinitions[i].key
+            var entry = rawValue(pace, key)
+            if (entry && typeof entry === "object" && !(entry instanceof Array) && isNonEmptyString(entry.summary)) {
+                var exp = rawValue(entry, "expectedUsedPercent")
+                result[key] = {
+                    summary: entry.summary,
+                    expectedUsedPercent: (typeof exp === "number" && isFinite(exp) && exp >= 0 && exp <= 100) ? exp : NaN
+                }
+            }
+        }
+    }
+    var windows = providerData && providerData.windows instanceof Array ? providerData.windows : []
+    for (i = 0; i < windows.length; i++) {
+        var win = windows[i]
+        if (!win || !isNonEmptyString(win.key) || Object.prototype.hasOwnProperty.call(result, win.key)) {
+            continue
+        }
+        var rawWin = findRawWindowForKey(providerData, win.key)
+        var localPace = computeLocalPaceInfo(rawWin, win.usedPercent, nowMs)
+        if (localPace !== null) {
+            result[win.key] = localPace
+        }
+    }
+    return result
+}
+
 export function isFiniteNonNegative(value) {
     return typeof value === "number" && isFinite(value) && value >= 0
 }
