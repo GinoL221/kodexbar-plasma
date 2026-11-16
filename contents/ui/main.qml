@@ -156,11 +156,10 @@ PlasmoidItem {
         // Instances share one scan per cycle: a record another instance saved
         // within 90% of the refresh interval is reused instead of rescanned.
         sharedFreshnessMs: Math.floor(root.refreshSeconds * 900)
-    }
-
-    onCodexRemoteHostsChanged: {
-        if (root.controller.committedGeneration > 0) {
-            root.prefetchSupportedCosts()
+        onRemoteHostsInvalidated: {
+            if (root.controller.committedGeneration > 0) {
+                root.prefetchSupportedCosts()
+            }
         }
     }
 

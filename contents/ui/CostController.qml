@@ -31,6 +31,8 @@ Item {
     property bool _initialized: false
     property string _bypassSharedCacheProvider: ""
 
+    signal remoteHostsInvalidated()
+
     readonly property string effectiveCommandPath: _effectiveCommandPath
     property string _effectiveCommandPath: ""
 
@@ -66,6 +68,7 @@ Item {
         }
         root._appliedRemoteHostsKey = nextKey
         root.invalidateProvider("codex")
+        root.remoteHostsInvalidated()
     }
 
     function invalidateProvider(provider) {

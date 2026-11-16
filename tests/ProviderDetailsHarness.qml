@@ -256,6 +256,25 @@ Item {
         assert(localPaceInfo.tertiary === undefined,
                "sub-5h burst windows (<300m) must not invent a pace estimate")
 
+        // Deficit calculation must append 'Runs out in ...' projection matching CodexBar CLI
+        var deficitNow = Date.parse("2026-11-16T01:00:00Z")
+        // 300m window resetting in 150m -> 50% elapsed (150m elapsed), 75% used -> delta +25,
+        // remaining 25% at rate 75%/150m = 50m -> Runs out in 50m.
+        var deficitInfo = ProviderDetails.paceInfoByKey({
+            provider: "antigravity",
+            windows: [{ key: "primary", label: "Session", usedPercent: 75 }],
+            raw: {
+                provider: "antigravity",
+                usage: {
+                    primary: { usedPercent: 75, windowMinutes: 300, resetsAt: "2026-11-16T03:30:00Z" }
+                }
+            }
+        }, deficitNow)
+        assert(deficitInfo.primary !== undefined
+               && deficitInfo.primary.expectedUsedPercent === 50
+               && deficitInfo.primary.summary === "25% in deficit | Expected 50% used | Runs out in 50m",
+               "deficit pace summary must include expected percentage and 'Runs out in <duration>' projection")
+
         var cliPaceInfo = ProviderDetails.paceInfoByKey({
             provider: "claude",
             windows: [{ key: "secondary", label: "Weekly", usedPercent: 44 }],

@@ -363,6 +363,20 @@ function findRawWindowForKey(providerData, windowKey) {
     return null
 }
 
+function formatPaceDuration(ms) {
+    var totalMinutes = Math.max(1, Math.round(ms / 60000))
+    var days = Math.floor(totalMinutes / 1440)
+    var hours = Math.floor((totalMinutes % 1440) / 60)
+    var mins = totalMinutes % 60
+    if (days > 0) {
+        return hours > 0 ? (days + "d " + hours + "h") : (days + "d")
+    }
+    if (hours > 0) {
+        return mins > 0 ? (hours + "h " + mins + "m") : (hours + "h")
+    }
+    return mins + "m"
+}
+
 function computeLocalPaceInfo(rawWindow, fallbackUsedPercent, nowMs) {
     if (!rawWindow || typeof rawWindow !== "object" || rawWindow instanceof Array) {
         return null
@@ -387,7 +401,8 @@ function computeLocalPaceInfo(rawWindow, fallbackUsedPercent, nowMs) {
     if (!isFinite(resetsAtMs) || remainingMs <= 0 || remainingMs >= totalMs) {
         return null
     }
-    var elapsedRatio = (totalMs - remainingMs) / totalMs
+    var elapsedMs = totalMs - remainingMs
+    var elapsedRatio = elapsedMs / totalMs
     if (elapsedRatio < 0.02 || elapsedRatio > 0.99) {
         return null
     }
@@ -399,6 +414,10 @@ function computeLocalPaceInfo(rawWindow, fallbackUsedPercent, nowMs) {
         summary = Math.abs(delta) + "% in reserve | Expected " + expected + "% used | Lasts until reset"
     } else if (delta >= 3) {
         summary = delta + "% in deficit | Expected " + expected + "% used"
+        var remainingPercent = 100 - usedPercent
+        if (usedPercent > 0 && remainingPercent > 0) {
+            summary += " | Runs out in " + formatPaceDuration(elapsedMs * (remainingPercent / usedPercent))
+        }
     } else {
         summary = "On pace | Expected " + expected + "% used"
     }

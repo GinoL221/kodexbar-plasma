@@ -271,7 +271,11 @@ Item {
                "non-codex providers must ignore remoteHosts")
         remoteCtrl.completeForTest(remoteCtrl.activeSerial, payloadFor("claude", 5), 0)
 
+        var invalidationSignals = 0
+        remoteCtrl.remoteHostsInvalidated.connect(function() { invalidationSignals += 1 })
         remoteCtrl.remoteHosts = "workstation"
+        assert(invalidationSignals === 1,
+               "changing remoteHosts must emit remoteHostsInvalidated after invalidating codex cache")
         assert(remoteCtrl.exactSnapshotFor("codex", 40) === null,
                "changing remoteHosts must clear stale in-memory codex snapshots")
         assert(remoteCtrl.exactSnapshotFor("claude", 40) !== null,
