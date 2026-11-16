@@ -272,6 +272,143 @@ class UsageMergeTest(AdapterTestCase):
         self.assertEqual(ag["usage"]["accountEmail"], "active@example.com")
         self.assertEqual(ag["usage"]["identity"]["accountEmail"], "active@example.com")
 
+    def test_antigravity_entry_is_enriched_with_agy_oauth_token_email(self):
+        agy_dir = self.home / ".gemini" / "antigravity-cli"
+        agy_dir.mkdir(parents=True, exist_ok=True)
+        (agy_dir / "antigravity-oauth-token").write_text(json.dumps({
+            "id_token_email": "agy-user@example.com",
+            "auth_method": "oauth-personal",
+        }))
+        antigravity_entry = {
+            "provider": "antigravity",
+            "source": "cli",
+            "usage": {"identity": {"providerID": "antigravity"}},
+        }
+        real = self.fake_codexbar(json.dumps([antigravity_entry]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        ag = [entry for entry in entries if entry.get("provider") == "antigravity"][0]
+        self.assertEqual(ag["usage"]["accountEmail"], "agy-user@example.com")
+        self.assertEqual(ag["usage"]["identity"]["accountEmail"], "agy-user@example.com")
+
+    def test_antigravity_entry_falls_back_to_cli_proxy_when_agy_token_lacks_email(self):
+        agy_dir = self.home / ".gemini" / "antigravity-cli"
+        agy_dir.mkdir(parents=True, exist_ok=True)
+        (agy_dir / "antigravity-oauth-token").write_text(json.dumps({"auth_method": "oauth-personal"}))
+        proxy_dir = self.home / ".cli-proxy-api"
+        proxy_dir.mkdir(parents=True, exist_ok=True)
+        (proxy_dir / "antigravity-1.json").write_text(json.dumps({"email": "proxy@example.com", "disabled": False}))
+        antigravity_entry = {
+            "provider": "antigravity",
+            "source": "cli",
+            "usage": {"identity": {"providerID": "antigravity"}},
+        }
+        real = self.fake_codexbar(json.dumps([antigravity_entry]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        ag = [entry for entry in entries if entry.get("provider") == "antigravity"][0]
+        self.assertEqual(ag["usage"]["accountEmail"], "proxy@example.com")
+        self.assertEqual(ag["usage"]["identity"]["accountEmail"], "proxy@example.com")
+
+    def test_antigravity_entry_prefers_agy_cli_log_email_over_stale_oauth_token(self):
+        agy_dir = self.home / ".gemini" / "antigravity-cli"
+        agy_dir.mkdir(parents=True, exist_ok=True)
+        (agy_dir / "antigravity-oauth-token").write_text(json.dumps({
+            "id_token_email": "stale@example.com",
+            "auth_method": "oauth-personal",
+        }))
+        (agy_dir / "cli.log").write_text(
+            "I1116 18:17:03.460811 1 auth.go:157] ChainedAuth: authenticated via keyring\n"
+            "I1116 18:17:03.460830 1 server_oauth.go:221] applyAuthResult: email=active-cli@example.com, authMethod=consumer, quotaProject=\n"
+        )
+        antigravity_entry = {
+            "provider": "antigravity",
+            "source": "cli",
+            "usage": {"identity": {"providerID": "antigravity"}},
+        }
+        real = self.fake_codexbar(json.dumps([antigravity_entry]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        ag = [entry for entry in entries if entry.get("provider") == "antigravity"][0]
+        self.assertEqual(ag["usage"]["accountEmail"], "active-cli@example.com")
+        self.assertEqual(ag["usage"]["identity"]["accountEmail"], "active-cli@example.com")
+
+    def test_antigravity_entry_falls_back_to_recent_cli_logs_when_cli_log_has_no_auth_line(self):
+        agy_dir = self.home / ".gemini" / "antigravity-cli"
+        log_dir = agy_dir / "log"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        (agy_dir / "cli.log").write_text("I1116 18:18:00.000000 1 main.go:1] no auth here\n")
+        (log_dir / "cli-20261116_181600.log").write_text(
+            "I1116 18:16:00.000000 1 server_oauth.go:221] applyAuthResult: email=older@example.com, authMethod=consumer\n"
+        )
+        (log_dir / "cli-20261116_181702.log").write_text(
+            "I1116 18:17:03.000000 1 server_oauth.go:221] applyAuthResult: email=recent-log@example.com, authMethod=consumer\n"
+        )
+        antigravity_entry = {
+            "provider": "antigravity",
+            "source": "cli",
+            "usage": {"identity": {"providerID": "antigravity"}},
+        }
+        real = self.fake_codexbar(json.dumps([antigravity_entry]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        ag = [entry for entry in entries if entry.get("provider") == "antigravity"][0]
+        self.assertEqual(ag["usage"]["accountEmail"], "recent-log@example.com")
+        self.assertEqual(ag["usage"]["identity"]["accountEmail"], "recent-log@example.com")
+
+    def test_claude_entry_is_enriched_with_claude_json_email(self):
+        (self.home / ".claude.json").write_text(json.dumps({
+            "oauthAccount": {"emailAddress": "claude-user@example.com"}
+        }))
+        claude_entry = {
+            "provider": "claude",
+            "source": "oauth",
+            "usage": {"identity": {"providerID": "claude", "loginMethod": "Claude Pro"}},
+        }
+        real = self.fake_codexbar(json.dumps([claude_entry]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        claude = [entry for entry in entries if entry.get("provider") == "claude"][0]
+        self.assertEqual(claude["usage"]["accountEmail"], "claude-user@example.com")
+        self.assertEqual(claude["usage"]["identity"]["accountEmail"], "claude-user@example.com")
+
+    def test_claude_entry_preserves_existing_account_email(self):
+        (self.home / ".claude.json").write_text(json.dumps({
+            "oauthAccount": {"emailAddress": "fallback@example.com"}
+        }))
+        claude_entry = {
+            "provider": "claude",
+            "source": "oauth",
+            "usage": {
+                "accountEmail": "native@example.com",
+                "identity": {"providerID": "claude", "accountEmail": "native@example.com"},
+            },
+        }
+        real = self.fake_codexbar(json.dumps([claude_entry]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        claude = [entry for entry in entries if entry.get("provider") == "claude"][0]
+        self.assertEqual(claude["usage"]["accountEmail"], "native@example.com")
+        self.assertEqual(claude["usage"]["identity"]["accountEmail"], "native@example.com")
+
     def write_pi_auth(self, key_value):
         pi_dir = self.home / ".pi" / "agent"
         pi_dir.mkdir(parents=True, exist_ok=True)

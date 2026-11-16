@@ -358,13 +358,62 @@ def maybe_refresh_claude_oauth():
         pass
 
 
-def resolve_antigravity_email():
+def _read_json_dict(path):
     try:
-        pattern = os.path.join(os.path.expanduser("~"), ".cli-proxy-api", "antigravity-*.json")
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+AGY_LOG_EMAIL_PATTERN = re.compile(
+    r"(?:applyAuthResult:\s*email=|OAuth:\s*authenticated successfully as )([^\s,]+)"
+)
+
+
+def _extract_agy_log_email(path):
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as handle:
+            matches = AGY_LOG_EMAIL_PATTERN.findall(handle.read())
+        for candidate in reversed(matches):
+            email = candidate.strip()
+            if "@" in email:
+                return email
+    except Exception:
+        return None
+    return None
+
+
+def resolve_antigravity_email():
+    """Return the active Antigravity CLI email from agy logs, OAuth file, or cli-proxy-api."""
+    home = os.path.expanduser("~")
+    agy_dir = os.path.join(home, ".gemini", "antigravity-cli")
+
+    email = _extract_agy_log_email(os.path.join(agy_dir, "cli.log"))
+    if email:
+        return email
+
+    try:
+        log_pattern = os.path.join(agy_dir, "log", "cli-*.log")
+        for path in sorted(glob.glob(log_pattern), reverse=True)[:10]:
+            email = _extract_agy_log_email(path)
+            if email:
+                return email
+    except Exception:
+        pass
+
+    agy_token = _read_json_dict(os.path.join(agy_dir, "antigravity-oauth-token"))
+    if agy_token:
+        email = agy_token.get("id_token_email")
+        if isinstance(email, str) and email.strip():
+            return email.strip()
+
+    try:
+        pattern = os.path.join(home, ".cli-proxy-api", "antigravity-*.json")
         for path in sorted(glob.glob(pattern)):
-            with open(path, encoding="utf-8") as handle:
-                data = json.load(handle)
-            if isinstance(data, dict) and not bool(data.get("disabled", False)):
+            data = _read_json_dict(path)
+            if data and not bool(data.get("disabled", False)):
                 email = data.get("email")
                 if isinstance(email, str) and email.strip():
                     return email.strip()
@@ -373,24 +422,47 @@ def resolve_antigravity_email():
     return None
 
 
-def enrich_antigravity_entries(entries):
+def resolve_claude_email():
+    """Return the local Claude account email from ~/.claude.json, if present."""
+    data = _read_json_dict(os.path.join(os.path.expanduser("~"), ".claude.json"))
+    oauth = data.get("oauthAccount") if data else None
+    email = oauth.get("emailAddress") if isinstance(oauth, dict) else None
+    if isinstance(email, str) and email.strip():
+        return email.strip()
+    return None
+
+
+EMAIL_RESOLVERS = {
+    "antigravity": resolve_antigravity_email,
+    "claude": resolve_claude_email,
+}
+
+
+def enrich_provider_emails(entries):
+    """Fill missing usage/identity accountEmail fields from local provider state."""
     if not isinstance(entries, list):
         return
-    email = None
-    resolved = False
+    resolved_emails = {}
     for entry in entries:
-        if not isinstance(entry, dict) or entry.get("provider") != "antigravity":
+        if not isinstance(entry, dict):
+            continue
+        provider_id = entry.get("provider")
+        resolver = EMAIL_RESOLVERS.get(provider_id)
+        if resolver is None:
             continue
         usage = entry.get("usage")
         if not isinstance(usage, dict):
             continue
-        if not usage.get("accountEmail"):
-            if not resolved:
-                email = resolve_antigravity_email()
-                resolved = True
+        identity = usage.get("identity")
+        existing = usage.get("accountEmail") or (
+            identity.get("accountEmail") if isinstance(identity, dict) else None
+        )
+        if not existing:
+            if provider_id not in resolved_emails:
+                resolved_emails[provider_id] = resolver()
+            email = resolved_emails[provider_id]
             if email:
                 usage["accountEmail"] = email
-                identity = usage.get("identity")
                 if isinstance(identity, dict) and not identity.get("accountEmail"):
                     identity["accountEmail"] = email
 
@@ -433,7 +505,7 @@ def main(args):
     if not isinstance(entries, list):
         sys.stdout.write(result.stdout)
         return result.returncode
-    enrich_antigravity_entries(entries)
+    enrich_provider_emails(entries)
     entries.append(holder["entry"])
     print(json.dumps(entries))
     return result.returncode
