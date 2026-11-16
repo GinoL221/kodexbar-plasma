@@ -125,3 +125,83 @@ export function normalize(payload, expectedProvider) {
         primaryModel: extractPrimaryModel(entry.daily)
     }
 }
+
+var MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+var MONTHS_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+
+// Comma-decimal / dot-thousands contract locked by ProviderRowHarness & goldens.
+export function formatUsd(value) {
+    var rounded = Math.round(value * 100) / 100
+    var negative = rounded < 0
+    var fixed = Math.abs(rounded).toFixed(2)
+    var parts = fixed.split(".")
+    var grouped = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+    return (negative ? "-" : "") + grouped + "," + parts[1]
+}
+
+export function formatTokensAbbreviated(value) {
+    var rounded = Math.round(value)
+    var negative = rounded < 0
+    var absValue = Math.abs(rounded)
+
+    var suffix = ""
+    var divisor = 1
+    if (absValue >= 1000000000) {
+        suffix = "B"
+        divisor = 1000000000
+    } else if (absValue >= 1000000) {
+        suffix = "M"
+        divisor = 1000000
+    } else if (absValue >= 1000) {
+        suffix = "K"
+        divisor = 1000
+    }
+
+    if (suffix === "") {
+        return (negative ? "-" : "") + String(absValue)
+    }
+
+    var fixed = (absValue / divisor).toFixed(1)
+    var parts = fixed.split(".")
+    return (negative ? "-" : "") + parts[0] + "," + parts[1] + suffix
+}
+
+export function formatDailyDate(isoDate, isSpanish) {
+    if (typeof isoDate !== "string") {
+        return ""
+    }
+    var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate)
+    if (!match) {
+        return isoDate
+    }
+    var monthIndex = parseInt(match[2], 10) - 1
+    var dayNum = parseInt(match[3], 10)
+    var months = isSpanish ? MONTHS_ES : MONTHS_EN
+    var monthName = months[monthIndex]
+    if (!monthName) {
+        return isoDate
+    }
+    return isSpanish ? (dayNum + " " + monthName) : (monthName + " " + dayNum)
+}
+
+export function formatDailyTooltip(entry, isSpanish) {
+    if (!entry || typeof entry !== "object") {
+        return ""
+    }
+    var dateLabel = formatDailyDate(entry.date, isSpanish)
+    if (dateLabel.length === 0) {
+        return ""
+    }
+    var hasCost = isFiniteNonNegative(entry.totalCost) && entry.totalCost > 0
+    var hasTokens = isFiniteNonNegative(entry.totalTokens) && entry.totalTokens > 0
+    if (hasCost && hasTokens) {
+        return dateLabel + ": $" + formatUsd(entry.totalCost) + " · " + formatTokensAbbreviated(entry.totalTokens) + " tokens"
+    }
+    if (hasCost) {
+        return dateLabel + ": $" + formatUsd(entry.totalCost)
+    }
+    if (hasTokens) {
+        return dateLabel + ": " + formatTokensAbbreviated(entry.totalTokens) + " tokens"
+    }
+    return dateLabel + ": $0,00"
+}

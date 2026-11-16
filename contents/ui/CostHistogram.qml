@@ -1,14 +1,19 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+
+import "../code/CostModel.mjs" as CostModel
+import "../code/Translation.mjs" as Translation
 
 Item {
     id: root
 
     property var daily: []
     property string accentColor: ""
+    property string languagePreference: "auto"
 
     readonly property var validDaily: Array.isArray(root.daily) ? root.daily : []
     // Display up to the most recent 14 days aligned to the right so the present
@@ -66,6 +71,7 @@ Item {
 
             delegate: Item {
                 id: barDelegate
+                objectName: "costHistogramBarDelegate"
                 required property var modelData
 
                 readonly property real metricValue: {
@@ -80,12 +86,23 @@ Item {
                     return 0
                 }
                 readonly property real ratio: Math.max(0, Math.min(1, barDelegate.metricValue / root.maxMetric))
+                readonly property string tooltipText: barDelegate.modelData && typeof barDelegate.modelData === "object"
+                    ? CostModel.formatDailyTooltip(barDelegate.modelData, Translation.isSpanishActive(root.languagePreference))
+                    : ""
 
                 Layout.fillHeight: true
                 Layout.preferredWidth: 16
                 Layout.minimumWidth: 12
                 Layout.maximumWidth: 20
                 Layout.fillWidth: false
+
+                QQC2.ToolTip.visible: barHover.hovered && barDelegate.tooltipText.length > 0
+                QQC2.ToolTip.text: barDelegate.tooltipText
+                QQC2.ToolTip.delay: 250
+
+                HoverHandler {
+                    id: barHover
+                }
 
                 Rectangle {
                     objectName: "costHistogramBar"

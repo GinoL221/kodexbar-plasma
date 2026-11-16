@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
+import "../code/CostModel.mjs" as CostModel
 import "../code/Translation.mjs" as Translation
 
 // Optional local token-cost estimate for the selected provider. `snapshot` is
@@ -27,39 +28,11 @@ ColumnLayout {
     spacing: Kirigami.Units.smallSpacing
 
     function formatUsd(value) {
-        var rounded = Math.round(value * 100) / 100
-        var negative = rounded < 0
-        var fixed = Math.abs(rounded).toFixed(2)
-        var parts = fixed.split(".")
-        var grouped = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-        return (negative ? "-" : "") + grouped + "," + parts[1]
+        return CostModel.formatUsd(value)
     }
 
     function formatTokensAbbreviated(value) {
-        var rounded = Math.round(value)
-        var negative = rounded < 0
-        var absValue = Math.abs(rounded)
-
-        var suffix = ""
-        var divisor = 1
-        if (absValue >= 1000000000) {
-            suffix = "B"
-            divisor = 1000000000
-        } else if (absValue >= 1000000) {
-            suffix = "M"
-            divisor = 1000000
-        } else if (absValue >= 1000) {
-            suffix = "K"
-            divisor = 1000
-        }
-
-        if (suffix === "") {
-            return (negative ? "-" : "") + String(absValue)
-        }
-
-        var fixed = (absValue / divisor).toFixed(1)
-        var parts = fixed.split(".")
-        return (negative ? "-" : "") + parts[0] + "," + parts[1] + suffix
+        return CostModel.formatTokensAbbreviated(value)
     }
 
     PlasmaComponents.Label {
@@ -193,6 +166,7 @@ ColumnLayout {
         id: costHistogram
         objectName: "costHistogram"
         daily: root.dailyEntries
+        languagePreference: root.languagePreference
         accentColor: root.accentColor
         Layout.fillWidth: true
         Layout.topMargin: Kirigami.Units.smallSpacing

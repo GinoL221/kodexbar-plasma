@@ -38,6 +38,7 @@ Item {
     UI.CostHistogram {
         id: mixedHistogram
         width: 300
+        languagePreference: "en"
         daily: [
             { date: "2026-11-01", totalCost: 10.0, totalTokens: 1000 },
             { date: "2026-11-02", totalCost: 0.0, totalTokens: 50000000 },
@@ -59,6 +60,15 @@ Item {
         id: emptyHistogram
         width: 300
         daily: []
+    }
+
+    UI.CostHistogram {
+        id: esHistogram
+        width: 300
+        languagePreference: "es"
+        daily: [
+            { date: "2026-12-14", totalCost: 12.874, totalTokens: 122288032 }
+        ]
     }
 
     UI.CostHistogram {
@@ -118,6 +128,18 @@ Item {
             var firstMixedBarPos = mixedBars[0].mapToItem(mixedHistogram, 0, 0)
             root.assert(firstMixedBarPos.x > mixedHistogram.width / 2,
                 "short daily series must align to the right edge of the histogram")
+
+            // Interactive tooltip formatting per bar
+            var delegates = root.findChildrenByObjectName(mixedHistogram, "costHistogramBarDelegate")
+            root.assert(delegates.length === 3, "must expose costHistogramBarDelegate with tooltip text")
+            root.assert(delegates[0].tooltipText === "Nov 1: $10,00 · 1,0K tokens",
+                "mixed cost+token bar tooltip mismatch: " + delegates[0].tooltipText)
+            root.assert(delegates[1].tooltipText === "Nov 2: 50,0M tokens",
+                "token-only bar tooltip mismatch: " + delegates[1].tooltipText)
+
+            var esDelegates = root.findChildrenByObjectName(esHistogram, "costHistogramBarDelegate")
+            root.assert(esDelegates.length === 1 && esDelegates[0].tooltipText === "14 Dic: $12,87 · 122,3M tokens",
+                "Spanish bar tooltip mismatch: " + (esDelegates.length > 0 ? esDelegates[0].tooltipText : "none"))
 
             root.finish()
         }
