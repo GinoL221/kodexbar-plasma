@@ -60,10 +60,9 @@ export function rateLimitedProviderIds(errors) {
 // Fresh providers always win. A rate-limited provider that did not answer
 // keeps its previous entry so the popup does not blank out mid-session, and
 // a provider that never had an entry is never fabricated.
-export function mergeRateLimitedProviders(freshProviders, previousProviders, errors) {
+export function mergeProvidersByIds(freshProviders, previousProviders, ids) {
     var merged = Array.isArray(freshProviders) ? freshProviders.slice(0) : []
     var previous = Array.isArray(previousProviders) ? previousProviders : []
-    var ids = rateLimitedProviderIds(errors)
     var i, j, id, found, previousEntry
     for (i = 0; i < ids.length; i++) {
         id = ids[i]
@@ -89,6 +88,89 @@ export function mergeRateLimitedProviders(freshProviders, previousProviders, err
         }
     }
     return merged
+}
+
+export function mergeRateLimitedProviders(freshProviders, previousProviders, errors) {
+    return mergeProvidersByIds(freshProviders, previousProviders, rateLimitedProviderIds(errors))
+}
+
+export function isAuthLogoutError(errorEntry) {
+    if (!errorEntry || typeof errorEntry !== "object") {
+        return false
+    }
+    var error = errorEntry.error
+    if (!error || typeof error !== "object") {
+        return false
+    }
+    var message = typeof error.message === "string" ? error.message : ""
+    return /\blogged out\b|authentication required|not authenticated|not logged in|invalid api key|unauthorized|\b401\b/i.test(message)
+}
+
+export function isTransientRetainableError(errorEntry) {
+    if (!errorEntry || typeof errorEntry !== "object") {
+        return false
+    }
+    if (isAuthLogoutError(errorEntry)) {
+        return false
+    }
+    if (isRateLimitError(errorEntry)) {
+        return true
+    }
+    var error = errorEntry.error
+    if (!error || typeof error !== "object") {
+        return false
+    }
+    if (error.kind === "runtime") {
+        return true
+    }
+    var message = typeof error.message === "string" ? error.message : ""
+    return /timed?\s*out|timeout|session expired|temporar|try again|connection reset|econnreset|etimedout|\b50[234]\b/i.test(message)
+}
+
+export function hasRetainableError(errors) {
+    if (!Array.isArray(errors)) {
+        return false
+    }
+    var i
+    for (i = 0; i < errors.length; i++) {
+        if (isTransientRetainableError(errors[i])) {
+            return true
+        }
+    }
+    return false
+}
+
+export function retainableProviderIds(errors) {
+    var ids = []
+    var excluded = []
+    if (!Array.isArray(errors)) {
+        return ids
+    }
+    var i, entry, provider
+    for (i = 0; i < errors.length; i++) {
+        entry = errors[i]
+        provider = entry !== null && typeof entry === "object" && typeof entry.provider === "string"
+            ? entry.provider : ""
+        if (provider.length > 0 && isAuthLogoutError(entry) && excluded.indexOf(provider) === -1) {
+            excluded.push(provider)
+        }
+    }
+    for (i = 0; i < errors.length; i++) {
+        entry = errors[i]
+        if (!isTransientRetainableError(entry)) {
+            continue
+        }
+        provider = entry !== null && typeof entry === "object" && typeof entry.provider === "string"
+            ? entry.provider : ""
+        if (provider.length > 0 && excluded.indexOf(provider) === -1 && ids.indexOf(provider) === -1) {
+            ids.push(provider)
+        }
+    }
+    return ids
+}
+
+export function mergeRetainedProviders(freshProviders, previousProviders, errors) {
+    return mergeProvidersByIds(freshProviders, previousProviders, retainableProviderIds(errors))
 }
 
 export function backoffDelayMs(consecutive) {

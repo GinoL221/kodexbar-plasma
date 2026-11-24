@@ -70,6 +70,13 @@ Item {
         SnapshotStorage.save(LocalStorage.LocalStorage, providers, storageDbName)
     }
 
+    function clearCache() {
+        if (!cacheEnabled) {
+            return
+        }
+        SnapshotStorage.clear(LocalStorage.LocalStorage, storageDbName)
+    }
+
     function commandLine() {
         return PathResolver.shellQuote(effectiveCommandPath)
             + (includeStatus ? " usage --status --format json --json-only" : " usage --format json --json-only")
@@ -290,8 +297,9 @@ Item {
         // provider keeps its last good entry instead of blanking the popup,
         // and the backoff delays the next poll.
         var rateLimited = RateLimitPolicy.hasRateLimitError(normalized.errors)
-        var providers = rateLimited
-            ? RateLimitPolicy.mergeRateLimitedProviders(normalized.providers, committedProviders, normalized.errors)
+        var retainable = RateLimitPolicy.hasRetainableError(normalized.errors)
+        var providers = retainable
+            ? RateLimitPolicy.mergeRetainedProviders(normalized.providers, committedProviders, normalized.errors)
             : normalized.providers
         consecutiveRateLimits = rateLimited ? consecutiveRateLimits + 1 : 0
         committedProviders = providers
@@ -308,6 +316,8 @@ Item {
                 : (normalized.errors.length > 0 ? "CodexBar returned provider errors." : ""))
         if (providers.length > 0) {
             saveToCache(providers)
+        } else if (!retainable) {
+            clearCache()
         }
         releaseGeneration(true)
     }

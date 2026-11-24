@@ -1,12 +1,14 @@
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import importlib.machinery
+import importlib.util
 import json
 import os
+from pathlib import Path
 import stat
 import subprocess
 import tempfile
 import threading
 import unittest
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from pathlib import Path
 
 
 ROOT = Path(__file__).parents[1]
@@ -50,15 +52,17 @@ class FakeNanServer:
                 self.end_headers()
                 self.wfile.write(data)
 
-            def log_message(self, *args):
+            def log_message(self, format, *args):
                 pass
 
         self.httpd = HTTPServer(("127.0.0.1", 0), Handler)
-        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+        self.thread = threading.Thread(
+            target=self.httpd.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True
+        )
 
     @property
     def url(self):
-        return "http://127.0.0.1:%d" % self.httpd.server_address[1]
+        return f"http://127.0.0.1:{self.httpd.server_address[1]}"
 
     def __enter__(self):
         self.thread.start()
@@ -80,10 +84,10 @@ class AdapterTestCase(unittest.TestCase):
     def fake_codexbar(self, stdout, exit_code=0):
         script = Path(self.tmp.name) / "codexbar"
         script.write_text(
-            "#!/bin/sh\n"
-            'echo "$@" >> "%s"\n'
-            "cat <<'EOF'\n%s\nEOF\n"
-            "exit %d\n" % (self.calls, stdout, exit_code)
+            f"#!/bin/sh\n"
+            f'echo "$@" >> "{self.calls}"\n'
+            f"cat <<'EOF'\n{stdout}\nEOF\n"
+            f"exit {exit_code}\n"
         )
         script.chmod(script.stat().st_mode | stat.S_IXUSR)
         return script
@@ -220,7 +224,7 @@ class UsageMergeTest(AdapterTestCase):
         }))
         claude_calls = Path(self.tmp.name) / "claude_calls.txt"
         claude_bin = Path(self.tmp.name) / "claude"
-        claude_bin.write_text("#!/bin/sh\necho \"$@\" >> \"%s\"\n" % claude_calls)
+        claude_bin.write_text(f'#!/bin/sh\necho "$@" >> "{claude_calls}"\n')
         claude_bin.chmod(claude_bin.stat().st_mode | stat.S_IXUSR)
         return claude_bin, claude_calls
 
@@ -409,6 +413,162 @@ class UsageMergeTest(AdapterTestCase):
         self.assertEqual(claude["usage"]["accountEmail"], "native@example.com")
         self.assertEqual(claude["usage"]["identity"]["accountEmail"], "native@example.com")
 
+    def test_logged_out_codex_usage_entry_is_converted_to_error_when_auth_json_missing(self):
+        codex_entry = {
+            "provider": "codex",
+            "source": "auto",
+            "usage": {"primary": {"usedPercent": 15}},
+        }
+        real = self.fake_codexbar(json.dumps([codex_entry, CLAUDE_ENTRY]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        codex = [entry for entry in entries if entry.get("provider") == "codex"][0]
+        self.assertNotIn("usage", codex)
+        self.assertIn("error", codex)
+        self.assertEqual(codex["error"]["kind"], "provider")
+        claude = [entry for entry in entries if entry.get("provider") == "claude"][0]
+        self.assertEqual(claude, CLAUDE_ENTRY)
+
+    def test_active_codex_auth_json_preserves_codex_usage_entry(self):
+        codex_dir = self.home / ".codex"
+        codex_dir.mkdir(parents=True, exist_ok=True)
+        (codex_dir / "auth.json").write_text(json.dumps({
+            "tokens": {"access_token": "tok-123", "refresh_token": "ref-123"}
+        }))
+        codex_entry = {
+            "provider": "codex",
+            "source": "auto",
+            "usage": {"primary": {"usedPercent": 15}},
+        }
+        real = self.fake_codexbar(json.dumps([codex_entry, CLAUDE_ENTRY]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        codex = [entry for entry in entries if entry.get("provider") == "codex"][0]
+        self.assertEqual(codex, codex_entry)
+
+    def test_hung_codexbar_cli_falls_back_to_per_provider_queries_and_isolates_timeout(self):
+        self.write_claude_setup(expires_at=9999999999999)
+        agy_dir = self.home / ".gemini" / "antigravity-cli"
+        agy_dir.mkdir(parents=True, exist_ok=True)
+        (agy_dir / "antigravity-oauth-token").write_text(json.dumps({"auth_method": "oauth-personal"}))
+        cfg_dir = self.home / ".config" / "codexbar"
+        cfg_dir.mkdir(parents=True, exist_ok=True)
+        (cfg_dir / "config.json").write_text(json.dumps({
+            "providers": [
+                {"id": "codex", "enabled": True},
+                {"id": "claude", "enabled": True, "source": "oauth"},
+                {"id": "antigravity", "enabled": True},
+            ]
+        }))
+        claude_payload = json.dumps([CLAUDE_ENTRY])
+        script = Path(self.tmp.name) / "codexbar"
+        script.write_text(
+            f"#!/bin/sh\n"
+            f'echo "$@" >> "{self.calls}"\n'
+            f'case "$*" in\n'
+            f'  *"--provider claude"*)\n'
+            f"    cat <<'EOF'\n{claude_payload}\nEOF\n"
+            f"    exit 0\n"
+            f"    ;;\n"
+            f'  *"--provider antigravity"*)\n'
+            f"    sleep 5\n"
+            f"    exit 0\n"
+            f"    ;;\n"
+            f"  *)\n"
+            f"    sleep 5\n"
+            f"    exit 0\n"
+            f"    ;;\n"
+            f"esac\n"
+        )
+        script.chmod(script.stat().st_mode | stat.S_IXUSR)
+        with FakeNanServer() as server:
+            result = self.run_adapter(
+                ["usage", "--format", "json", "--json-only"],
+                server,
+                script,
+                env_extra={
+                    "CODEXBAR_CLI_TIMEOUT": "0.05",
+                    "CODEXBAR_PROVIDER_TIMEOUT": "0.05",
+                },
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        by_provider = {entry["provider"]: entry for entry in entries}
+        self.assertIn("claude", by_provider)
+        self.assertEqual(by_provider["claude"]["usage"]["primary"]["usedPercent"], 7)
+        self.assertIn("nan", by_provider)
+        self.assertIn("usage", by_provider["nan"])
+        self.assertIn("codex", by_provider)
+        self.assertNotIn("usage", by_provider["codex"])
+        self.assertIn("error", by_provider["codex"])
+        self.assertIn("antigravity", by_provider)
+        self.assertNotIn("usage", by_provider["antigravity"])
+        self.assertIn("error", by_provider["antigravity"])
+
+    def test_local_session_checks_short_circuit_logged_out_cli_providers_without_spawning_cli(self):
+        cfg_dir = self.home / ".config" / "codexbar"
+        cfg_dir.mkdir(parents=True, exist_ok=True)
+        (cfg_dir / "config.json").write_text(json.dumps({
+            "providers": [
+                {"id": "codex", "enabled": True},
+                {"id": "claude", "enabled": True},
+                {"id": "antigravity", "enabled": True},
+                {"id": "copilot", "enabled": True},
+            ]
+        }))
+        copilot_entry = {
+            "provider": "copilot",
+            "source": "auto",
+            "usage": {"primary": {"usedPercent": 42}},
+        }
+        real = self.fake_codexbar(json.dumps([copilot_entry]))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            self.real_calls(),
+            ["usage --format json --json-only --provider copilot"],
+        )
+        entries = json.loads(result.stdout)
+        by_provider = {entry["provider"]: entry for entry in entries}
+        for logged_out_id in ("codex", "claude", "antigravity"):
+            self.assertIn(logged_out_id, by_provider)
+            self.assertNotIn("usage", by_provider[logged_out_id])
+            self.assertEqual(by_provider[logged_out_id]["error"]["kind"], "provider")
+        self.assertEqual(by_provider["copilot"]["usage"]["primary"]["usedPercent"], 42)
+        self.assertIn("usage", by_provider["nan"])
+
+    def test_logged_out_claude_and_antigravity_state_dirs_sanitize_stale_cookie_usage(self):
+        (self.home / ".claude").mkdir(parents=True, exist_ok=True)
+        (self.home / ".gemini" / "antigravity-cli").mkdir(parents=True, exist_ok=True)
+        stale_entries = [
+            CLAUDE_ENTRY,
+            {
+                "provider": "antigravity",
+                "source": "auto",
+                "usage": {"primary": {"usedPercent": 10}},
+            },
+        ]
+        real = self.fake_codexbar(json.dumps(stale_entries))
+        with FakeNanServer() as server:
+            result = self.run_adapter(["usage", "--format", "json", "--json-only"], server, real)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        entries = json.loads(result.stdout)
+        by_provider = {entry["provider"]: entry for entry in entries}
+        self.assertNotIn("usage", by_provider["claude"])
+        self.assertIn("error", by_provider["claude"])
+        self.assertNotIn("usage", by_provider["antigravity"])
+        self.assertIn("error", by_provider["antigravity"])
+
     def write_pi_auth(self, key_value):
         pi_dir = self.home / ".pi" / "agent"
         pi_dir.mkdir(parents=True, exist_ok=True)
@@ -506,22 +666,20 @@ class UsageMergeTest(AdapterTestCase):
 
 
 def load_adapter_module():
-    import importlib.machinery
-    import importlib.util
-
     loader = importlib.machinery.SourceFileLoader("codexbar_nan", str(ADAPTER))
     spec = importlib.util.spec_from_loader("codexbar_nan", loader)
+    assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
-    loader.exec_module(module)
+    spec.loader.exec_module(module)
     return module
 
 
 class PeriodTest(unittest.TestCase):
     def period(self, now, day):
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
         adapter = load_adapter_module()
-        parsed = datetime.strptime(now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        parsed = datetime.strptime(now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
         start, end = adapter.billing_period(parsed, day)
         return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
 

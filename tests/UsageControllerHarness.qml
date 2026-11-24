@@ -1,11 +1,14 @@
 import QtQuick
+import QtQuick.LocalStorage as LocalStorage
 import "../contents/ui" as UsageUi
+import "../contents/code/SnapshotStorage.mjs" as SnapshotStorage
 
 Item {
     id: root
     property bool assertionFailed: false
 
     property var controller: null
+    property var cachedController: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -72,6 +75,45 @@ Item {
         controller.timeoutForTest(controller.generation)
         assert(controller.phase === "error", "timeout must become a recoverable error")
         assert(controller.committedProviders.length === 0, "timeout must not commit output")
+
+        var cacheDbName = "KodexBarLogoutClear_" + Date.now()
+        cachedController = controllerComponent.createObject(root, {
+            commandPath: "/tmp/cli dir/cli'$(unsafe)",
+            timeoutMs: 60000,
+            testMode: true,
+            cacheEnabled: true,
+            storageDbName: cacheDbName
+        })
+        cachedController.requestRefresh()
+        cachedController.completeForTest(
+            cachedController.generation,
+            JSON.stringify([{
+                provider: "codex",
+                source: "auto",
+                usage: { primary: { usedPercent: 22 } }
+            }]),
+            0
+        )
+        assert(cachedController.committedProviders.length === 1,
+               "initial active provider must commit")
+        assert(SnapshotStorage.load(LocalStorage.LocalStorage, cacheDbName).length === 1,
+               "initial active provider must persist to SQLite cache")
+
+        cachedController.requestRefresh()
+        cachedController.completeForTest(
+            cachedController.generation,
+            JSON.stringify([{
+                provider: "codex",
+                source: "auto",
+                error: { kind: "provider", code: 1, message: "Codex CLI session is logged out" }
+            }]),
+            0
+        )
+        assert(cachedController.committedProviders.length === 0,
+               "logged-out provider error response must clear committedProviders")
+        assert(SnapshotStorage.load(LocalStorage.LocalStorage, cacheDbName).length === 0,
+               "non-rate-limited empty provider response must clear stale SQLite snapshot")
+
         finish()
     }
 

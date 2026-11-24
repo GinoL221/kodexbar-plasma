@@ -13,8 +13,10 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import urllib.error
 import urllib.request
@@ -438,6 +440,243 @@ EMAIL_RESOLVERS = {
 }
 
 
+def has_codex_cli_auth():
+    """Return True when ~/.codex/auth.json (or $CODEX_HOME/auth.json) holds an active CLI session."""
+    codex_home = os.environ.get("CODEX_HOME") or os.path.join(os.path.expanduser("~"), ".codex")
+    data = _read_json_dict(os.path.join(codex_home, "auth.json"))
+    if not isinstance(data, dict):
+        return False
+    api_key = data.get("OPENAI_API_KEY")
+    if isinstance(api_key, str) and api_key.strip():
+        return True
+    tokens = data.get("tokens")
+    if isinstance(tokens, dict):
+        for key in ("access_token", "refresh_token", "id_token"):
+            value = tokens.get(key)
+            if isinstance(value, str) and value.strip():
+                return True
+    return False
+
+
+def has_claude_cli_auth():
+    """Return True when ~/.claude/.credentials.json or ~/.claude.json holds an active Claude session."""
+    home = os.path.expanduser("~")
+    cred = _read_json_dict(os.path.join(home, ".claude", ".credentials.json"))
+    oauth = cred.get("claudeAiOauth") if isinstance(cred, dict) else None
+    if isinstance(oauth, dict):
+        for key in ("accessToken", "refreshToken"):
+            value = oauth.get(key)
+            if isinstance(value, str) and value.strip():
+                return True
+    if resolve_claude_email() is not None:
+        return True
+    return False
+
+
+def has_antigravity_cli_auth():
+    """Return True when local Antigravity CLI token, logs, or cli-proxy-api holds an active session."""
+    home = os.path.expanduser("~")
+    agy_token = _read_json_dict(
+        os.path.join(home, ".gemini", "antigravity-cli", "antigravity-oauth-token")
+    )
+    if isinstance(agy_token, dict):
+        for key in ("access_token", "refresh_token", "id_token_email", "auth_method"):
+            value = agy_token.get(key)
+            if isinstance(value, str) and value.strip():
+                return True
+    if resolve_antigravity_email() is not None:
+        return True
+    return False
+
+
+LOCAL_SESSION_CHECKS = {
+    "codex": has_codex_cli_auth,
+    "claude": has_claude_cli_auth,
+    "antigravity": has_antigravity_cli_auth,
+}
+
+
+def has_provider_local_state(provider_id):
+    home = os.path.expanduser("~")
+    if os.path.exists(os.path.join(config_dir(), "config.json")):
+        return True
+    if provider_id == "codex":
+        return True
+    if provider_id == "claude":
+        return os.path.exists(os.path.join(home, ".claude")) or os.path.exists(
+            os.path.join(home, ".claude.json")
+        )
+    if provider_id == "antigravity":
+        return os.path.exists(
+            os.path.join(home, ".gemini", "antigravity-cli")
+        ) or os.path.exists(os.path.join(home, ".cli-proxy-api"))
+    return False
+
+
+def provider_requires_local_auth(provider_id):
+    """Return False only if ~/.config/codexbar/config.json explicitly sets source to web/api."""
+    cfg = _read_json_dict(os.path.join(config_dir(), "config.json"))
+    providers = cfg.get("providers") if isinstance(cfg, dict) else None
+    if isinstance(providers, list):
+        for item in providers:
+            if isinstance(item, dict) and item.get("id") == provider_id:
+                if item.get("source") in ("web", "api"):
+                    return False
+    return True
+
+
+def is_provider_logged_out(provider_id):
+    checker = LOCAL_SESSION_CHECKS.get(provider_id)
+    if checker is None:
+        return False
+    if not has_provider_local_state(provider_id) or not provider_requires_local_auth(provider_id):
+        return False
+    return not checker()
+
+
+def logged_out_provider_entry(provider_id, source="auto"):
+    return {
+        "provider": provider_id,
+        "source": source if isinstance(source, str) and source else "auto",
+        "error": {
+            "kind": "provider",
+            "code": 1,
+            "message": "%s local CLI session is logged out" % provider_id,
+        },
+    }
+
+
+def sanitize_logged_out_providers(entries):
+    """Replace usage entries with a provider error when a local CLI provider session is logged out."""
+    if not isinstance(entries, list):
+        return
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict) or "usage" not in entry:
+            continue
+        provider_id = entry.get("provider")
+        if isinstance(provider_id, str) and is_provider_logged_out(provider_id):
+            entries[index] = logged_out_provider_entry(provider_id, entry.get("source"))
+
+
+def configured_enabled_providers(fallback_default=True):
+    cfg = _read_json_dict(os.path.join(config_dir(), "config.json"))
+    providers = cfg.get("providers") if isinstance(cfg, dict) else None
+    enabled = []
+    if isinstance(providers, list):
+        for item in providers:
+            if isinstance(item, dict) and item.get("enabled") is True:
+                pid = item.get("id")
+                if isinstance(pid, str) and pid and pid != "nan" and pid not in enabled:
+                    enabled.append(pid)
+    if enabled or not fallback_default:
+        return enabled
+    return ["codex", "claude", "antigravity", "grok", "copilot", "cursor"]
+
+
+def args_with_provider(args, provider_id):
+    filtered = []
+    skip_next = False
+    for arg in args:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg == "--provider":
+            skip_next = True
+            continue
+        if arg.startswith("--provider="):
+            continue
+        filtered.append(arg)
+    return filtered + ["--provider", provider_id]
+
+
+def run_command_with_timeout(cmd, timeout):
+    proc = subprocess.Popen(
+        cmd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        cwd=tempfile.gettempdir(),
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stdout, _ = proc.communicate(timeout=timeout)
+        return stdout, proc.returncode
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except OSError:
+            proc.kill()
+        if proc.stdout is not None:
+            proc.stdout.close()
+        proc.wait()
+        raise
+
+
+def collect_per_provider_entries(real, args):
+    try:
+        provider_timeout = float(os.environ.get("CODEXBAR_PROVIDER_TIMEOUT", "20"))
+    except ValueError:
+        provider_timeout = 20.0
+    providers = configured_enabled_providers(fallback_default=True)
+    results_by_provider = {}
+    threads = []
+
+    def query_one(pid):
+        try:
+            raw_out, _ = run_command_with_timeout(
+                [real] + args_with_provider(args, pid),
+                timeout=provider_timeout,
+            )
+            parsed = json.loads(raw_out)
+            if isinstance(parsed, list):
+                results_by_provider[pid] = parsed
+                return
+        except subprocess.TimeoutExpired:
+            results_by_provider[pid] = [
+                {
+                    "provider": pid,
+                    "source": "auto",
+                    "error": {
+                        "kind": "runtime",
+                        "code": 1,
+                        "message": "Provider %s timed out after %ss" % (pid, provider_timeout),
+                    },
+                }
+            ]
+            return
+        except Exception as error:
+            results_by_provider[pid] = [
+                {
+                    "provider": pid,
+                    "source": "auto",
+                    "error": {
+                        "kind": "runtime",
+                        "code": 1,
+                        "message": "Provider %s failed: %s" % (pid, error),
+                    },
+                }
+            ]
+            return
+        results_by_provider[pid] = []
+
+    for pid in providers:
+        if is_provider_logged_out(pid):
+            results_by_provider[pid] = [logged_out_provider_entry(pid)]
+            continue
+        thread = threading.Thread(target=query_one, args=(pid,))
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
+
+    combined = []
+    for pid in providers:
+        combined.extend(results_by_provider.get(pid, []))
+    return combined
+
+
 def enrich_provider_emails(entries):
     """Fill missing usage/identity accountEmail fields from local provider state."""
     if not isinstance(entries, list):
@@ -496,19 +735,36 @@ def main(args):
         print(json.dumps([entry]))
         return 1 if "error" in entry else 0
 
-    result = subprocess.run([real] + args, stdout=subprocess.PIPE, text=True)
-    worker.join()
     try:
-        entries = json.loads(result.stdout)
+        cli_timeout = float(os.environ.get("CODEXBAR_CLI_TIMEOUT", "20"))
     except ValueError:
-        entries = None
+        cli_timeout = 20.0
+
+    if configured_enabled_providers(fallback_default=False):
+        entries = collect_per_provider_entries(real, args)
+        raw_stdout = ""
+        returncode = 0
+    else:
+        try:
+            raw_stdout, returncode = run_command_with_timeout([real] + args, timeout=cli_timeout)
+            try:
+                entries = json.loads(raw_stdout)
+            except ValueError:
+                entries = None
+        except subprocess.TimeoutExpired:
+            entries = collect_per_provider_entries(real, args)
+            raw_stdout = ""
+            returncode = 0
+
+    worker.join()
     if not isinstance(entries, list):
-        sys.stdout.write(result.stdout)
-        return result.returncode
+        sys.stdout.write(raw_stdout)
+        return returncode
+    sanitize_logged_out_providers(entries)
     enrich_provider_emails(entries)
     entries.append(holder["entry"])
     print(json.dumps(entries))
-    return result.returncode
+    return returncode
 
 
 if __name__ == "__main__":

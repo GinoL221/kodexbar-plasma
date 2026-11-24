@@ -154,6 +154,57 @@ Item {
         assert(RateLimitPolicy.retryMinutes(120000) === 2, "exact minutes must not round up")
         assert(RateLimitPolicy.retryMinutes(1800000) === 30, "the capped delay must communicate thirty minutes")
         assert(RateLimitPolicy.retryMinutes(1800001) === 31, "anything above the cap must round up")
+
+        // Transient retainable errors vs auth/logout errors.
+        assert(RateLimitPolicy.isAuthLogoutError({ provider: "codex", error: { kind: "provider", code: 1, message: "codex local CLI session is logged out" } }),
+            "logged out message must be classified as auth/logout error")
+        assert(RateLimitPolicy.isAuthLogoutError({ provider: "codex", error: { kind: "provider", code: 1, message: "Codex connection failed: codex account authentication required" } }),
+            "authentication required message must be classified as auth/logout error")
+        assert(!RateLimitPolicy.isAuthLogoutError({ provider: "antigravity", error: { kind: "runtime", code: 1, message: "Provider antigravity timed out after 15.0s" } }),
+            "timeout message must not be classified as auth/logout error")
+
+        assert(RateLimitPolicy.isTransientRetainableError({ provider: "antigravity", error: { kind: "runtime", code: 1, message: "Provider antigravity timed out after 15.0s" } }),
+            "runtime timeout must be transient retainable")
+        assert(RateLimitPolicy.isTransientRetainableError({ provider: "antigravity", error: { kind: "provider", code: 1, message: "Antigravity session expired. Restart Antigravity and retry." } }),
+            "Antigravity session expired must be transient retainable")
+        assert(!RateLimitPolicy.isTransientRetainableError({ provider: "codex", error: { kind: "provider", code: 1, message: "codex local CLI session is logged out" } }),
+            "logged out error must not be transient retainable")
+        assert(!RateLimitPolicy.isTransientRetainableError({ provider: "codex", error: { kind: "runtime", code: 1, message: "authentication required" } }),
+            "auth/logout error must not be retainable even if kind is runtime")
+        assert(!RateLimitPolicy.isTransientRetainableError({ provider: "zed", error: { kind: "provider", code: 1, message: "Zed is only supported on macOS." } }),
+            "unrelated unsupported error must not be transient retainable")
+
+        assert(RateLimitPolicy.hasRetainableError([
+            { provider: "antigravity", error: { kind: "runtime", code: 1, message: "Provider antigravity timed out after 15.0s" } }
+        ]), "hasRetainableError must detect timeout errors")
+        assert(!RateLimitPolicy.hasRetainableError([
+            { provider: "codex", error: { kind: "provider", code: 1, message: "codex local CLI session is logged out" } }
+        ]), "hasRetainableError must return false for logout-only errors")
+
+        assertIds(RateLimitPolicy.retainableProviderIds([
+            { provider: "antigravity", error: { kind: "runtime", code: 1, message: "Provider antigravity timed out after 15.0s" } },
+            { provider: "codex", error: { kind: "provider", code: 1, message: "codex local CLI session is logged out" } },
+            { provider: "claude", error: { kind: "provider", code: 3, message: "rate_limit_error: throttled" } },
+            { provider: "claude", error: { kind: "provider", code: 1, message: "not authenticated" } }
+        ]), ["antigravity"],
+            "retainableProviderIds must exclude any provider that also has an auth/logout error")
+
+        var prevRetained = [
+            { provider: "antigravity", raw: { usage: { primary: { usedPercent: 18 } } } },
+            { provider: "codex", raw: { usage: { primary: { usedPercent: 20 } } } }
+        ]
+        var mergedRetained = RateLimitPolicy.mergeRetainedProviders(
+            [{ provider: "claude", raw: { usage: { primary: { usedPercent: 5 } } } }],
+            prevRetained,
+            [
+                { provider: "antigravity", error: { kind: "provider", code: 1, message: "Antigravity session expired. Restart Antigravity and retry." } },
+                { provider: "codex", error: { kind: "provider", code: 1, message: "codex local CLI session is logged out" } }
+            ])
+        assert(mergedRetained.length === 2,
+            "mergeRetainedProviders must keep fresh providers and transient-error providers while dropping logged-out ones")
+        assert(mergedRetained[0].provider === "claude" && mergedRetained[1].provider === "antigravity",
+            "mergeRetainedProviders must preserve fresh order followed by retained provider")
+
         finish()
     }
 }

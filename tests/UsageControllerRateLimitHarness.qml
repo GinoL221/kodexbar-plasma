@@ -11,6 +11,7 @@ Item {
     property var copy: null
     property var cachedController: null
     property var coldController: null
+    property var transientController: null
 
     function assert(condition, message) {
         if (!condition) {
@@ -196,6 +197,51 @@ Item {
             "claude preserves the hydrated 15% figure across the cold-start 429")
         assert(coldController.consecutiveRateLimits === 1, "rate limit strike must be counted")
         assert(coldController.phase === "ready", "phase stays ready")
+
+        // Transient timeout and Antigravity session expired errors must retain
+        // the provider's committed snapshot without incrementing consecutiveRateLimits,
+        // while auth/logout errors must drop the provider.
+        transientController = controllerComponent.createObject(root, {
+            commandPath: "/tmp/codexbar",
+            testMode: true
+        })
+        complete(transientController, JSON.stringify([
+            { provider: "antigravity", usage: { primary: { usedPercent: 18 } } },
+            { provider: "codex", usage: { primary: { usedPercent: 25 } } }
+        ]), 0)
+        assert(transientController.committedProviders.length === 2,
+            "initial response must commit both antigravity and codex")
+
+        // Transient timeout for antigravity + logout for codex
+        complete(transientController, JSON.stringify([
+            { provider: "claude", usage: { primary: { usedPercent: 10 } } },
+            { provider: "antigravity", error: { kind: "runtime", code: 1, message: "Provider antigravity timed out after 15.0s" } },
+            { provider: "codex", error: { kind: "provider", code: 1, message: "codex local CLI session is logged out" } }
+        ]), 0)
+        assert(transientController.consecutiveRateLimits === 0,
+            "transient timeout must not increment consecutiveRateLimits")
+        assert(transientController.phase === "ready", "phase must stay ready with fresh + retained providers")
+        assert(transientController.committedProviders.length === 2,
+            "antigravity must be retained and codex must be dropped on logout")
+        assert(transientController.committedProviders[0].provider === "claude",
+            "fresh claude provider must come first")
+        assert(transientController.committedProviders[1].provider === "antigravity",
+            "retained antigravity provider must remain in committedProviders")
+        assert(transientController.committedProviders[1].raw.usage.primary.usedPercent === 18,
+            "retained antigravity must keep its last committed snapshot")
+
+        // Antigravity session expired error must also retain antigravity without backoff
+        complete(transientController, JSON.stringify([
+            { provider: "claude", usage: { primary: { usedPercent: 12 } } },
+            { provider: "antigravity", error: { kind: "provider", code: 1, message: "Antigravity session expired. Restart Antigravity and retry." } }
+        ]), 0)
+        assert(transientController.consecutiveRateLimits === 0,
+            "session expired must not increment consecutiveRateLimits")
+        assert(transientController.committedProviders.length === 2,
+            "antigravity must still be retained on session expired")
+        assert(transientController.committedProviders[1].provider === "antigravity"
+            && transientController.committedProviders[1].raw.usage.primary.usedPercent === 18,
+            "antigravity must keep its committed snapshot across session expired")
 
         finish()
     }
