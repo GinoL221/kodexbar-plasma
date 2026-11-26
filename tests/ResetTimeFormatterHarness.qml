@@ -123,6 +123,20 @@ Item {
         assert(ResetTimeFormatter.formatResetText("", "", fixedIsoNow, "en") === "",
                "empty resetsAt and empty resetDescription returns empty")
 
+        // Sentinel epoch (<= 0) resetsAt timestamps must not render as bogus reset dates
+        assert(ResetTimeFormatter.formatResetText("1970-01-01T00:00:00Z", null, fixedIsoNow, "en") === "",
+               "epoch sentinel resetsAt returns empty in en")
+        assert(ResetTimeFormatter.formatResetText("1970-01-01T00:00:00Z", null, fixedIsoNow, "es") === "",
+               "epoch sentinel resetsAt returns empty in es")
+        assert(ResetTimeFormatter.formatResetText("1970-01-01T00:00:00.000Z", null, fixedIsoNow, "es") === "",
+               "epoch sentinel with milliseconds returns empty")
+        assert(ResetTimeFormatter.formatResetText(0, null, fixedIsoNow, "en") === "",
+               "numeric epoch 0 resetsAt returns empty")
+        assert(ResetTimeFormatter.formatResetText("0001-01-01T00:00:00Z", null, fixedIsoNow, "es") === "",
+               "pre-epoch zero-value timestamp returns empty")
+        assert(ResetTimeFormatter.formatResetText("1970-01-01T00:00:00Z", "Resets in 2 hours", fixedIsoNow, "es") === "Se reinicia en 2 h 0 min",
+               "epoch sentinel resetsAt still falls back to valid resetDescription")
+
         // Explicit language overrides
         assert(ResetTimeFormatter.formatResetText("2026-11-06T16:56:00Z", null, fixedIsoNow, "en") === "Resets in 4h 56m",
                "explicit en forces English formatting")

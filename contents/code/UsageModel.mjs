@@ -27,6 +27,17 @@ export function cleanResetDescription(desc) {
     return desc
 }
 
+export function cleanResetsAt(value) {
+    if (value === null || value === undefined) {
+        return value
+    }
+    var ms = (typeof value === "number") ? value : Date.parse(String(value))
+    if (isFinite(ms) && ms <= 0) {
+        return null
+    }
+    return value
+}
+
 export function normalizeWindow(definition, value) {
     if (!value || typeof value !== "object" || value instanceof Array) {
         return null
@@ -37,7 +48,7 @@ export function normalizeWindow(definition, value) {
         key: definition.key,
         label: definition.label,
         usedPercent: finiteNumber(value.usedPercent) ? Math.round(value.usedPercent) : null,
-        resetsAt: rawValue(value, "resetsAt"),
+        resetsAt: cleanResetsAt(rawValue(value, "resetsAt")),
         resetDescription: cleanResetDescription(desc)
     }
 }

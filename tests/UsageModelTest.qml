@@ -681,4 +681,61 @@ TestCase {
         compare(overview[1].label, "Weekly")
         compare(overview[2].label, "Fable")
     }
+
+    function test_normalizesSentinelEpochResetsAtToNull() {
+        var result = UsageModel.normalize({
+            provider: "antigravity",
+            source: "cli",
+            usage: {
+                primary: { usedPercent: 62, resetsAt: "2026-11-30T20:03:20Z" },
+                secondary: { usedPercent: 0, resetsAt: "1970-01-01T00:00:00Z" },
+                extraRateWindows: [
+                    {
+                        id: "antigravity-quota-summary-gemini-5h",
+                        title: "Gemini 5-hour",
+                        window: { usedPercent: 50, resetsAt: "2026-11-26T01:56:30Z" }
+                    },
+                    {
+                        id: "antigravity-quota-summary-gemini-weekly",
+                        title: "Gemini weekly",
+                        window: { usedPercent: 62, resetsAt: "2026-11-30T20:03:20Z" }
+                    },
+                    {
+                        id: "antigravity-quota-summary-3p-5h",
+                        title: "Claude/GPT 5-hour",
+                        window: { usedPercent: 0, resetsAt: "1970-01-01T00:00:00Z" }
+                    },
+                    {
+                        id: "antigravity-quota-summary-3p-weekly",
+                        title: "Claude/GPT weekly",
+                        window: { usedPercent: 0, resetsAt: "0001-01-01T00:00:00Z" }
+                    }
+                ]
+            }
+        })
+
+        var p = result.providers[0]
+        compare(p.windows.length, 4)
+        compare(p.windows[0].resetsAt, "2026-11-26T01:56:30Z")
+        compare(p.windows[1].resetsAt, "2026-11-30T20:03:20Z")
+        compare(p.windows[2].label, "Claude/GPT 5-hour")
+        compare(p.windows[2].resetsAt, null)
+        compare(p.windows[3].label, "Claude/GPT weekly")
+        compare(p.windows[3].resetsAt, null)
+        compare(p.raw.usage.extraRateWindows[2].window.resetsAt, "1970-01-01T00:00:00Z",
+                "raw entry must stay untouched")
+
+        var direct = UsageModel.normalize({
+            provider: "p",
+            usage: {
+                primary: { usedPercent: 0, resetsAt: 0 },
+                secondary: { usedPercent: 10, resetsAt: "2026-08-09T10:00:00Z" },
+                tertiary: { usedPercent: 20, resetsAt: "unchanged" }
+            }
+        }).providers[0]
+
+        compare(direct.windows[0].resetsAt, null)
+        compare(direct.windows[1].resetsAt, "2026-08-09T10:00:00Z")
+        compare(direct.windows[2].resetsAt, "unchanged")
+    }
 }

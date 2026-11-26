@@ -185,9 +185,10 @@ export function formatResetText(resetsAt, resetDescription, nowMs, languagePrefe
     var isSpanish = Translation.isSpanishActive(languagePreference)
 
     // 1. Check future ISO-8601 resetsAt
+    var targetMs = NaN
     if (resetsAt !== null && resetsAt !== undefined) {
-        var targetMs = (typeof resetsAt === "number") ? resetsAt : Date.parse(String(resetsAt))
-        if (!isNaN(targetMs) && targetMs > effectiveNowMs) {
+        targetMs = (typeof resetsAt === "number") ? resetsAt : Date.parse(String(resetsAt))
+        if (isFinite(targetMs) && targetMs > effectiveNowMs) {
             var diffMs = targetMs - effectiveNowMs
             return formatCountdownFromDiff(diffMs, isSpanish)
         }
@@ -215,8 +216,12 @@ export function formatResetText(resetsAt, resetDescription, nowMs, languagePrefe
         }
     }
 
-    // 3. Fallback when resetDescription is absent but resetsAt exists (past or unparseable timestamp)
+    // 3. Fallback when resetDescription is absent but resetsAt exists (past or unparseable timestamp).
+    // Discard Unix epoch (0) and pre-epoch sentinel timestamps (e.g. 1970-01-01T00:00:00Z).
     if (resetsAt !== null && resetsAt !== undefined) {
+        if (isFinite(targetMs) && targetMs <= 0) {
+            return ""
+        }
         var rawResetsAt = String(resetsAt).trim()
         if (rawResetsAt.length > 0) {
             return Translation.translate("Reset: %1", [rawResetsAt], null, languagePreference)
