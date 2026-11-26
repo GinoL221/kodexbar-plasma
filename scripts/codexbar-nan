@@ -35,6 +35,14 @@ DEFAULT_MODEL_PRICING = {
 DEFAULT_FALLBACK_PRICING = {"input": 0.15, "cached": 0.04, "output": 0.60}
 WINDOW_KEYS = ("primary", "secondary", "tertiary")
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+ANTIGRAVITY_DB_ROOTS = (
+    os.path.join(".gemini", "antigravity-cli", "conversations"),
+    os.path.join(".gemini", "antigravity"),
+    os.path.join(".gemini", "antigravity", "conversations"),
+)
+DEFAULT_ANTIGRAVITY_DB_LIMIT = 500
+DEFAULT_ANTIGRAVITY_DB_CAP = 450
+DEFAULT_ANTIGRAVITY_WINDOW_DAYS = 45
 
 
 class NanError(Exception):
@@ -706,6 +714,105 @@ def enrich_provider_emails(entries):
                     identity["accountEmail"] = email
 
 
+def _antigravity_db_limit():
+    raw = os.environ.get("CODEXBAR_ANTIGRAVITY_DB_LIMIT", "").strip()
+    if raw:
+        try:
+            parsed = int(raw)
+            if parsed >= 2:
+                return parsed
+        except ValueError:
+            pass
+    return DEFAULT_ANTIGRAVITY_DB_LIMIT
+
+
+def _antigravity_window_days(args):
+    raw_days = option_value(args, "--days")
+    if raw_days:
+        try:
+            days = int(raw_days)
+            if days > 0:
+                return max(DEFAULT_ANTIGRAVITY_WINDOW_DAYS, days + 15)
+        except ValueError:
+            pass
+    return DEFAULT_ANTIGRAVITY_WINDOW_DAYS
+
+
+def _collect_antigravity_dbs(home):
+    entries = []
+    for rel_root in ANTIGRAVITY_DB_ROOTS:
+        root = os.path.join(home, rel_root)
+        try:
+            names = os.listdir(root)
+        except OSError:
+            continue
+        for name in names:
+            if name.startswith(".") or not name.lower().endswith(".db"):
+                continue
+            full_path = os.path.join(root, name)
+            try:
+                if not os.path.isfile(full_path):
+                    continue
+                mtime = os.path.getmtime(full_path)
+            except OSError:
+                continue
+            for suffix in ("-wal", "-shm"):
+                sidecar = full_path + suffix
+                try:
+                    sidecar_mtime = os.path.getmtime(sidecar)
+                    if sidecar_mtime > mtime:
+                        mtime = sidecar_mtime
+                except OSError:
+                    pass
+            entries.append((mtime, rel_root, name, full_path))
+    return entries
+
+
+def _symlink_if_exists(src, dst):
+    if not os.path.exists(src):
+        return
+    try:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        os.symlink(src, dst)
+    except OSError:
+        pass
+
+
+def run_antigravity_cost_with_pruned_home(real, args):
+    """Work around CodexBar's hardcoded 500-DB discovery cap for Antigravity cost."""
+    home = os.path.expanduser("~")
+    limit = _antigravity_db_limit()
+    all_dbs = _collect_antigravity_dbs(home)
+    if len(all_dbs) < limit:
+        return None
+
+    cutoff = utc_now().timestamp() - _antigravity_window_days(args) * 86400
+    recent = [item for item in all_dbs if item[0] >= cutoff]
+    recent.sort(key=lambda item: item[0], reverse=True)
+    cap = max(1, min(limit - 1, DEFAULT_ANTIGRAVITY_DB_CAP))
+    selected = recent[:cap]
+
+    with tempfile.TemporaryDirectory(prefix="codexbar-agy-home-") as tmp_home:
+        for rel_path in (
+            os.path.join(".config", "codexbar"),
+            os.path.join(".config", "codexbar.plist"),
+            os.path.join(".config", "tokscale"),
+            ".cache",
+            os.path.join(".local", "share", "codexbar-cli"),
+        ):
+            _symlink_if_exists(os.path.join(home, rel_path), os.path.join(tmp_home, rel_path))
+
+        for _, rel_root, name, full_path in selected:
+            dst_dir = os.path.join(tmp_home, rel_root)
+            _symlink_if_exists(full_path, os.path.join(dst_dir, name))
+            for suffix in ("-wal", "-shm"):
+                _symlink_if_exists(full_path + suffix, os.path.join(dst_dir, name + suffix))
+
+        env = dict(os.environ, HOME=tmp_home)
+        completed = subprocess.run([real] + args, env=env)
+        return completed.returncode
+
+
 def main(args):
     real = find_real_codexbar()
     if real is None:
@@ -717,6 +824,11 @@ def main(args):
         entry = collect_nan_cost_entry()
         print(json.dumps([entry]))
         return 1 if "error" in entry else 0
+
+    if bool(args) and args[0] == "cost" and provider == "antigravity":
+        pruned_rc = run_antigravity_cost_with_pruned_home(real, args)
+        if pruned_rc is not None:
+            return pruned_rc
 
     if bool(args) and args[0] == "usage" and provider in (None, "all", "claude"):
         maybe_refresh_claude_oauth()

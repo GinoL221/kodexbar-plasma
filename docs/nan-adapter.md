@@ -10,8 +10,8 @@ One provider, **NaN Cloud**, with one bar per model. Bars are labeled with the m
 
 | Behavior | Detail |
 | --- | --- |
-| Other commands | `--version`, text output, and any `--provider` other than `all`/`nan` for `usage` (or other than `nan` for `cost --json`) are passed to the real `codexbar` untouched. |
-| Cost breakdown | `cost --provider nan --json` aggregates 30 days of `GET /v1/usage` rows and estimates USD equivalence via built-in model list pricing (`source: "local"`). |
+| Other commands | `--version`, text output, and any `--provider` other than `all`/`nan` for `usage` (or other than `nan` / oversized `antigravity` histories for `cost`) are passed to the real `codexbar` untouched. |
+| Cost breakdown | `cost --provider nan --json` aggregates 30 days of `GET /v1/usage` rows and estimates USD equivalence via built-in model list pricing (`source: "local"`). For `cost --provider antigravity`, when local Antigravity conversation `.db` files reach CodexBar's 500-database discovery cap, the adapter runs the real `codexbar` against an ephemeral `HOME` symlinking only recent databases (last 45 days, capped below 500) so cost history stays available without touching user files. |
 | Exit code | The real CLI's exit code is preserved. With `--provider nan` the adapter exits `1` when the NaN request fails. |
 | Failure isolation | Any NaN problem (missing key, HTTP error, timeout, bad config) becomes an `error` entry for `nan`; the other providers still render. |
 | Secrets | The key is sent only as a bearer header and is never printed. |
@@ -72,6 +72,7 @@ Defaults match the **Gentle** plan (DeepSeek V4 Flash 1,000M tokens, GLM 5.3 Fla
 | `NAN_API_BASE_URL` | `https://api.nan.builders` | API origin (used by the tests). |
 | `NAN_TIMEOUT` | `8` | Request timeout in seconds. |
 | `NAN_NOW` | current time | Fixed UTC time `YYYY-MM-DDTHH:MM:SSZ` (used by the tests). |
+| `CODEXBAR_ANTIGRAVITY_DB_LIMIT` | `500` | Threshold of Antigravity `.db` files above which `cost --provider antigravity` runs with a pruned recent-DB view. |
 
 ## Verify
 

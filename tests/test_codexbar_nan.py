@@ -664,6 +664,147 @@ class UsageMergeTest(AdapterTestCase):
             ["deepseek-v4-flash", "glm5.3-flash"],
         )
 
+    def fake_antigravity_cost_cli(self, limit=5):
+        state_file = Path(self.tmp.name) / "agy_seen.json"
+        script = Path(self.tmp.name) / "codexbar"
+        script.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os, sys\n"
+            f"LIMIT = {limit}\n"
+            f"STATE = {str(state_file)!r}\n"
+            'home = os.environ["HOME"]\n'
+            'roots = [\n'
+            '    os.path.join(home, ".gemini", "antigravity-cli", "conversations"),\n'
+            '    os.path.join(home, ".gemini", "antigravity"),\n'
+            '    os.path.join(home, ".gemini", "antigravity", "conversations"),\n'
+            ']\n'
+            'dbs = []\n'
+            'sidecars = []\n'
+            'for root in roots:\n'
+            '    if not os.path.isdir(root):\n'
+            '        continue\n'
+            '    for name in sorted(os.listdir(root)):\n'
+            '        if name.startswith("."):\n'
+            '            continue\n'
+            '        if name.lower().endswith(".db"):\n'
+            '            dbs.append(name)\n'
+            '        elif name.lower().endswith((".db-wal", ".db-shm")):\n'
+            '            sidecars.append(name)\n'
+            'with open(STATE, "w", encoding="utf-8") as handle:\n'
+            '    json.dump({\n'
+            '        "home": home,\n'
+            '        "args": sys.argv[1:],\n'
+            '        "dbs": dbs,\n'
+            '        "sidecars": sidecars,\n'
+            '        "has_config": os.path.exists(os.path.join(home, ".config", "codexbar", "config.json")),\n'
+            '    }, handle)\n'
+            'if len(dbs) >= LIMIT:\n'
+            '    print(json.dumps([{"provider": "antigravity", "daily": [], "historyCoverageIsEstablished": False}]))\n'
+            'else:\n'
+            '    print(json.dumps([{\n'
+            '        "provider": "antigravity",\n'
+            '        "source": "local",\n'
+            '        "sessionCostUSD": 1.25,\n'
+            '        "sessionTokens": 1000,\n'
+            '        "last30DaysCostUSD": 5.5,\n'
+            '        "last30DaysTokens": 5000,\n'
+            '        "daily": [{"date": "2026-11-04", "totalCost": 1.25, "totalTokens": 1000}],\n'
+            '        "historyCoverageIsEstablished": True,\n'
+            '    }]))\n'
+        )
+        script.chmod(script.stat().st_mode | stat.S_IXUSR)
+        return script, state_file
+
+    def _touch_with_mtime(self, path, epoch):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("db")
+        os.utime(path, (epoch, epoch))
+
+    def test_cost_provider_antigravity_under_db_limit_passes_through_original_home(self):
+        # 2026-11-04T12:00:00Z = 1793793600
+        now_ts = 1793793600
+        conv_dir = self.home / ".gemini" / "antigravity-cli" / "conversations"
+        for i in range(3):
+            self._touch_with_mtime(conv_dir / f"chat-{i}.db", now_ts - i * 3600)
+
+        real, state_file = self.fake_antigravity_cost_cli(limit=5)
+        with FakeNanServer() as server:
+            result = self.run_adapter(
+                ["cost", "--provider", "antigravity", "--format", "json", "--json-only"],
+                server,
+                real,
+                env_extra={"CODEXBAR_ANTIGRAVITY_DB_LIMIT": "5"},
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        seen = json.loads(state_file.read_text())
+        self.assertEqual(seen["home"], str(self.home))
+        self.assertEqual(len(seen["dbs"]), 3)
+        self.assertTrue(json.loads(result.stdout)[0]["historyCoverageIsEstablished"])
+
+    def test_cost_provider_antigravity_prunes_old_dbs_and_keeps_recent_wal_when_over_limit(self):
+        now_ts = 1793793600
+        old_ts = now_ts - 60 * 86400
+        recent_ts = now_ts - 2 * 86400
+
+        cfg_dir = self.home / ".config" / "codexbar"
+        cfg_dir.mkdir(parents=True, exist_ok=True)
+        (cfg_dir / "config.json").write_text(json.dumps({"providers": []}))
+
+        conv_dir = self.home / ".gemini" / "antigravity-cli" / "conversations"
+        for i in range(4):
+            self._touch_with_mtime(conv_dir / f"old-{i}.db", old_ts - i * 100)
+        # Main .db is recent with sidecars
+        self._touch_with_mtime(conv_dir / "recent.db", recent_ts)
+        self._touch_with_mtime(conv_dir / "recent.db-wal", recent_ts)
+        self._touch_with_mtime(conv_dir / "recent.db-shm", recent_ts)
+        # Main .db is old, but its -wal was updated recently
+        self._touch_with_mtime(conv_dir / "wal-active.db", old_ts)
+        self._touch_with_mtime(conv_dir / "wal-active.db-wal", recent_ts + 60)
+
+        real, state_file = self.fake_antigravity_cost_cli(limit=5)
+        with FakeNanServer() as server:
+            result = self.run_adapter(
+                ["cost", "--provider", "antigravity", "--format", "json", "--json-only"],
+                server,
+                real,
+                env_extra={"CODEXBAR_ANTIGRAVITY_DB_LIMIT": "5"},
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        seen = json.loads(state_file.read_text())
+        self.assertNotEqual(seen["home"], str(self.home))
+        self.assertFalse(Path(seen["home"]).exists(), "ephemeral HOME must be cleaned up")
+        self.assertTrue(seen["has_config"])
+        self.assertEqual(seen["dbs"], ["recent.db", "wal-active.db"])
+        self.assertIn("recent.db-wal", seen["sidecars"])
+        self.assertIn("recent.db-shm", seen["sidecars"])
+        self.assertIn("wal-active.db-wal", seen["sidecars"])
+        payload = json.loads(result.stdout)[0]
+        self.assertTrue(payload["historyCoverageIsEstablished"])
+        self.assertEqual(payload["sessionCostUSD"], 1.25)
+
+    def test_cost_provider_antigravity_caps_recent_dbs_strictly_below_limit(self):
+        now_ts = 1793793600
+        conv_dir = self.home / ".gemini" / "antigravity-cli" / "conversations"
+        for i in range(7):
+            self._touch_with_mtime(conv_dir / f"chat-{i}.db", now_ts - (6 - i) * 60)
+
+        real, state_file = self.fake_antigravity_cost_cli(limit=5)
+        with FakeNanServer() as server:
+            result = self.run_adapter(
+                ["cost", "--provider", "antigravity", "--format", "json", "--json-only"],
+                server,
+                real,
+                env_extra={"CODEXBAR_ANTIGRAVITY_DB_LIMIT": "5"},
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        seen = json.loads(state_file.read_text())
+        self.assertEqual(len(seen["dbs"]), 4)
+        self.assertEqual(seen["dbs"], ["chat-3.db", "chat-4.db", "chat-5.db", "chat-6.db"])
+        self.assertFalse(Path(seen["home"]).exists())
+
 
 def load_adapter_module():
     loader = importlib.machinery.SourceFileLoader("codexbar_nan", str(ADAPTER))
